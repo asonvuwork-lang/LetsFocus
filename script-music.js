@@ -13,11 +13,11 @@ const MusicModule = (function () {
   const ambientAudios = new Map();
   const ambientVolumes = new Map();
   const SOUND_FILES = {
-    rain: './sounds/rain.mp3', thunder: './sounds/thunder.mp3',
-    ocean: './sounds/ocean.mp3', forest: './sounds/forest.mp3',
-    fire: './sounds/fire.mp3', coffee: './sounds/coffee.mp3',
-    wind: './sounds/wind.mp3', writing: './sounds/writing.mp3',
-    fan: './sounds/fan.mp3', ac: './sounds/ac.mp3',
+    rain: '../sounds/rain.mp3', thunder: '../sounds/thunder.mp3',
+    ocean: '../sounds/ocean.mp3', forest: '../sounds/forest.mp3',
+    fire: '../sounds/fire.mp3', coffee: '../sounds/coffee.mp3',
+    wind: '../sounds/wind.mp3', writing: '../sounds/writing.mp3',
+    fan: '../sounds/fan.mp3', ac: '../sounds/ac.mp3',
   };
 
   // ── URL helpers ────────────────────────────
