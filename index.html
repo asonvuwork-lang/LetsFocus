@@ -9,7 +9,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles-main.css">
   <script src="https://cdn.jsdelivr.net/npm/vara@1.4.0/lib/vara.min.js"></script>
-  <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body>
 
@@ -129,134 +128,64 @@
           <p class="music-setup-subtitle">Add songs and configure your focus sounds before starting a session</p>
         </div>
 
-        <div class="music-setup-grid">
+        <div class="music-setup-grid music-setup-grid-single">
 
-          <!-- Playlist Manager — goal-area style box -->
-          <div class="goal-area-box">
-            <div class="goal-area-box-header">
-              <h3>🎵 Playlist</h3>
-            </div>
-            <div class="playlist-add-row">
-              <input type="text" id="setupMusicUrl" placeholder="Search by name or paste a YouTube URL...">
-              <button id="setupAddSongBtn" class="setup-add-btn">Search / Add</button>
-            </div>
-            <div class="search-results" id="searchResults" style="margin-bottom:10px;">
-              <p class="search-hint">Search a song name or paste a YouTube URL above.</p>
-            </div>
-            <div class="playlist-list" id="playlistList">
-              <p class="empty-playlist">No songs yet. Add some to enjoy during your focus sessions!</p>
-            </div>
-            <div class="playlist-footer">
-              <button id="clearPlaylistBtn" class="danger-btn">Clear Playlist</button>
-              <span id="playlistCount" class="playlist-count">0 songs</span>
-            </div>
-            <!-- Queue preview -->
-            <div class="queue-section" style="margin-top:1rem;border-top:1px solid rgba(139,111,71,0.15);padding-top:1rem;">
-              <div class="queue-header">
-                <span class="queue-title">Current Queue</span>
-                <button id="clearQueueBtn" class="queue-clear-btn">Clear All</button>
-              </div>
-              <div class="queue-list" id="queueList">
-                <p class="empty-queue">Queue is empty</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Ambient Sounds — goal-area style box, flex grid like whitenoise -->
-          <div class="goal-area-box">
+          <!-- Ambient Sounds Setup -->
+          <div class="goal-area-box setup-ambient-box">
             <div class="goal-area-box-header">
               <h3>🌿 Ambient Sounds</h3>
+              <button id="stopAllPreviewBtn" class="stop-all-btn-small">■ Stop All</button>
             </div>
-            <p class="card-hint">Test sounds before your session. Active sounds carry over to your timer.</p>
-            <div class="noise-grid setup-noise-grid-flex">
-              <div class="noise-item setup-noise-item" data-sound="rain">
-                <div class="noise-icon">🌦️</div>
-                <div class="noise-name">Soft Rain</div>
-                <div class="noise-controls">
-                  <button class="noise-play-btn">▶</button>
-                  <input type="range" class="noise-volume" min="0" max="100" value="50">
-                </div>
-              </div>
-              <div class="noise-item setup-noise-item" data-sound="thunder">
-                <div class="noise-icon">⛈️</div>
-                <div class="noise-name">Thunder</div>
-                <div class="noise-controls">
-                  <button class="noise-play-btn">▶</button>
-                  <input type="range" class="noise-volume" min="0" max="100" value="50">
-                </div>
-              </div>
-              <div class="noise-item setup-noise-item" data-sound="ocean">
-                <div class="noise-icon">🌊</div>
-                <div class="noise-name">Ocean</div>
-                <div class="noise-controls">
-                  <button class="noise-play-btn">▶</button>
-                  <input type="range" class="noise-volume" min="0" max="100" value="50">
-                </div>
-              </div>
-              <div class="noise-item setup-noise-item" data-sound="forest">
-                <div class="noise-icon">🌲</div>
-                <div class="noise-name">Forest</div>
-                <div class="noise-controls">
-                  <button class="noise-play-btn">▶</button>
-                  <input type="range" class="noise-volume" min="0" max="100" value="50">
-                </div>
-              </div>
-              <div class="noise-item setup-noise-item" data-sound="fire">
-                <div class="noise-icon">🔥</div>
-                <div class="noise-name">Fireplace</div>
-                <div class="noise-controls">
-                  <button class="noise-play-btn">▶</button>
-                  <input type="range" class="noise-volume" min="0" max="100" value="50">
-                </div>
-              </div>
-              <div class="noise-item setup-noise-item" data-sound="coffee">
-                <div class="noise-icon">☕</div>
-                <div class="noise-name">Barista</div>
-                <div class="noise-controls">
-                  <button class="noise-play-btn">▶</button>
-                  <input type="range" class="noise-volume" min="0" max="100" value="50">
-                </div>
-              </div>
-              <div class="noise-item setup-noise-item" data-sound="wind">
-                <div class="noise-icon">🌾</div>
-                <div class="noise-name">Field Wind</div>
-                <div class="noise-controls">
-                  <button class="noise-play-btn">▶</button>
-                  <input type="range" class="noise-volume" min="0" max="100" value="50">
-                </div>
-              </div>
-              <div class="noise-item setup-noise-item" data-sound="writing">
-                <div class="noise-icon">✍️</div>
-                <div class="noise-name">Writing</div>
-                <div class="noise-controls">
-                  <button class="noise-play-btn">▶</button>
-                  <input type="range" class="noise-volume" min="0" max="100" value="50">
-                </div>
-              </div>
-              <div class="noise-item setup-noise-item" data-sound="fan">
-                <div class="noise-icon">🌀</div>
-                <div class="noise-name">Fan</div>
-                <div class="noise-controls">
-                  <button class="noise-play-btn">▶</button>
-                  <input type="range" class="noise-volume" min="0" max="100" value="50">
-                </div>
-              </div>
-              <div class="noise-item setup-noise-item" data-sound="ac">
-                <div class="noise-icon">❄️</div>
-                <div class="noise-name">AC Hum</div>
-                <div class="noise-controls">
-                  <button class="noise-play-btn">▶</button>
-                  <input type="range" class="noise-volume" min="0" max="100" value="50">
-                </div>
-              </div>
+            <p class="card-hint">Click a sound to preview it. Active sounds carry over to your timer.</p>
+            <div class="noise-toggle-grid">
+              <button class="noise-toggle-btn setup-noise-btn" data-sound="rain">
+                <span class="ntb-icon">🌦️</span>
+                <span class="ntb-name">Soft Rain</span>
+              </button>
+              <button class="noise-toggle-btn setup-noise-btn" data-sound="thunder">
+                <span class="ntb-icon">⛈️</span>
+                <span class="ntb-name">Thunder</span>
+              </button>
+              <button class="noise-toggle-btn setup-noise-btn" data-sound="ocean">
+                <span class="ntb-icon">🌊</span>
+                <span class="ntb-name">Ocean</span>
+              </button>
+              <button class="noise-toggle-btn setup-noise-btn" data-sound="forest">
+                <span class="ntb-icon">🌲</span>
+                <span class="ntb-name">Forest</span>
+              </button>
+              <button class="noise-toggle-btn setup-noise-btn" data-sound="fire">
+                <span class="ntb-icon">🔥</span>
+                <span class="ntb-name">Fireplace</span>
+              </button>
+              <button class="noise-toggle-btn setup-noise-btn" data-sound="coffee">
+                <span class="ntb-icon">☕</span>
+                <span class="ntb-name">Barista</span>
+              </button>
+              <button class="noise-toggle-btn setup-noise-btn" data-sound="wind">
+                <span class="ntb-icon">🌾</span>
+                <span class="ntb-name">Field Wind</span>
+              </button>
+              <button class="noise-toggle-btn setup-noise-btn" data-sound="writing">
+                <span class="ntb-icon">✍️</span>
+                <span class="ntb-name">Writing</span>
+              </button>
+              <button class="noise-toggle-btn setup-noise-btn" data-sound="keyboard">
+                <span class="ntb-icon">⌨️</span>
+                <span class="ntb-name">Keyboard</span>
+              </button>
+              <button class="noise-toggle-btn setup-noise-btn" data-sound="ac">
+                <span class="ntb-icon">❄️</span>
+                <span class="ntb-name">AC Hum</span>
+              </button>
             </div>
-            <button id="stopAllPreviewBtn" class="stop-all-btn">■ Stop All Sounds</button>
+            </div>
           </div>
 
         </div>
 
         <div class="setup-start-hint">
-          <p>☕ When ready, click the <strong>coffee cup</strong> on the Goals tab to set your timer and begin!</p>
+          <p>☕ Configure your ambient sounds, then click the <strong>coffee cup</strong> on the Goals tab to set your timer and begin!</p>
         </div>
       </div>
     </div>
@@ -266,39 +195,57 @@
   <!-- ===== TIMER CONFIGURATION OVERLAY ===== -->
   <div id="timerConfirmOverlay" class="timer-confirm-overlay hidden">
     <div class="timer-confirm-content">
-      <div class="timer-config-title">Set Your Focus Time</div>
-      <div class="timer-config">
-        <div class="time-section">
-          <div class="time-label">HOURS</div>
-          <div class="time-display-large" id="configHours" contenteditable="true">00</div>
-          <div class="time-controls">
-            <button class="time-btn up" data-target="hours">▲</button>
-            <button class="time-btn down" data-target="hours">▼</button>
-          </div>
+
+      <!-- Step 1: Pick a goal -->
+      <div id="configStep1" class="config-step">
+        <div class="timer-config-title">What are you focusing on? ☕</div>
+        <div class="goal-picker-list" id="goalPickerList">
+          <p class="goal-picker-empty">No goals yet — add one on the Goals tab first!</p>
         </div>
-        <div class="time-separator">:</div>
-        <div class="time-section">
-          <div class="time-label">MINUTES</div>
-          <div class="time-display-large" id="configMinutes" contenteditable="true">25</div>
-          <div class="time-controls">
-            <button class="time-btn up" data-target="minutes">▲</button>
-            <button class="time-btn down" data-target="minutes">▼</button>
-          </div>
-        </div>
-        <div class="time-separator">:</div>
-        <div class="time-section">
-          <div class="time-label">SECONDS</div>
-          <div class="time-display-large" id="configSeconds" contenteditable="true">00</div>
-          <div class="time-controls">
-            <button class="time-btn up" data-target="seconds">▲</button>
-            <button class="time-btn down" data-target="seconds">▼</button>
-          </div>
+        <div class="timer-confirm-controls">
+          <button id="goalPickerNextBtn" class="timer-confirm-btn start" disabled>Next →</button>
+          <button id="goalPickerCancelBtn" class="timer-confirm-btn cancel">Cancel</button>
         </div>
       </div>
-      <div class="timer-confirm-controls">
-        <button id="confirmStartBtn" class="timer-confirm-btn start">Start Session</button>
-        <button id="confirmCancelBtn" class="timer-confirm-btn cancel">Cancel</button>
+
+      <!-- Step 2: Set time -->
+      <div id="configStep2" class="config-step hidden">
+        <div class="timer-config-title">Set Your Focus Time</div>
+        <div class="selected-goal-preview" id="selectedGoalPreview"></div>
+        <div class="timer-config">
+          <div class="time-section">
+            <div class="time-label">HOURS</div>
+            <div class="time-display-large" id="configHours" contenteditable="true">00</div>
+            <div class="time-controls">
+              <button class="time-btn up" data-target="hours">▲</button>
+              <button class="time-btn down" data-target="hours">▼</button>
+            </div>
+          </div>
+          <div class="time-separator">:</div>
+          <div class="time-section">
+            <div class="time-label">MINUTES</div>
+            <div class="time-display-large" id="configMinutes" contenteditable="true">25</div>
+            <div class="time-controls">
+              <button class="time-btn up" data-target="minutes">▲</button>
+              <button class="time-btn down" data-target="minutes">▼</button>
+            </div>
+          </div>
+          <div class="time-separator">:</div>
+          <div class="time-section">
+            <div class="time-label">SECONDS</div>
+            <div class="time-display-large" id="configSeconds" contenteditable="true">00</div>
+            <div class="time-controls">
+              <button class="time-btn up" data-target="seconds">▲</button>
+              <button class="time-btn down" data-target="seconds">▼</button>
+            </div>
+          </div>
+        </div>
+        <div class="timer-confirm-controls">
+          <button id="confirmStartBtn" class="timer-confirm-btn start">Start Session</button>
+          <button id="confirmBackBtn" class="timer-confirm-btn cancel">← Back</button>
+        </div>
       </div>
+
     </div>
   </div>
 
@@ -337,7 +284,6 @@
             <button id="startPauseBtn" class="timer-btn-large start-btn">▶ Start</button>
             <button id="resetBtn" class="timer-btn-large reset-btn">↺ Reset</button>
           </div>
-          <!-- Session stats inline -->
           <div class="session-stats">
             <div class="stat-item">
               <div class="stat-label">Session Goal</div>
@@ -361,140 +307,67 @@
         </div>
       </div>
 
-      <!-- RIGHT: Music & Sounds -->
+      <!-- RIGHT: Working On + Sounds -->
       <div class="timer-right-col">
 
-        <!-- Music Player Card -->
-        <div class="goal-area-box vinyl-player-box" id="vinylPlayerBox">
-
-          <!-- Track info row -->
-          <div class="player-info-row">
-            <div class="player-vinyl-mini">
-              <div class="vinyl-mini-record" id="vinylRecord">
-                <div class="vinyl-mini-label">♪</div>
-                <div class="vinyl-mini-grooves"></div>
-              </div>
-            </div>
-            <div class="player-track-info">
-              <div class="player-now-label">NOW PLAYING</div>
-              <div class="player-now-title" id="songTitle">No Song Loaded</div>
-              <div class="player-next-row">
-                <span class="player-next-label">Up Next:</span>
-                <span class="player-next-title" id="upNextTitle">—</span>
-              </div>
-            </div>
-            <div class="player-track-count" id="trackIndexDisplay">0 / 0</div>
+        <!-- Focused Goal Card (moved to right) -->
+        <div class="goal-area-box focus-goal-card-right" id="focusGoalCard">
+          <div class="focus-goal-header">
+            <div class="focus-goal-label">🎯 Working On</div>
+            <button class="focus-goal-done-btn" id="focusGoalDoneBtn">✓ Mark Complete</button>
           </div>
-
-          <!-- YouTube embed — full native player with seek bar -->
-          <div class="yt-embed-wrap" id="ytEmbedWrap">
-            <div class="yt-embed-placeholder" id="ytEmbedPlaceholder">
-              <div class="yt-placeholder-icon">♪</div>
-              <div class="yt-placeholder-text">Search for a song in the<br><strong>Music Setup</strong> tab to begin</div>
-            </div>
-            <div id="ytEmbedContainer"></div>
-          </div>
-
-          <!-- Controls row -->
-          <div class="player-controls-row">
-            <button class="music-btn" id="prevBtn" title="Previous">⏮</button>
-            <button class="music-btn" id="nextBtn" title="Next">⏭</button>
-            <div class="player-volume-row">
-              <span>🔊</span>
-              <input type="range" id="musicVolumeSlider" min="0" max="100" value="80" class="volume-slider">
-            </div>
-          </div>
-
+          <div class="focus-goal-title" id="focusGoalTitle">No goal selected</div>
+          <div class="focus-subgoals" id="focusSubgoals"></div>
         </div>
 
-        <!-- Ambient Sounds — goal-area style box -->
+        <!-- Ambient Sounds — toggle button style -->
         <div class="goal-area-box">
           <div class="goal-area-box-header">
             <h3>🌿 Ambient Sounds</h3>
+            <button id="stopAllNoisesBtn" class="stop-all-btn-small">■ Stop All</button>
           </div>
-          <div class="noise-grid">
-            <div class="noise-item" data-sound="rain">
-              <div class="noise-icon">🌦️</div>
-              <div class="noise-name">Soft Rain</div>
-              <div class="noise-controls">
-                <button class="noise-play-btn">▶</button>
-                <input type="range" class="noise-volume" min="0" max="100" value="50">
-              </div>
-            </div>
-            <div class="noise-item" data-sound="thunder">
-              <div class="noise-icon">⛈️</div>
-              <div class="noise-name">Thunder</div>
-              <div class="noise-controls">
-                <button class="noise-play-btn">▶</button>
-                <input type="range" class="noise-volume" min="0" max="100" value="50">
-              </div>
-            </div>
-            <div class="noise-item" data-sound="ocean">
-              <div class="noise-icon">🌊</div>
-              <div class="noise-name">Ocean</div>
-              <div class="noise-controls">
-                <button class="noise-play-btn">▶</button>
-                <input type="range" class="noise-volume" min="0" max="100" value="50">
-              </div>
-            </div>
-            <div class="noise-item" data-sound="forest">
-              <div class="noise-icon">🌲</div>
-              <div class="noise-name">Forest</div>
-              <div class="noise-controls">
-                <button class="noise-play-btn">▶</button>
-                <input type="range" class="noise-volume" min="0" max="100" value="50">
-              </div>
-            </div>
-            <div class="noise-item" data-sound="fire">
-              <div class="noise-icon">🔥</div>
-              <div class="noise-name">Fireplace</div>
-              <div class="noise-controls">
-                <button class="noise-play-btn">▶</button>
-                <input type="range" class="noise-volume" min="0" max="100" value="50">
-              </div>
-            </div>
-            <div class="noise-item" data-sound="coffee">
-              <div class="noise-icon">☕</div>
-              <div class="noise-name">Barista</div>
-              <div class="noise-controls">
-                <button class="noise-play-btn">▶</button>
-                <input type="range" class="noise-volume" min="0" max="100" value="50">
-              </div>
-            </div>
-            <div class="noise-item" data-sound="wind">
-              <div class="noise-icon">🌾</div>
-              <div class="noise-name">Field Wind</div>
-              <div class="noise-controls">
-                <button class="noise-play-btn">▶</button>
-                <input type="range" class="noise-volume" min="0" max="100" value="50">
-              </div>
-            </div>
-            <div class="noise-item" data-sound="writing">
-              <div class="noise-icon">✍️</div>
-              <div class="noise-name">Writing</div>
-              <div class="noise-controls">
-                <button class="noise-play-btn">▶</button>
-                <input type="range" class="noise-volume" min="0" max="100" value="50">
-              </div>
-            </div>
-            <div class="noise-item" data-sound="fan">
-              <div class="noise-icon">🌀</div>
-              <div class="noise-name">Fan</div>
-              <div class="noise-controls">
-                <button class="noise-play-btn">▶</button>
-                <input type="range" class="noise-volume" min="0" max="100" value="50">
-              </div>
-            </div>
-            <div class="noise-item" data-sound="ac">
-              <div class="noise-icon">❄️</div>
-              <div class="noise-name">AC Hum</div>
-              <div class="noise-controls">
-                <button class="noise-play-btn">▶</button>
-                <input type="range" class="noise-volume" min="0" max="100" value="50">
-              </div>
-            </div>
+          <div class="noise-toggle-grid">
+            <button class="noise-toggle-btn" data-sound="rain">
+              <span class="ntb-icon">🌦️</span>
+              <span class="ntb-name">Soft Rain</span>
+            </button>
+            <button class="noise-toggle-btn" data-sound="thunder">
+              <span class="ntb-icon">⛈️</span>
+              <span class="ntb-name">Thunder</span>
+            </button>
+            <button class="noise-toggle-btn" data-sound="ocean">
+              <span class="ntb-icon">🌊</span>
+              <span class="ntb-name">Ocean</span>
+            </button>
+            <button class="noise-toggle-btn" data-sound="forest">
+              <span class="ntb-icon">🌲</span>
+              <span class="ntb-name">Forest</span>
+            </button>
+            <button class="noise-toggle-btn" data-sound="fire">
+              <span class="ntb-icon">🔥</span>
+              <span class="ntb-name">Fireplace</span>
+            </button>
+            <button class="noise-toggle-btn" data-sound="coffee">
+              <span class="ntb-icon">☕</span>
+              <span class="ntb-name">Barista</span>
+            </button>
+            <button class="noise-toggle-btn" data-sound="wind">
+              <span class="ntb-icon">🌾</span>
+              <span class="ntb-name">Field Wind</span>
+            </button>
+            <button class="noise-toggle-btn" data-sound="writing">
+              <span class="ntb-icon">✍️</span>
+              <span class="ntb-name">Writing</span>
+            </button>
+            <button class="noise-toggle-btn" data-sound="keyboard">
+              <span class="ntb-icon">⌨️</span>
+              <span class="ntb-name">Keyboard</span>
+            </button>
+            <button class="noise-toggle-btn" data-sound="ac">
+              <span class="ntb-icon">❄️</span>
+              <span class="ntb-name">AC Hum</span>
+            </button>
           </div>
-          <button id="stopAllNoisesBtn" class="stop-all-btn">■ Stop All Sounds</button>
         </div>
 
       </div>
