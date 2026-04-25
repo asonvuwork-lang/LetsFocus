@@ -936,6 +936,77 @@ aside.right {
 .setup-noise-btn .ntb-icon { font-size: 1.8rem; }
 .setup-noise-btn .ntb-name { font-size: 0.72rem; }
 
+/* ===== NTB WRAP — button + collapsible volume row ===== */
+.ntb-wrap {
+  flex: 0 0 calc(20% - 7px); min-width: 64px;
+  display: flex; flex-direction: column; align-items: stretch;
+}
+/* make the button itself fill the wrap width */
+.ntb-wrap .noise-toggle-btn {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+/* Volume row — hidden by default, slides open when active */
+.ntb-volume-row {
+  display: flex; align-items: center; gap: 3px;
+  padding: 0 2px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.25s ease, margin 0.25s ease;
+  margin-top: 0;
+}
+.ntb-wrap.slider-visible .ntb-volume-row {
+  max-height: 28px;
+  opacity: 1;
+  margin-top: 5px;
+}
+.ntb-vol-icon {
+  font-size: 0.65rem; line-height: 1; flex-shrink: 0; user-select: none;
+}
+.ntb-volume-slider {
+  flex: 1;
+  min-width: 0; /* prevent flex overflow */
+  height: 4px;
+  -webkit-appearance: none; appearance: none;
+  background: rgba(139,111,71,0.25);
+  border-radius: 3px; outline: none; cursor: pointer;
+  /* ensure thumb never renders outside the element bounds */
+  overflow: visible;
+  box-sizing: border-box;
+}
+.ntb-volume-slider::-webkit-slider-container {
+  overflow: hidden;
+}
+.ntb-volume-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: rgba(139,111,71,0.25);
+  border-radius: 3px;
+}
+.ntb-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  background: #8b6f47;
+  border-radius: 50%; cursor: pointer;
+  margin-top: -4px; /* vertically centre on 4px track */
+  box-shadow: 0 1px 4px rgba(139,111,71,0.4);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.ntb-volume-slider::-webkit-slider-thumb:hover {
+  background: #6b5139; transform: scale(1.2);
+}
+.ntb-volume-slider::-moz-range-track {
+  height: 4px;
+  background: rgba(139,111,71,0.25);
+  border-radius: 3px;
+}
+.ntb-volume-slider::-moz-range-thumb {
+  width: 12px; height: 12px;
+  background: #8b6f47; border: none;
+  border-radius: 50%; cursor: pointer;
+}
+
 .stop-all-btn-small {
   background: rgba(245,241,235,0.7); border: 1px solid rgba(139,111,71,0.25);
   color: #6b5139; font-family: 'Playfair Display', serif; font-size: 0.75rem;

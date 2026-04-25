@@ -327,46 +327,116 @@
             <button id="stopAllNoisesBtn" class="stop-all-btn-small">■ Stop All</button>
           </div>
           <div class="noise-toggle-grid">
-            <button class="noise-toggle-btn" data-sound="rain">
-              <span class="ntb-icon">🌦️</span>
-              <span class="ntb-name">Soft Rain</span>
-            </button>
-            <button class="noise-toggle-btn" data-sound="thunder">
-              <span class="ntb-icon">⛈️</span>
-              <span class="ntb-name">Thunder</span>
-            </button>
-            <button class="noise-toggle-btn" data-sound="ocean">
-              <span class="ntb-icon">🌊</span>
-              <span class="ntb-name">Ocean</span>
-            </button>
-            <button class="noise-toggle-btn" data-sound="forest">
-              <span class="ntb-icon">🌲</span>
-              <span class="ntb-name">Forest</span>
-            </button>
-            <button class="noise-toggle-btn" data-sound="fire">
-              <span class="ntb-icon">🔥</span>
-              <span class="ntb-name">Fireplace</span>
-            </button>
-            <button class="noise-toggle-btn" data-sound="coffee">
-              <span class="ntb-icon">☕</span>
-              <span class="ntb-name">Barista</span>
-            </button>
-            <button class="noise-toggle-btn" data-sound="wind">
-              <span class="ntb-icon">🌾</span>
-              <span class="ntb-name">Field Wind</span>
-            </button>
-            <button class="noise-toggle-btn" data-sound="writing">
-              <span class="ntb-icon">✍️</span>
-              <span class="ntb-name">Writing</span>
-            </button>
-            <button class="noise-toggle-btn" data-sound="keyboard">
-              <span class="ntb-icon">⌨️</span>
-              <span class="ntb-name">Keyboard</span>
-            </button>
-            <button class="noise-toggle-btn" data-sound="ac">
-              <span class="ntb-icon">❄️</span>
-              <span class="ntb-name">AC Hum</span>
-            </button>
+            <div class="ntb-wrap" data-sound="rain">
+              <button class="noise-toggle-btn" data-sound="rain">
+                <span class="ntb-icon">🌦️</span>
+                <span class="ntb-name">Soft Rain</span>
+              </button>
+              <div class="ntb-volume-row">
+                <span class="ntb-vol-icon">🔈</span>
+                <input type="range" class="ntb-volume-slider" data-sound="rain" min="0" max="100" value="50">
+                <span class="ntb-vol-icon">🔊</span>
+              </div>
+            </div>
+            <div class="ntb-wrap" data-sound="thunder">
+              <button class="noise-toggle-btn" data-sound="thunder">
+                <span class="ntb-icon">⛈️</span>
+                <span class="ntb-name">Thunder</span>
+              </button>
+              <div class="ntb-volume-row">
+                <span class="ntb-vol-icon">🔈</span>
+                <input type="range" class="ntb-volume-slider" data-sound="thunder" min="0" max="100" value="50">
+                <span class="ntb-vol-icon">🔊</span>
+              </div>
+            </div>
+            <div class="ntb-wrap" data-sound="ocean">
+              <button class="noise-toggle-btn" data-sound="ocean">
+                <span class="ntb-icon">🌊</span>
+                <span class="ntb-name">Ocean</span>
+              </button>
+              <div class="ntb-volume-row">
+                <span class="ntb-vol-icon">🔈</span>
+                <input type="range" class="ntb-volume-slider" data-sound="ocean" min="0" max="100" value="50">
+                <span class="ntb-vol-icon">🔊</span>
+              </div>
+            </div>
+            <div class="ntb-wrap" data-sound="forest">
+              <button class="noise-toggle-btn" data-sound="forest">
+                <span class="ntb-icon">🌲</span>
+                <span class="ntb-name">Forest</span>
+              </button>
+              <div class="ntb-volume-row">
+                <span class="ntb-vol-icon">🔈</span>
+                <input type="range" class="ntb-volume-slider" data-sound="forest" min="0" max="100" value="50">
+                <span class="ntb-vol-icon">🔊</span>
+              </div>
+            </div>
+            <div class="ntb-wrap" data-sound="fire">
+              <button class="noise-toggle-btn" data-sound="fire">
+                <span class="ntb-icon">🔥</span>
+                <span class="ntb-name">Fireplace</span>
+              </button>
+              <div class="ntb-volume-row">
+                <span class="ntb-vol-icon">🔈</span>
+                <input type="range" class="ntb-volume-slider" data-sound="fire" min="0" max="100" value="50">
+                <span class="ntb-vol-icon">🔊</span>
+              </div>
+            </div>
+            <div class="ntb-wrap" data-sound="coffee">
+              <button class="noise-toggle-btn" data-sound="coffee">
+                <span class="ntb-icon">☕</span>
+                <span class="ntb-name">Barista</span>
+              </button>
+              <div class="ntb-volume-row">
+                <span class="ntb-vol-icon">🔈</span>
+                <input type="range" class="ntb-volume-slider" data-sound="coffee" min="0" max="100" value="50">
+                <span class="ntb-vol-icon">🔊</span>
+              </div>
+            </div>
+            <div class="ntb-wrap" data-sound="wind">
+              <button class="noise-toggle-btn" data-sound="wind">
+                <span class="ntb-icon">🌾</span>
+                <span class="ntb-name">Field Wind</span>
+              </button>
+              <div class="ntb-volume-row">
+                <span class="ntb-vol-icon">🔈</span>
+                <input type="range" class="ntb-volume-slider" data-sound="wind" min="0" max="100" value="50">
+                <span class="ntb-vol-icon">🔊</span>
+              </div>
+            </div>
+            <div class="ntb-wrap" data-sound="writing">
+              <button class="noise-toggle-btn" data-sound="writing">
+                <span class="ntb-icon">✍️</span>
+                <span class="ntb-name">Writing</span>
+              </button>
+              <div class="ntb-volume-row">
+                <span class="ntb-vol-icon">🔈</span>
+                <input type="range" class="ntb-volume-slider" data-sound="writing" min="0" max="100" value="50">
+                <span class="ntb-vol-icon">🔊</span>
+              </div>
+            </div>
+            <div class="ntb-wrap" data-sound="keyboard">
+              <button class="noise-toggle-btn" data-sound="keyboard">
+                <span class="ntb-icon">⌨️</span>
+                <span class="ntb-name">Keyboard</span>
+              </button>
+              <div class="ntb-volume-row">
+                <span class="ntb-vol-icon">🔈</span>
+                <input type="range" class="ntb-volume-slider" data-sound="keyboard" min="0" max="100" value="50">
+                <span class="ntb-vol-icon">🔊</span>
+              </div>
+            </div>
+            <div class="ntb-wrap" data-sound="ac">
+              <button class="noise-toggle-btn" data-sound="ac">
+                <span class="ntb-icon">❄️</span>
+                <span class="ntb-name">AC Hum</span>
+              </button>
+              <div class="ntb-volume-row">
+                <span class="ntb-vol-icon">🔈</span>
+                <input type="range" class="ntb-volume-slider" data-sound="ac" min="0" max="100" value="50">
+                <span class="ntb-vol-icon">🔊</span>
+              </div>
+            </div>
           </div>
         </div>
 

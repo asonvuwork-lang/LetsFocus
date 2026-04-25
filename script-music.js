@@ -6,6 +6,8 @@ const MusicModule = (function () {
   const ambientAudios = new Map();
   const ambientVolumes = new Map();
 
+  const STORAGE_KEY = 'letsfocus_volumes';
+
   const SOUND_FILES = {
     rain:     'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996128/rain_otcmzn.mp3',
     thunder:  'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996118/thunder_mz7jxe.mp3',
@@ -19,17 +21,41 @@ const MusicModule = (function () {
     ac:       'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996118/ac_nhvrqh.mp3',
   };
 
+  // ---- Persist volumes to localStorage ----
+  function loadStoredVolumes() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      Object.entries(saved).forEach(([sound, vol]) => {
+        ambientVolumes.set(sound, Number(vol));
+      });
+    } catch(e) {}
+  }
+
+  function saveVolume(sound, vol) {
+    ambientVolumes.set(sound, vol);
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      saved[sound] = vol;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+    } catch(e) {}
+  }
+
+  function getVolume(sound) {
+    return ambientVolumes.has(sound) ? ambientVolumes.get(sound) : 50;
+  }
+
+  // ---- Audio helpers ----
   function getOrCreateAudio(sound) {
     if (!ambientAudios.has(sound)) {
       const audio = new Audio(SOUND_FILES[sound]);
       audio.loop = true;
-      audio.volume = (ambientVolumes.get(sound) ?? 70) / 100;
+      audio.volume = getVolume(sound) / 100;
       ambientAudios.set(sound, audio);
     }
     return ambientAudios.get(sound);
   }
 
-  // Toggle a sound on/off — called by toggle button click
+  // Toggle a sound on/off
   function toggleNoise(sound) {
     const audio = getOrCreateAudio(sound);
     if (!audio.paused) {
@@ -43,10 +69,15 @@ const MusicModule = (function () {
     }
   }
 
-  // Sync all buttons with matching data-sound across both pages
+  // Sync all buttons + slider visibility for a given sound
   function syncToggleUI(sound, playing) {
+    // Toggle active class on all matching buttons
     document.querySelectorAll(`.noise-toggle-btn[data-sound="${sound}"], .setup-noise-btn[data-sound="${sound}"]`)
       .forEach(btn => btn.classList.toggle('active', playing));
+
+    // Show/hide slider rows — only on the timer page wraps
+    document.querySelectorAll(`#timerPage .ntb-wrap[data-sound="${sound}"]`)
+      .forEach(wrap => wrap.classList.toggle('slider-visible', playing));
   }
 
   function stopAllNoises() {
@@ -57,7 +88,7 @@ const MusicModule = (function () {
     });
   }
 
-  // Wire all toggle buttons in a container
+  // ---- Wire toggle buttons ----
   function wireToggleBtns(selector) {
     document.querySelectorAll(selector).forEach(btn => {
       const sound = btn.dataset.sound;
@@ -66,11 +97,36 @@ const MusicModule = (function () {
     });
   }
 
+  // ---- Wire volume sliders (timer page only) ----
+  function wireVolumeSliders() {
+    document.querySelectorAll('#timerPage .ntb-volume-slider').forEach(slider => {
+      const sound = slider.dataset.sound;
+      if (!sound) return;
+
+      // Set initial value from stored/default volume
+      slider.value = getVolume(sound);
+
+      slider.addEventListener('input', (e) => {
+        const vol = Number(e.target.value);
+        saveVolume(sound, vol);
+        // Apply to live audio if it exists
+        if (ambientAudios.has(sound)) {
+          ambientAudios.get(sound).volume = vol / 100;
+        }
+      });
+
+      // Prevent slider drag from toggling the sound
+      slider.addEventListener('click', (e) => e.stopPropagation());
+    });
+  }
+
   function stopAllAudio() { stopAllNoises(); }
 
   function init() {
+    loadStoredVolumes();
     wireToggleBtns('#timerPage .noise-toggle-btn');
     wireToggleBtns('#tab-music .setup-noise-btn');
+    wireVolumeSliders();
     document.getElementById('stopAllNoisesBtn')?.addEventListener('click', stopAllNoises);
     document.getElementById('stopAllPreviewBtn')?.addEventListener('click', stopAllNoises);
   }
