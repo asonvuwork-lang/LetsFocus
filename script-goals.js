@@ -390,5 +390,18 @@ const GoalsModule = (function() {
     newGoalInput.focus();
   }
 
-  return { init, renderGoals, updateMainProgress, getGoals, getCompletionRate };
+  // Called by TimerModule when a goal is marked complete during a session
+  function completeGoalByIndex(goalIndex, subgoalDoneStates) {
+    const goal = goals[goalIndex];
+    if (!goal) return;
+    goal.completed = true;
+    if (goal.subgoals?.length && subgoalDoneStates?.length) {
+      goal.subgoals.forEach((sg, i) => {
+        if (subgoalDoneStates[i] != null) sg.completed = subgoalDoneStates[i];
+      });
+    }
+    saveData();
+  }
+
+  return { init, renderGoals, updateMainProgress, getGoals, getCompletionRate, completeGoalByIndex };
 })();

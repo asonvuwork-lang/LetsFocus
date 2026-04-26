@@ -5,7 +5,6 @@ const MusicModule = (function () {
 
   const ambientAudios = new Map();
   const ambientVolumes = new Map();
-
   const STORAGE_KEY = 'letsfocus_volumes';
 
   const SOUND_FILES = {
@@ -21,13 +20,11 @@ const MusicModule = (function () {
     ac:       'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996118/ac_nhvrqh.mp3',
   };
 
-  // ---- Persist volumes to localStorage ----
+  // ---- Volume persistence ----
   function loadStoredVolumes() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      Object.entries(saved).forEach(([sound, vol]) => {
-        ambientVolumes.set(sound, Number(vol));
-      });
+      Object.entries(saved).forEach(([sound, vol]) => ambientVolumes.set(sound, Number(vol)));
     } catch(e) {}
   }
 
@@ -44,7 +41,7 @@ const MusicModule = (function () {
     return ambientVolumes.has(sound) ? ambientVolumes.get(sound) : 50;
   }
 
-  // ---- Audio helpers ----
+  // ---- Audio ----
   function getOrCreateAudio(sound) {
     if (!ambientAudios.has(sound)) {
       const audio = new Audio(SOUND_FILES[sound]);
@@ -55,7 +52,6 @@ const MusicModule = (function () {
     return ambientAudios.get(sound);
   }
 
-  // Toggle a sound on/off
   function toggleNoise(sound) {
     const audio = getOrCreateAudio(sound);
     if (!audio.paused) {
@@ -63,20 +59,19 @@ const MusicModule = (function () {
       syncToggleUI(sound, false);
     } else {
       audio.play().catch(() =>
-        showCustomAlert(`Could not play "${sound}" sound. Check your internet connection.`)
+        showCustomAlert('Could not play "' + sound + '" sound. Check your internet connection.')
       );
       syncToggleUI(sound, true);
     }
   }
 
-  // Sync all buttons + slider visibility for a given sound
+  // ---- Sync button active state + show/hide slider ----
   function syncToggleUI(sound, playing) {
-    // Toggle active class on all matching buttons
-    document.querySelectorAll(`.noise-toggle-btn[data-sound="${sound}"], .setup-noise-btn[data-sound="${sound}"]`)
+    document.querySelectorAll('.noise-toggle-btn[data-sound="' + sound + '"], .setup-noise-btn[data-sound="' + sound + '"]')
       .forEach(btn => btn.classList.toggle('active', playing));
 
-    // Show/hide slider rows — only on the timer page wraps
-    document.querySelectorAll(`#timerPage .ntb-wrap[data-sound="${sound}"]`)
+    // Reveal slider only on timer page
+    document.querySelectorAll('#timerPage .ntb-wrap[data-sound="' + sound + '"]')
       .forEach(wrap => wrap.classList.toggle('slider-visible', playing));
   }
 
@@ -88,7 +83,7 @@ const MusicModule = (function () {
     });
   }
 
-  // ---- Wire toggle buttons ----
+  // ---- Wire buttons ----
   function wireToggleBtns(selector) {
     document.querySelectorAll(selector).forEach(btn => {
       const sound = btn.dataset.sound;
@@ -102,20 +97,12 @@ const MusicModule = (function () {
     document.querySelectorAll('#timerPage .ntb-volume-slider').forEach(slider => {
       const sound = slider.dataset.sound;
       if (!sound) return;
-
-      // Set initial value from stored/default volume
       slider.value = getVolume(sound);
-
       slider.addEventListener('input', (e) => {
         const vol = Number(e.target.value);
         saveVolume(sound, vol);
-        // Apply to live audio if it exists
-        if (ambientAudios.has(sound)) {
-          ambientAudios.get(sound).volume = vol / 100;
-        }
+        if (ambientAudios.has(sound)) ambientAudios.get(sound).volume = vol / 100;
       });
-
-      // Prevent slider drag from toggling the sound
       slider.addEventListener('click', (e) => e.stopPropagation());
     });
   }
@@ -131,7 +118,6 @@ const MusicModule = (function () {
     document.getElementById('stopAllPreviewBtn')?.addEventListener('click', stopAllNoises);
   }
 
-  // Stubs for compatibility
   function loadPlaylist() {}
   function updateDisplay() {}
   function addSong() { return Promise.resolve(false); }

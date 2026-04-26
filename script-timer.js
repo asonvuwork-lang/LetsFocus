@@ -145,6 +145,13 @@ const TimerModule = (function() {
     clearInterval(timerInterval); timerRunning = false;
     const btn = document.getElementById('startPauseBtn');
     if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
+
+    // Update GoalsModule's in-memory array + persist to localStorage
+    if (selectedGoal != null && selectedGoal.index != null) {
+      const subgoalDoneStates = selectedGoal.subgoals?.map(s => s.done) || [];
+      GoalsModule.completeGoalByIndex(selectedGoal.index, subgoalDoneStates);
+    }
+
     playSoftChime();
     triggerCelebration();
     showGoalCompleteModal();
@@ -204,8 +211,7 @@ const TimerModule = (function() {
 
     document.getElementById('timerEndDone').addEventListener('click', () => {
       document.body.removeChild(modal);
-      triggerCelebration();
-      showGoalCompleteModal();
+      triggerGoalComplete();
     });
   }
 
@@ -401,6 +407,9 @@ const TimerModule = (function() {
     MusicModule.stopAllAudio();
     const btn = document.getElementById('startPauseBtn');
     if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
+    // Refresh goals list so any completions from the timer session are shown immediately
+    GoalsModule.renderGoals();
+    GoalsModule.updateMainProgress();
   }
 
   function toggleTimer() {
