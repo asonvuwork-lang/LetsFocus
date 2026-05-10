@@ -51,6 +51,7 @@
     <!-- Tab Navigation -->
     <nav class="tab-nav">
       <button class="tab-btn active" data-tab="goals">☕ Goals</button>
+      <button class="tab-btn" data-tab="deadlines">📅 Deadlines</button>
       <button class="tab-btn" data-tab="music">♪ Music Setup</button>
     </nav>
 
@@ -61,7 +62,20 @@
           <h2>Goal Area</h2>
           <div class="goal-controls">
             <div class="controls-center">
-              <input type="text" id="newGoalInput" placeholder="Enter a new goal">
+              <div class="goal-input-wrap">
+                <input type="text" id="newGoalInput" placeholder="Enter a new goal or subgoal name…">
+                <button id="deadlineDateToggle" class="deadline-date-toggle" title="Set deadline">📅</button>
+                <input type="date" id="newGoalDeadline" class="new-goal-deadline hidden">
+                <!-- Subgoal parent selector dropdown (appears on input focus) -->
+                <div id="parentGoalDropdown" class="parent-goal-dropdown hidden">
+                  <div class="parent-goal-option parent-goal-none active" data-id="">
+                    <span class="parent-icon">✦</span>
+                    <span>Add as new goal</span>
+                  </div>
+                  <div class="parent-goal-divider">— or make a subgoal of —</div>
+                  <div id="parentGoalList" class="parent-goal-list"></div>
+                </div>
+              </div>
               <button id="addGoalBtn" class="add-goal-btn">+</button>
               <button id="sortGoalsBtn" class="sort-goals-btn"><span>Sort</span></button>
               <button id="pickCategoryToggle" class="pick-category-toggle">
@@ -117,6 +131,22 @@
             </div>
           </div>
         </aside>
+      </div>
+    </div>
+
+    <!-- TAB: Deadlines -->
+    <div class="tab-content" id="tab-deadlines">
+      <div class="deadlines-page">
+        <div class="deadlines-header">
+          <h2>📅 Deadlines</h2>
+          <p class="deadlines-subtitle">Goals with upcoming or past deadlines</p>
+        </div>
+        <!-- Overdue notification area -->
+        <div id="overdueNotifications" class="overdue-notifications"></div>
+        <!-- Today / tomorrow alerts -->
+        <div id="upcomingAlerts" class="upcoming-alerts"></div>
+        <!-- Deadline goal list -->
+        <div id="deadlinesList" class="deadlines-list"></div>
       </div>
     </div>
 

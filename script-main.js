@@ -150,6 +150,8 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.classList.add('active');
       const target = document.getElementById('tab-' + tab);
       if (target) target.classList.add('active');
+      // Refresh deadlines tab whenever it's opened
+      if (tab === 'deadlines') GoalsModule.renderDeadlinesTab();
     });
   });
 

@@ -8,10 +8,12 @@ const GoalsModule = (function() {
   let categories = JSON.parse(localStorage.getItem('categories')) || ['work', 'personal', 'health'];
   let selectedCategory = null;
   let selectedGoalId = null;
+  let selectedParentId = null; // for subgoal-via-dropdown flow
   let sortBy = 'none';
   let sortDirection = 'asc';
   let activeFilters = [];
   let completionFilter = null;
+  let noDeadlineFilter = false;
 
   function saveData() {
     localStorage.setItem('goals', JSON.stringify(goals));
@@ -24,6 +26,35 @@ const GoalsModule = (function() {
     return Math.round((goals.filter(g => g.completed).length / goals.length) * 100);
   }
 
+  // ---- Deadline urgency helpers ----
+  function getDeadlineUrgency(deadline) {
+    if (!deadline) return null;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const dl = new Date(deadline + 'T00:00:00');
+    const diff = Math.round((dl - today) / (1000 * 60 * 60 * 24));
+    if (diff < 0)  return 'overdue';
+    if (diff <= 2) return 'urgent';
+    if (diff <= 5) return 'soon';
+    return 'safe';
+  }
+
+  function getDeadlineDaysLabel(deadline) {
+    if (!deadline) return '';
+    const today = new Date(); today.setHours(0,0,0,0);
+    const dl = new Date(deadline + 'T00:00:00');
+    const diff = Math.round((dl - today) / (1000 * 60 * 60 * 24));
+    if (diff < 0)  return `${Math.abs(diff)}d overdue`;
+    if (diff === 0) return 'Due today!';
+    if (diff === 1) return 'Due tomorrow!';
+    return `${diff}d left`;
+  }
+
+  function formatDeadlineDisplay(deadline) {
+    if (!deadline) return '';
+    const d = new Date(deadline + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
   // ---- Rendering ----
   function renderGoals() {
     const container = document.getElementById('goalsContainer');
@@ -34,15 +65,17 @@ const GoalsModule = (function() {
     if (activeFilters.length > 0) filtered = filtered.filter(g => activeFilters.includes(g.category));
     if (completionFilter === 'completed') filtered = filtered.filter(g => g.completed);
     else if (completionFilter === 'incomplete') filtered = filtered.filter(g => !g.completed);
+    if (noDeadlineFilter) filtered = filtered.filter(g => !g.deadline);
 
     if (filtered.length === 0) {
-      container.innerHTML = `<p class="no-goals-message">${activeFilters.length || completionFilter ? 'No goals match filters' : 'No goals yet. Add your first goal!'}</p>`;
+      container.innerHTML = `<p class="no-goals-message">${activeFilters.length || completionFilter || noDeadlineFilter ? 'No goals match filters' : 'No goals yet. Add your first goal!'}</p>`;
       return;
     }
 
     filtered.forEach(goal => {
+      const urgency = getDeadlineUrgency(goal.deadline);
       const el = document.createElement('div');
-      el.className = `goal-item ${goal.completed ? 'completed' : ''} ${selectedGoalId === goal.id ? 'selected' : ''}`;
+      el.className = `goal-item ${goal.completed ? 'completed' : ''} ${selectedGoalId === goal.id ? 'selected' : ''} ${urgency && !goal.completed ? 'deadline-' + urgency : ''}`;
       el.dataset.id = goal.id;
 
       const content = document.createElement('div');
@@ -52,13 +85,36 @@ const GoalsModule = (function() {
       chk.type = 'checkbox'; chk.className = 'goal-checkbox'; chk.checked = goal.completed;
       chk.addEventListener('change', function() {
         goal.completed = this.checked;
-        if (goal.subgoals?.length) goal.subgoals.forEach(sg => sg.completed = this.checked);
-        saveData(); updateMainProgress(); renderGoals();
+        if (goal.subgoals && goal.subgoals.length) goal.subgoals.forEach(sg => sg.completed = this.checked);
+        saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab();
       });
 
       const span = document.createElement('span');
       span.className = `goal-text ${goal.completed ? 'completed' : ''}`;
       span.textContent = goal.text;
+
+      content.appendChild(chk);
+      content.appendChild(span);
+
+      if (goal.category) {
+        const catBadge = document.createElement('span');
+        catBadge.className = 'goal-category';
+        catBadge.textContent = goal.category;
+        content.appendChild(catBadge);
+      }
+
+      // Deadline badge on the goal card
+      if (goal.deadline && !goal.completed) {
+        const badge = document.createElement('span');
+        badge.className = `deadline-badge deadline-badge-${urgency}`;
+        badge.title = 'Click to change deadline';
+        badge.innerHTML = `📅 ${formatDeadlineDisplay(goal.deadline)} <span class="deadline-days">(${getDeadlineDaysLabel(goal.deadline)})</span>`;
+        badge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openInlineDeadlinePicker(goal, badge);
+        });
+        content.appendChild(badge);
+      }
 
       const del = document.createElement('button');
       del.className = 'delete-goal-btn'; del.innerHTML = '&times;';
@@ -66,20 +122,31 @@ const GoalsModule = (function() {
         e.stopPropagation();
         goals = goals.filter(g => g.id !== goal.id);
         if (selectedGoalId === goal.id) selectedGoalId = null;
-        saveData(); updateMainProgress(); renderGoals();
+        saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab();
       });
-
-      content.appendChild(chk); content.appendChild(span);
-      if (goal.category) {
-        const badge = document.createElement('span');
-        badge.className = 'goal-category'; badge.textContent = goal.category;
-        content.appendChild(badge);
-      }
       content.appendChild(del);
       el.appendChild(content);
 
+      // Inline deadline setter (shown when goal is selected, no deadline yet)
+      if (!goal.deadline && !goal.completed) {
+        const setDl = document.createElement('div');
+        setDl.className = `goal-set-deadline ${selectedGoalId === goal.id ? '' : 'hidden'}`;
+        setDl.innerHTML = `<button class="set-deadline-link">📅 Set deadline</button><input type="date" class="inline-deadline-input hidden">`;
+        setDl.querySelector('.set-deadline-link').addEventListener('click', (e) => {
+          e.stopPropagation();
+          const inp = setDl.querySelector('.inline-deadline-input');
+          inp.classList.toggle('hidden');
+          if (!inp.classList.contains('hidden')) inp.focus();
+        });
+        setDl.querySelector('.inline-deadline-input').addEventListener('change', (e) => {
+          goal.deadline = e.target.value || null;
+          saveData(); renderGoals(); renderDeadlinesTab();
+        });
+        el.appendChild(setDl);
+      }
+
       // Subgoals
-      if (goal.subgoals?.length) {
+      if (goal.subgoals && goal.subgoals.length) {
         const prog = document.createElement('div'); prog.className = 'goal-progress-container';
         const progBar = document.createElement('div'); progBar.className = 'goal-progress-bar';
         const progFill = document.createElement('div'); progFill.className = 'goal-progress';
@@ -93,7 +160,7 @@ const GoalsModule = (function() {
           sChk.addEventListener('change', function() {
             sg.completed = this.checked;
             goal.completed = goal.subgoals.every(s => s.completed);
-            saveData(); updateMainProgress(); renderGoals();
+            saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab();
           });
           const sSpan = document.createElement('span'); sSpan.className = `goal-text ${sg.completed ? 'completed' : ''}`; sSpan.textContent = sg.text;
           const sDel = document.createElement('button'); sDel.className = 'delete-goal-btn'; sDel.innerHTML = '&times;';
@@ -118,10 +185,44 @@ const GoalsModule = (function() {
 
       container.appendChild(el);
     });
+
+    // also refresh parent goal dropdown options if visible
+    renderParentGoalDropdown();
+  }
+
+  function openInlineDeadlinePicker(goal, badgeEl) {
+    document.querySelectorAll('.floating-deadline-picker').forEach(el => el.remove());
+    const picker = document.createElement('div');
+    picker.className = 'floating-deadline-picker';
+    picker.innerHTML = `
+      <label>Change deadline</label>
+      <input type="date" value="${goal.deadline || ''}">
+      <div class="fdp-actions">
+        <button class="fdp-save">Save</button>
+        <button class="fdp-remove">Remove</button>
+        <button class="fdp-cancel">Cancel</button>
+      </div>`;
+    badgeEl.style.position = 'relative';
+    badgeEl.appendChild(picker);
+    picker.querySelector('input').focus();
+    picker.querySelector('.fdp-save').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const val = picker.querySelector('input').value;
+      goal.deadline = val || null;
+      saveData(); renderGoals(); renderDeadlinesTab(); picker.remove();
+    });
+    picker.querySelector('.fdp-remove').addEventListener('click', (e) => {
+      e.stopPropagation();
+      goal.deadline = null;
+      saveData(); renderGoals(); renderDeadlinesTab(); picker.remove();
+    });
+    picker.querySelector('.fdp-cancel').addEventListener('click', (e) => {
+      e.stopPropagation(); picker.remove();
+    });
   }
 
   function calcSubgoalProgress(goal) {
-    if (!goal.subgoals?.length) return 0;
+    if (!goal.subgoals || !goal.subgoals.length) return 0;
     return (goal.subgoals.filter(s => s.completed).length / goal.subgoals.length) * 100;
   }
 
@@ -137,31 +238,259 @@ const GoalsModule = (function() {
     if (allDone) triggerCelebration();
   }
 
+  // ---- Deadlines tab ----
+  function renderDeadlinesTab() {
+    renderOverdueNotifications();
+    renderUpcomingAlerts();
+    renderDeadlinesList();
+  }
+
+  function renderOverdueNotifications() {
+    const container = document.getElementById('overdueNotifications');
+    if (!container) return;
+    container.innerHTML = '';
+    const overdueGoals = goals.filter(g => !g.completed && getDeadlineUrgency(g.deadline) === 'overdue');
+    if (!overdueGoals.length) return;
+
+    overdueGoals.forEach(goal => {
+      const card = document.createElement('div');
+      card.className = 'overdue-notification-card';
+      const today = new Date(); today.setHours(0,0,0,0);
+      const dl = new Date(goal.deadline + 'T00:00:00');
+      const daysOver = Math.abs(Math.round((dl - today) / (1000 * 60 * 60 * 24)));
+      card.innerHTML = `
+        <div class="overdue-icon">⏰</div>
+        <div class="overdue-body">
+          <div class="overdue-title">Deadline passed: <strong>${goal.text}</strong></div>
+          <div class="overdue-meta">Was due ${formatDeadlineDisplay(goal.deadline)} · ${daysOver} day${daysOver !== 1 ? 's' : ''} ago</div>
+        </div>
+        <div class="overdue-actions">
+          <button class="overdue-btn change">📅 New Date</button>
+          <button class="overdue-btn remove">✕ Remove Deadline</button>
+        </div>`;
+
+      card.querySelector('.overdue-btn.change').addEventListener('click', () => {
+        showDatePickerModal(goal, () => { renderGoals(); renderDeadlinesTab(); });
+      });
+      card.querySelector('.overdue-btn.remove').addEventListener('click', () => {
+        goal.deadline = null;
+        saveData(); renderGoals(); renderDeadlinesTab();
+      });
+
+      container.appendChild(card);
+    });
+  }
+
+  function showDatePickerModal(goal, callback) {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(74,52,41,0.5);backdrop-filter:blur(3px);z-index:10000;display:flex;align-items:center;justify-content:center;';
+    const dialog = document.createElement('div');
+    dialog.style.cssText = 'background:rgba(245,241,235,0.98);border-radius:16px;padding:2rem;max-width:360px;width:90%;box-shadow:0 12px 35px rgba(139,111,71,0.25);border:2px solid rgba(139,111,71,0.3);text-align:center;';
+    dialog.innerHTML = `
+      <p style="font-family:'Playfair Display',serif;font-size:1.1rem;color:#6b5139;margin-bottom:1rem;">📅 Set new deadline for<br><strong>${goal.text}</strong></p>
+      <input type="date" id="modalDateInput" value="${goal.deadline || ''}" style="width:100%;padding:10px 14px;border:2px solid rgba(139,111,71,0.3);border-radius:10px;font-size:1rem;margin-bottom:1.5rem;background:rgba(245,241,235,0.9);color:#4a3429;font-family:'Source Sans Pro',sans-serif;">
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button id="modalDateSave" style="background:linear-gradient(135deg,#8b6f47,#6b5139);color:#f5f1eb;border:none;padding:10px 22px;border-radius:10px;font-family:'Playfair Display',serif;cursor:pointer;font-size:1rem;">Save</button>
+        <button id="modalDateCancel" style="background:rgba(245,241,235,0.8);color:#6b5139;border:2px solid rgba(139,111,71,0.3);padding:10px 22px;border-radius:10px;font-family:'Playfair Display',serif;cursor:pointer;font-size:1rem;">Cancel</button>
+      </div>`;
+    modal.appendChild(dialog);
+    document.body.appendChild(modal);
+    dialog.querySelector('#modalDateSave').addEventListener('click', () => {
+      const val = dialog.querySelector('#modalDateInput').value;
+      goal.deadline = val || null;
+      saveData(); document.body.removeChild(modal); callback();
+    });
+    dialog.querySelector('#modalDateCancel').addEventListener('click', () => document.body.removeChild(modal));
+  }
+
+  function renderUpcomingAlerts() {
+    const container = document.getElementById('upcomingAlerts');
+    if (!container) return;
+    container.innerHTML = '';
+    const alertGoals = goals.filter(g => {
+      if (g.completed) return false;
+      const u = getDeadlineUrgency(g.deadline);
+      return u === 'urgent' || u === 'soon';
+    });
+    if (!alertGoals.length) return;
+
+    const banner = document.createElement('div');
+    banner.className = 'upcoming-alerts-banner';
+    banner.innerHTML = `<div class="upcoming-alerts-title">☕ Heads up — goals coming up soon</div>`;
+    alertGoals.forEach(g => {
+      const row = document.createElement('div');
+      row.className = `upcoming-alert-row alert-${getDeadlineUrgency(g.deadline)}`;
+      row.innerHTML = `<span class="upcoming-alert-dot"></span><strong>${g.text}</strong><span class="upcoming-alert-when">${getDeadlineDaysLabel(g.deadline)}</span>`;
+      banner.appendChild(row);
+    });
+    container.appendChild(banner);
+  }
+
+  function renderDeadlinesList() {
+    const container = document.getElementById('deadlinesList');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const withDeadline = goals.filter(g => g.deadline);
+    if (!withDeadline.length) {
+      container.innerHTML = `<p class="no-goals-message">No goals have deadlines set yet.<br>Add a deadline using 📅 when creating or clicking a goal.</p>`;
+      return;
+    }
+
+    const sorted = [...withDeadline].sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      return new Date(a.deadline) - new Date(b.deadline);
+    });
+
+    sorted.forEach(goal => {
+      const urgency = getDeadlineUrgency(goal.deadline);
+      const card = document.createElement('div');
+      card.className = `deadline-card ${goal.completed ? 'completed' : 'deadline-' + urgency}`;
+
+      const subCount = goal.subgoals ? goal.subgoals.length : 0;
+      const subDone = goal.subgoals ? goal.subgoals.filter(s => s.completed).length : 0;
+
+      card.innerHTML = `
+        <div class="deadline-card-left">
+          <div class="deadline-card-urgency-bar"></div>
+          <div class="deadline-card-body">
+            <div class="deadline-card-title ${goal.completed ? 'completed' : ''}">${goal.text}</div>
+            ${goal.category ? `<span class="goal-category">${goal.category}</span>` : ''}
+            ${subCount ? `<div class="deadline-card-sub">${subDone}/${subCount} subtasks done</div>` : ''}
+          </div>
+        </div>
+        <div class="deadline-card-right">
+          <div class="deadline-card-date">${formatDeadlineDisplay(goal.deadline)}</div>
+          <div class="deadline-card-days deadline-days-${urgency}">${goal.completed ? '✓ Done' : getDeadlineDaysLabel(goal.deadline)}</div>
+          ${!goal.completed ? `<button class="deadline-card-edit-btn">📅 Edit</button>` : ''}
+        </div>`;
+
+      card.querySelector('.deadline-card-edit-btn') && card.querySelector('.deadline-card-edit-btn').addEventListener('click', () => {
+        showDatePickerModal(goal, () => { renderGoals(); renderDeadlinesTab(); });
+      });
+
+      container.appendChild(card);
+    });
+  }
+
   // ---- Goal actions ----
   function addGoal() {
     const input = document.getElementById('newGoalInput');
     const text = input.value.trim();
     if (!text) return;
-    goals.push({ id: Date.now(), text, category: selectedCategory, completed: false, subgoals: [] });
-    saveData(); updateMainProgress(); renderGoals();
-    input.value = ''; input.classList.remove('expanded'); input.focus();
+
+    const deadlineInput = document.getElementById('newGoalDeadline');
+    const deadline = deadlineInput ? deadlineInput.value || null : null;
+
+    // If a parent goal is selected → add as subgoal
+    if (selectedParentId) {
+      const parent = goals.find(g => g.id === selectedParentId);
+      if (parent) {
+        if (!parent.subgoals) parent.subgoals = [];
+        parent.subgoals.push({ id: Date.now(), text, completed: false, category: parent.category });
+        saveData(); renderGoals(); renderDeadlinesTab();
+        input.value = '';
+        if (deadlineInput) { deadlineInput.value = ''; deadlineInput.classList.add('hidden'); }
+        resetParentSelection();
+        input.focus();
+        return;
+      }
+    }
+
+    // Normal new goal
+    goals.push({ id: Date.now(), text, category: selectedCategory, completed: false, subgoals: [], deadline: deadline });
+    saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab();
+    input.value = '';
+    if (deadlineInput) { deadlineInput.value = ''; deadlineInput.classList.add('hidden'); }
+    resetParentSelection();
+    input.classList.remove('expanded');
+    input.focus();
   }
 
-  async function addSubgoalToSelected() {
-    if (!selectedGoalId) { showCustomAlert('Click a goal first to add a subgoal'); return; }
-    const subText = await showCustomPrompt('Enter subgoal text:');
-    if (!subText?.trim()) return;
-    const goal = goals.find(g => g.id === selectedGoalId);
-    if (!goal) return;
-    goal.subgoals.push({ id: Date.now(), text: subText.trim(), completed: false, category: goal.category });
-    saveData(); renderGoals();
+  function resetParentSelection() {
+    selectedParentId = null;
+    document.querySelectorAll('.parent-goal-option').forEach(el => el.classList.remove('active'));
+    const noneOpt = document.querySelector('.parent-goal-none');
+    if (noneOpt) noneOpt.classList.add('active');
+    const addBtn = document.getElementById('addGoalBtn');
+    if (addBtn) addBtn.textContent = '+';
   }
 
   function handleAddGoal() {
-    if (selectedGoalId) addSubgoalToSelected();
-    else addGoal();
+    addGoal();
     document.getElementById('addGoalBtn')?.classList.add('clicked');
     setTimeout(() => document.getElementById('addGoalBtn')?.classList.remove('clicked'), 300);
+  }
+
+  // ---- Parent goal dropdown ----
+  function renderParentGoalDropdown() {
+    const list = document.getElementById('parentGoalList');
+    if (!list) return;
+    list.innerHTML = '';
+    const inputVal = (document.getElementById('newGoalInput')?.value || '').toLowerCase();
+    const candidates = goals.filter(g => !g.completed && (!inputVal || g.text.toLowerCase().includes(inputVal)));
+
+    if (!candidates.length) {
+      list.innerHTML = '<div class="parent-goal-empty">No matching goals</div>';
+      return;
+    }
+    candidates.forEach(g => {
+      const opt = document.createElement('div');
+      opt.className = `parent-goal-option ${selectedParentId === g.id ? 'active' : ''}`;
+      opt.dataset.id = g.id;
+      opt.innerHTML = `<span class="parent-icon">↳</span><span class="parent-goal-text">${g.text}</span>${g.category ? `<span class="goal-category" style="font-size:0.75rem;padding:2px 8px;margin-left:auto;">${g.category}</span>` : ''}`;
+      opt.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        selectedParentId = selectedParentId === g.id ? null : g.id;
+        renderParentGoalDropdown();
+        const addBtn = document.getElementById('addGoalBtn');
+        if (addBtn) addBtn.textContent = selectedParentId ? '↳+' : '+';
+        // Mark none option
+        document.querySelector('.parent-goal-none')?.classList.toggle('active', !selectedParentId);
+      });
+      list.appendChild(opt);
+    });
+  }
+
+  function initParentGoalDropdown() {
+    const input = document.getElementById('newGoalInput');
+    const dropdown = document.getElementById('parentGoalDropdown');
+    if (!input || !dropdown) return;
+
+    input.addEventListener('focus', () => {
+      renderParentGoalDropdown();
+      dropdown.classList.remove('hidden');
+    });
+    input.addEventListener('input', () => {
+      renderParentGoalDropdown();
+    });
+    input.addEventListener('blur', () => {
+      setTimeout(() => dropdown.classList.add('hidden'), 200);
+    });
+
+    const noneOpt = dropdown.querySelector('.parent-goal-none');
+    if (noneOpt) {
+      noneOpt.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        selectedParentId = null;
+        renderParentGoalDropdown();
+        noneOpt.classList.add('active');
+        const addBtn = document.getElementById('addGoalBtn');
+        if (addBtn) addBtn.textContent = '+';
+      });
+    }
+  }
+
+  function initDeadlineDateToggle() {
+    const btn = document.getElementById('deadlineDateToggle');
+    const inp = document.getElementById('newGoalDeadline');
+    if (!btn || !inp) return;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      inp.classList.toggle('hidden');
+      if (!inp.classList.contains('hidden')) inp.focus();
+    });
+    inp.addEventListener('click', (e) => e.stopPropagation());
   }
 
   // ---- Categories ----
@@ -169,7 +498,6 @@ const GoalsModule = (function() {
     const list = document.getElementById('pickCategoryList');
     if (!list) return;
     list.innerHTML = '';
-
     const addTag = (name, isNull = false) => {
       const el = document.createElement('div');
       el.className = `category-tag ${(isNull && !selectedCategory) || selectedCategory === name ? 'active' : ''}`;
@@ -182,19 +510,6 @@ const GoalsModule = (function() {
     };
     addTag(null, true);
     categories.forEach(c => addTag(c));
-
-    const resetBtn = document.createElement('div');
-    resetBtn.className = 'reset-categories-btn';
-    resetBtn.innerHTML = '<span>↻</span> Reset Categories';
-    resetBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const confirmed = await showConfirm('Reset all categories to default?');
-      if (confirmed) {
-        categories = ['work', 'personal', 'health']; selectedCategory = null;
-        saveData(); renderPickCategories(); renderFilterCategories();
-      }
-    });
-    list.appendChild(resetBtn);
   }
 
   function renderFilterCategories() {
@@ -203,23 +518,23 @@ const GoalsModule = (function() {
     list.innerHTML = '';
 
     const compSec = document.createElement('div'); compSec.className = 'filter-section';
-    const compTitle = document.createElement('div'); compTitle.className = 'filter-section-title'; compTitle.textContent = 'Completion';
-    compSec.appendChild(compTitle);
+    const compTitle = document.createElement('div'); compTitle.className = 'filter-section-title'; compTitle.textContent = 'Status';
     const compTags = document.createElement('div'); compTags.className = 'filter-tags';
-    [{ value: null, label: 'All' }, { value: 'completed', label: 'Completed' }, { value: 'incomplete', label: 'Incomplete' }].forEach(opt => {
-      const t = document.createElement('span'); t.className = `filter-tag ${completionFilter === opt.value ? 'active' : ''}`;
-      t.textContent = opt.label;
+    [['all', 'All'], ['completed', 'Completed ✓'], ['incomplete', 'Incomplete']].forEach(([val, label]) => {
+      const t = document.createElement('span');
+      t.className = `filter-tag ${(val === 'all' && !completionFilter) || completionFilter === val ? 'active' : ''}`;
+      t.textContent = label;
       t.addEventListener('click', (e) => {
-        e.stopPropagation(); completionFilter = completionFilter === opt.value ? null : opt.value;
+        e.stopPropagation();
+        completionFilter = val === 'all' ? null : val;
         renderFilterCategories(); renderGoals();
       });
       compTags.appendChild(t);
     });
-    compSec.appendChild(compTags); list.appendChild(compSec);
+    compSec.appendChild(compTitle); compSec.appendChild(compTags); list.appendChild(compSec);
 
     const catSec = document.createElement('div'); catSec.className = 'filter-section';
     const catTitle = document.createElement('div'); catTitle.className = 'filter-section-title'; catTitle.textContent = 'Category';
-    catSec.appendChild(catTitle);
     const catTags = document.createElement('div'); catTags.className = 'filter-tags';
     const allTag = document.createElement('span'); allTag.className = `filter-tag ${activeFilters.length === 0 ? 'active' : ''}`; allTag.textContent = 'All Categories';
     allTag.addEventListener('click', (e) => { e.stopPropagation(); activeFilters = []; renderFilterCategories(); renderGoals(); });
@@ -234,12 +549,25 @@ const GoalsModule = (function() {
       });
       catTags.appendChild(t);
     });
-    catSec.appendChild(catTags); list.appendChild(catSec);
+    catSec.appendChild(catTitle); catSec.appendChild(catTags); list.appendChild(catSec);
+
+    // Suggestion D: no-deadline filter
+    const dlSec = document.createElement('div'); dlSec.className = 'filter-section';
+    const dlTitle = document.createElement('div'); dlTitle.className = 'filter-section-title'; dlTitle.textContent = 'Deadline';
+    const dlTags = document.createElement('div'); dlTags.className = 'filter-tags';
+    const dlAllTag = document.createElement('span');
+    dlAllTag.className = `filter-tag ${!noDeadlineFilter ? 'active' : ''}`; dlAllTag.textContent = 'All Goals';
+    dlAllTag.addEventListener('click', (e) => { e.stopPropagation(); noDeadlineFilter = false; renderFilterCategories(); renderGoals(); });
+    const dlNoTag = document.createElement('span');
+    dlNoTag.className = `filter-tag ${noDeadlineFilter ? 'active' : ''}`; dlNoTag.textContent = '📅 No Deadline Set';
+    dlNoTag.addEventListener('click', (e) => { e.stopPropagation(); noDeadlineFilter = !noDeadlineFilter; renderFilterCategories(); renderGoals(); });
+    dlTags.appendChild(dlAllTag); dlTags.appendChild(dlNoTag);
+    dlSec.appendChild(dlTitle); dlSec.appendChild(dlTags); list.appendChild(dlSec);
   }
 
   async function addNewCategory() {
     const name = await showCustomPrompt('Enter new category name:');
-    if (!name?.trim()) return;
+    if (!name || !name.trim()) return;
     if (categories.includes(name.trim())) { showCustomAlert('Category already exists!'); return; }
     categories.push(name.trim()); saveData();
     renderPickCategories(); renderFilterCategories();
@@ -252,10 +580,11 @@ const GoalsModule = (function() {
     const sortDropdown = document.createElement('div');
     sortDropdown.className = 'sort-dropdown hidden'; sortDropdown.id = 'sortDropdown';
 
-    ['category', 'completion', 'text'].forEach(opt => {
+    const sortLabels = { category: 'Category', completion: 'Completion', text: 'Name', deadline: '📅 Deadline' };
+    ['category', 'completion', 'text', 'deadline'].forEach(opt => {
       const el = document.createElement('div');
       el.className = `sort-option ${sortBy === opt ? 'active' : ''}`; el.dataset.sortBy = opt;
-      el.innerHTML = `${opt.charAt(0).toUpperCase() + opt.slice(1)} <span class="sort-arrow">${sortBy === opt ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>`;
+      el.innerHTML = `${sortLabels[opt]} <span class="sort-arrow">${sortBy === opt ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>`;
       el.addEventListener('click', () => {
         if (sortBy === opt) sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
         else { sortBy = opt; sortDirection = 'asc'; }
@@ -291,12 +620,16 @@ const GoalsModule = (function() {
       if (sortBy === 'category') cmp = (a.category||'zzz').localeCompare(b.category||'zzz');
       else if (sortBy === 'completion') cmp = a.completed === b.completed ? 0 : (a.completed ? 1 : -1);
       else if (sortBy === 'text') cmp = a.text.localeCompare(b.text);
+      else if (sortBy === 'deadline') {
+        const da = a.deadline ? new Date(a.deadline) : new Date('9999-12-31');
+        const db = b.deadline ? new Date(b.deadline) : new Date('9999-12-31');
+        cmp = da - db;
+      }
       return sortDirection === 'asc' ? cmp : -cmp;
     });
     saveData(); renderGoals();
   }
 
-  // ---- Helpers ----
   function wrapDropdown(button, dropdown) {
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'position:relative;display:inline-block;';
@@ -304,7 +637,7 @@ const GoalsModule = (function() {
     wrapper.appendChild(button); wrapper.appendChild(dropdown);
   }
 
-  function closeAllDropdowns(except = null) {
+  function closeAllDropdowns(except) {
     const items = [
       { btn: document.getElementById('pickCategoryToggle'), dd: document.getElementById('pickCategoryDropdown') },
       { btn: document.getElementById('sortGoalsBtn'), dd: document.getElementById('sortDropdown') },
@@ -319,7 +652,11 @@ const GoalsModule = (function() {
     });
   }
 
-  // ---- Init ----
+  function checkDeadlinesOnLoad() {
+    renderDeadlinesTab();
+    setInterval(renderDeadlinesTab, 60 * 60 * 1000);
+  }
+
   function init() {
     const addGoalBtn = document.getElementById('addGoalBtn');
     const newGoalInput = document.getElementById('newGoalInput');
@@ -356,7 +693,7 @@ const GoalsModule = (function() {
     });
 
     clearFiltersBtn.addEventListener('click', () => {
-      activeFilters = []; completionFilter = null;
+      activeFilters = []; completionFilter = null; noDeadlineFilter = false;
       renderFilterCategories(); renderGoals();
       filterCategoryDropdown.classList.remove('visible'); filterCategoryDropdown.classList.add('hidden');
       filterCategoryBtn.classList.remove('active');
@@ -364,7 +701,7 @@ const GoalsModule = (function() {
 
     clearAllGoalsBtn.addEventListener('click', async () => {
       const ok = await showConfirm('Clear all goals? This cannot be undone.');
-      if (ok) { goals = []; selectedGoalId = null; saveData(); updateMainProgress(); renderGoals(); }
+      if (ok) { goals = []; selectedGoalId = null; saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab(); }
     });
 
     document.addEventListener('click', (e) => {
@@ -382,20 +719,21 @@ const GoalsModule = (function() {
     });
 
     initSortDropdown();
+    initParentGoalDropdown();
+    initDeadlineDateToggle();
     renderGoals();
     renderPickCategories();
     renderFilterCategories();
     updateMainProgress();
-
+    checkDeadlinesOnLoad();
     newGoalInput.focus();
   }
 
-  // Called by TimerModule when a goal is marked complete during a session
   function completeGoalByIndex(goalIndex, subgoalDoneStates) {
     const goal = goals[goalIndex];
     if (!goal) return;
     goal.completed = true;
-    if (goal.subgoals?.length && subgoalDoneStates?.length) {
+    if (goal.subgoals && goal.subgoals.length && subgoalDoneStates && subgoalDoneStates.length) {
       goal.subgoals.forEach((sg, i) => {
         if (subgoalDoneStates[i] != null) sg.completed = subgoalDoneStates[i];
       });
@@ -403,5 +741,5 @@ const GoalsModule = (function() {
     saveData();
   }
 
-  return { init, renderGoals, updateMainProgress, getGoals, getCompletionRate, completeGoalByIndex };
+  return { init, renderGoals, updateMainProgress, getGoals, getCompletionRate, completeGoalByIndex, renderDeadlinesTab };
 })();
