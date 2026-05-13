@@ -8,23 +8,39 @@ const TimerModule = (function() {
   let timerRunning = false, timerInterval = null;
   let elapsedSeconds = 0;
   let configHours = 0, configMinutes = 25, configSeconds = 0;
-  let selectedGoal = null; // { text, subgoals: [{text, done}] }
+  let selectedGoal = null;
+  let popOutWindow = null;
 
-  // ---- Motivational quotes for timer end ----
+  // ---- Sync key for pop-out ----
+  const SYNC_KEY = 'letsfocus_timer_sync';
+
+  function broadcastState(extra) {
+    try {
+      localStorage.setItem(SYNC_KEY, JSON.stringify({
+        remaining: remainingSeconds,
+        total: totalSeconds,
+        running: timerRunning,
+        h: timerHours, m: timerMinutes, s: timerSeconds,
+        ts: Date.now(),
+        ...extra
+      }));
+    } catch(e) {}
+  }
+
+  // ---- Motivational quotes ----
   const MOTIVATIONAL_QUOTES = [
-    { text: "You didn't come this far to only come this far.", author: "" },
-    { text: "One more push. The finish line is closer than you think.", author: "" },
-    { text: "Tired means you're trying. Keep going.", author: "" },
-    { text: "The difference between done and not done is just a little more time.", author: "" },
-    { text: "You've already done the hard part — starting. Finish what you began.", author: "" },
-    { text: "Small steps still move you forward. Keep stepping.", author: "" },
-    { text: "Progress is progress, no matter how small. Add more time.", author: "" },
-    { text: "The best time to finish was yesterday. The second best time is now.", author: "" },
-    { text: "Champions keep going when they have nothing left.", author: "" },
-    { text: "A little more coffee and a little more focus — you've got this. ☕", author: "" },
+    { text: "You didn't come this far to only come this far." },
+    { text: "One more push. The finish line is closer than you think." },
+    { text: "Tired means you're trying. Keep going." },
+    { text: "The difference between done and not done is just a little more time." },
+    { text: "You've already done the hard part — starting. Finish what you began." },
+    { text: "Small steps still move you forward. Keep stepping." },
+    { text: "Progress is progress, no matter how small. Add more time." },
+    { text: "The best time to finish was yesterday. The second best time is now." },
+    { text: "Champions keep going when they have nothing left." },
+    { text: "A little more coffee and a little more focus — you've got this. ☕" },
   ];
 
-  // ---- Progress Quotes ----
   const PROGRESS_QUOTES = [
     { pct: 0,   text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
     { pct: 10,  text: "Push yourself, because no one else is going to do it for you.", author: "" },
@@ -41,24 +57,19 @@ const TimerModule = (function() {
 
   let lastQuoteMilestone = -1;
 
-  // ---- Soft chime (Web Audio) ----
+  // ---- Audio ----
   function playSoftChime() {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      // Soft bowl-like chime: gentle sine waves, low volume, slow fade
-      const notes = [523.25, 659.25, 783.99, 1046.50];
-      notes.forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+      [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+        const osc = ctx.createOscillator(), gain = ctx.createGain();
         osc.connect(gain); gain.connect(ctx.destination);
-        osc.frequency.value = freq;
-        osc.type = 'sine';
-        const startT = ctx.currentTime + i * 0.18;
-        gain.gain.setValueAtTime(0, startT);
-        gain.gain.linearRampToValueAtTime(0.15, startT + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.001, startT + 1.8);
-        osc.start(startT);
-        osc.stop(startT + 1.8);
+        osc.frequency.value = freq; osc.type = 'sine';
+        const t = ctx.currentTime + i * 0.18;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.15, t + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 1.8);
+        osc.start(t); osc.stop(t + 1.8);
       });
     } catch(e) {}
   }
@@ -68,14 +79,12 @@ const TimerModule = (function() {
     const list = document.getElementById('goalPickerList');
     const nextBtn = document.getElementById('goalPickerNextBtn');
     if (!list) return;
-
     const goals = JSON.parse(localStorage.getItem('goals')) || [];
     if (!goals.length) {
       list.innerHTML = '<p class="goal-picker-empty">No goals yet — add one on the Goals tab first!</p>';
       if (nextBtn) nextBtn.disabled = true;
       return;
     }
-
     list.innerHTML = '';
     goals.forEach((goal, i) => {
       const item = document.createElement('div');
@@ -85,11 +94,7 @@ const TimerModule = (function() {
       item.addEventListener('click', () => {
         document.querySelectorAll('.goal-picker-item').forEach(el => el.classList.remove('selected'));
         item.classList.add('selected');
-        selectedGoal = {
-          index: i,
-          text: goal.text,
-          subgoals: (goal.subgoals || []).map(s => ({ text: s.text || s, done: s.done || false }))
-        };
+        selectedGoal = { index: i, text: goal.text, subgoals: (goal.subgoals || []).map(s => ({ text: s.text || s, done: s.done || false })) };
         if (nextBtn) nextBtn.disabled = false;
         const preview = document.getElementById('selectedGoalPreview');
         if (preview) preview.textContent = '🎯 ' + goal.text;
@@ -98,34 +103,21 @@ const TimerModule = (function() {
     });
   }
 
-  // ---- Render focused goal on timer page ----
   function renderFocusGoal() {
     const titleEl = document.getElementById('focusGoalTitle');
     const subgoalsEl = document.getElementById('focusSubgoals');
     if (!titleEl) return;
-
-    if (!selectedGoal) {
-      titleEl.textContent = 'No goal selected';
-      if (subgoalsEl) subgoalsEl.innerHTML = '';
-      return;
-    }
-
+    if (!selectedGoal) { titleEl.textContent = 'No goal selected'; if (subgoalsEl) subgoalsEl.innerHTML = ''; return; }
     titleEl.textContent = selectedGoal.text;
     if (!subgoalsEl) return;
     subgoalsEl.innerHTML = '';
-
     if (!selectedGoal.subgoals?.length) {
-      subgoalsEl.innerHTML = '<p class="no-subgoals">No subtasks — just focus and finish! 💪</p>';
-      return;
+      subgoalsEl.innerHTML = '<p class="no-subgoals">No subtasks — just focus and finish! 💪</p>'; return;
     }
-
     selectedGoal.subgoals.forEach((sub, i) => {
       const item = document.createElement('div');
       item.className = 'focus-subgoal-item' + (sub.done ? ' done' : '');
-      item.innerHTML = `<label class="focus-subgoal-label">
-        <input type="checkbox" class="focus-subgoal-check" ${sub.done ? 'checked' : ''}>
-        <span>${sub.text}</span>
-      </label>`;
+      item.innerHTML = `<label class="focus-subgoal-label"><input type="checkbox" class="focus-subgoal-check" ${sub.done ? 'checked' : ''}><span>${sub.text}</span></label>`;
       item.querySelector('input').addEventListener('change', (e) => {
         selectedGoal.subgoals[i].done = e.target.checked;
         item.classList.toggle('done', e.target.checked);
@@ -137,24 +129,16 @@ const TimerModule = (function() {
 
   function checkAllSubgoalsDone() {
     if (!selectedGoal?.subgoals?.length) return;
-    const allDone = selectedGoal.subgoals.every(s => s.done);
-    if (allDone) triggerGoalComplete();
+    if (selectedGoal.subgoals.every(s => s.done)) triggerGoalComplete();
   }
 
   function triggerGoalComplete() {
     clearInterval(timerInterval); timerRunning = false;
+    broadcastState({ action: 'complete' });
     const btn = document.getElementById('startPauseBtn');
     if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
-
-    // Update GoalsModule's in-memory array + persist to localStorage
-    if (selectedGoal != null && selectedGoal.index != null) {
-      const subgoalDoneStates = selectedGoal.subgoals?.map(s => s.done) || [];
-      GoalsModule.completeGoalByIndex(selectedGoal.index, subgoalDoneStates);
-    }
-
-    playSoftChime();
-    triggerCelebration();
-    showGoalCompleteModal();
+    if (selectedGoal?.index != null) GoalsModule.completeGoalByIndex(selectedGoal.index, selectedGoal.subgoals?.map(s => s.done) || []);
+    playSoftChime(); triggerCelebration(); showGoalCompleteModal();
   }
 
   function showGoalCompleteModal() {
@@ -162,21 +146,15 @@ const TimerModule = (function() {
     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(40,22,10,0.72);z-index:10000;display:flex;align-items:center;justify-content:center;';
     const dialog = document.createElement('div');
     dialog.style.cssText = 'background:rgba(245,241,235,0.98);border-radius:20px;padding:2.5rem;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.4);border:2px solid rgba(139,111,71,0.3);text-align:center;';
-    dialog.innerHTML = `
-      <div style="font-size:3rem;margin-bottom:1rem;">🎉</div>
+    dialog.innerHTML = `<div style="font-size:3rem;margin-bottom:1rem;">🎉</div>
       <h2 style="font-family:'Playfair Display',serif;font-size:1.8rem;color:#4a3429;margin-bottom:0.5rem;">Goal Complete!</h2>
       <p style="font-family:'Playfair Display',serif;font-size:1.1rem;color:#6b5139;margin-bottom:1.5rem;font-style:italic;">"${selectedGoal?.text || 'Your goal'}"</p>
       <p style="font-family:'Source Sans Pro',sans-serif;color:#8b6f47;margin-bottom:2rem;">Amazing work! You crushed it. ☕</p>
-      <button id="goalCompleteOk" style="background:linear-gradient(135deg,#8b6f47,#6b5139);color:#f5f1eb;border:none;padding:14px 32px;border-radius:14px;font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;cursor:pointer;box-shadow:0 6px 20px rgba(139,111,71,0.4);">Back to Goals ☕</button>`;
-    modal.appendChild(dialog);
-    document.body.appendChild(modal);
-    document.getElementById('goalCompleteOk').addEventListener('click', () => {
-      document.body.removeChild(modal);
-      hideTimerPage();
-    });
+      <button id="goalCompleteOk" style="background:linear-gradient(135deg,#8b6f47,#6b5139);color:#f5f1eb;border:none;padding:14px 32px;border-radius:14px;font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;cursor:pointer;">Back to Goals ☕</button>`;
+    modal.appendChild(dialog); document.body.appendChild(modal);
+    document.getElementById('goalCompleteOk').addEventListener('click', () => { document.body.removeChild(modal); hideTimerPage(); });
   }
 
-  // ---- Timer end modal (goal not done) ----
   function showTimerEndModal() {
     playSoftChime();
     const quote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
@@ -184,38 +162,25 @@ const TimerModule = (function() {
     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(40,22,10,0.72);z-index:10000;display:flex;align-items:center;justify-content:center;';
     const dialog = document.createElement('div');
     dialog.style.cssText = 'background:rgba(245,241,235,0.98);border-radius:20px;padding:2.5rem;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.4);border:2px solid rgba(139,111,71,0.3);text-align:center;';
-    dialog.innerHTML = `
-      <div style="font-size:2.5rem;margin-bottom:1rem;">⏰</div>
+    dialog.innerHTML = `<div style="font-size:2.5rem;margin-bottom:1rem;">⏰</div>
       <h2 style="font-family:'Playfair Display',serif;font-size:1.6rem;color:#4a3429;margin-bottom:1rem;">Time's Up!</h2>
       <p style="font-family:'Playfair Display',serif;font-size:1.1rem;color:#6b5139;font-style:italic;margin-bottom:0.5rem;">"${quote.text}"</p>
       <p style="font-family:'Source Sans Pro',sans-serif;font-size:0.85rem;color:rgba(107,81,57,0.7);margin-bottom:2rem;">Still working on: <strong>${selectedGoal?.text || 'your goal'}</strong></p>
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-        <button id="timerEndMoreTime" style="background:linear-gradient(135deg,#8b6f47,#6b5139);color:#f5f1eb;border:none;padding:12px 24px;border-radius:12px;font-family:'Playfair Display',serif;font-size:1rem;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(139,111,71,0.4);">+ Add More Time</button>
+        <button id="timerEndMoreTime" style="background:linear-gradient(135deg,#8b6f47,#6b5139);color:#f5f1eb;border:none;padding:12px 24px;border-radius:12px;font-family:'Playfair Display',serif;font-size:1rem;font-weight:600;cursor:pointer;">+ Add More Time</button>
         <button id="timerEndDone" style="background:rgba(245,241,235,0.8);color:#6b5139;border:2px solid rgba(139,111,71,0.3);padding:12px 24px;border-radius:12px;font-family:'Playfair Display',serif;font-size:1rem;cursor:pointer;">I'm Done ✓</button>
       </div>`;
-    modal.appendChild(dialog);
-    document.body.appendChild(modal);
-
+    modal.appendChild(dialog); document.body.appendChild(modal);
     document.getElementById('timerEndMoreTime').addEventListener('click', () => {
       document.body.removeChild(modal);
-      // Re-open config overlay on step 2 (keep same goal)
       const overlay = document.getElementById('timerConfirmOverlay');
       const saved = loadTimerData();
-      configHours = saved.hours ?? 0;
-      configMinutes = saved.minutes ?? 25;
-      configSeconds = saved.seconds ?? 0;
-      updateConfigDisplay();
-      showConfigStep(2);
-      overlay?.classList.remove('hidden');
+      configHours = saved.hours ?? 0; configMinutes = saved.minutes ?? 25; configSeconds = saved.seconds ?? 0;
+      updateSegmentDisplay(); showConfigStep(2); overlay?.classList.remove('hidden');
     });
-
-    document.getElementById('timerEndDone').addEventListener('click', () => {
-      document.body.removeChild(modal);
-      triggerGoalComplete();
-    });
+    document.getElementById('timerEndDone').addEventListener('click', () => { document.body.removeChild(modal); triggerGoalComplete(); });
   }
 
-  // ---- Config overlay steps ----
   function showConfigStep(step) {
     document.getElementById('configStep1')?.classList.toggle('hidden', step !== 1);
     document.getElementById('configStep2')?.classList.toggle('hidden', step !== 2);
@@ -239,41 +204,30 @@ const TimerModule = (function() {
     }, 300);
   }
 
-  function saveTimerData(h, m, s) {
-    localStorage.setItem('timerData', JSON.stringify({ hours: h, minutes: m, seconds: s }));
-  }
-
+  function saveTimerData(h, m, s) { localStorage.setItem('timerData', JSON.stringify({ hours: h, minutes: m, seconds: s })); }
   function loadTimerData() {
     const saved = JSON.parse(localStorage.getItem('timerData'));
-    if (saved && ('seconds' in saved)) return saved;
-    return { hours: 0, minutes: 25, seconds: 0 };
+    return (saved && 'seconds' in saved) ? saved : { hours: 0, minutes: 25, seconds: 0 };
   }
-
   function pad(n) { return String(n).padStart(2, '0'); }
 
   function updateTimerDisplay() {
-    const h = document.getElementById('timerHours');
-    const m = document.getElementById('timerMinutes');
-    const s = document.getElementById('timerSeconds');
+    const h = document.getElementById('timerHours'), m = document.getElementById('timerMinutes'), s = document.getElementById('timerSeconds');
     if (h) h.textContent = pad(timerHours);
     if (m) m.textContent = pad(timerMinutes);
     if (s) s.textContent = pad(timerSeconds);
+    broadcastState();
   }
 
   function updateTimerProgress() {
-    const fill = document.getElementById('timerProgressFill');
-    const pctEl = document.getElementById('progressPctDisplay');
-    const elapsed = document.getElementById('elapsedDisplay');
+    const fill = document.getElementById('timerProgressFill'), pctEl = document.getElementById('progressPctDisplay'), elapsed = document.getElementById('elapsedDisplay');
     if (!fill) return;
     if (totalSeconds > 0) {
       const pct = ((totalSeconds - remainingSeconds) / totalSeconds) * 100;
       fill.style.width = pct + '%';
       if (pctEl) pctEl.textContent = Math.round(pct) + '%';
       updateProgressQuote(pct);
-    } else {
-      fill.style.width = '0%';
-      if (pctEl) pctEl.textContent = '0%';
-    }
+    } else { fill.style.width = '0%'; if (pctEl) pctEl.textContent = '0%'; }
     if (elapsed) {
       const e = totalSeconds - remainingSeconds;
       const eh = Math.floor(e / 3600), em = Math.floor((e % 3600) / 60), es = e % 60;
@@ -290,15 +244,472 @@ const TimerModule = (function() {
     el.textContent = d.hours > 0 ? (pad(d.hours)+':'+pad(d.minutes)+':'+pad(d.seconds)) : (pad(d.minutes)+':'+pad(d.seconds));
   }
 
-  function updateConfigDisplay() {
-    const h = document.getElementById('configHours');
-    const m = document.getElementById('configMinutes');
-    const s = document.getElementById('configSeconds');
-    if (h) h.textContent = pad(configHours);
-    if (m) m.textContent = pad(configMinutes);
-    if (s) s.textContent = pad(configSeconds);
+  // ============================================================
+  // SEGMENTED INPUT (Desktop HH : MM : SS boxes)
+  // ============================================================
+  const segState = { hours: 0, minutes: 25, seconds: 0 };
+  const segBuffer = { hours: '', minutes: '', seconds: '' };
+  const segOrder = ['hours', 'minutes', 'seconds'];
+  const segIds = { hours: 'segHours', minutes: 'segMinutes', seconds: 'segSeconds' };
+  const segMax = { hours: 23, minutes: 59, seconds: 59 };
+
+  function updateSegmentDisplay() {
+    Object.keys(segIds).forEach(k => {
+      const el = document.getElementById(segIds[k]);
+      if (el) el.textContent = pad(segState[k]);
+    });
+    configHours = segState.hours; configMinutes = segState.minutes; configSeconds = segState.seconds;
   }
 
+  function focusSegment(key) {
+    Object.keys(segIds).forEach(k => {
+      const el = document.getElementById(segIds[k]);
+      if (el) el.classList.toggle('active', k === key);
+    });
+    segBuffer[key] = '';
+    document.getElementById(segIds[key])?.focus();
+  }
+
+  function blurAllSegments() {
+    Object.keys(segIds).forEach(k => {
+      const el = document.getElementById(segIds[k]);
+      if (el) el.classList.remove('active');
+    });
+  }
+
+  function commitSegmentBuffer(key) {
+    if (segBuffer[key] !== '') {
+      let val = parseInt(segBuffer[key], 10);
+      if (isNaN(val)) val = 0;
+      if (val > segMax[key]) val = segMax[key];
+      segState[key] = val;
+      segBuffer[key] = '';
+      updateSegmentDisplay();
+    }
+  }
+
+  function initSegmentedInput() {
+    segOrder.forEach((key, idx) => {
+      const el = document.getElementById(segIds[key]);
+      if (!el) return;
+
+      el.addEventListener('click', (e) => { e.stopPropagation(); focusSegment(key); });
+      el.addEventListener('focus', () => { focusSegment(key); });
+      el.addEventListener('blur', () => { commitSegmentBuffer(key); blurAllSegments(); });
+
+      el.addEventListener('keydown', (e) => {
+        if (e.key >= '0' && e.key <= '9') {
+          e.preventDefault();
+          segBuffer[key] += e.key;
+          // Show partial entry
+          const partial = parseInt(segBuffer[key], 10);
+          el.textContent = pad(Math.min(partial, segMax[key]));
+
+          // Auto-advance after 2 digits or if adding another digit would exceed max
+          const twoDigits = segBuffer[key].length >= 2;
+          const wouldExceed = segBuffer[key].length === 1 && parseInt(e.key, 10) > Math.floor(segMax[key] / 10);
+          if (twoDigits || wouldExceed) {
+            commitSegmentBuffer(key);
+            const next = segOrder[idx + 1];
+            if (next) { setTimeout(() => focusSegment(next), 0); }
+            else blurAllSegments();
+          }
+        } else if (e.key === 'Backspace') {
+          e.preventDefault();
+          if (segBuffer[key].length > 0) {
+            segBuffer[key] = segBuffer[key].slice(0, -1);
+            el.textContent = segBuffer[key] === '' ? pad(segState[key]) : pad(parseInt(segBuffer[key] || '0', 10));
+          } else {
+            const prev = segOrder[idx - 1];
+            if (prev) { commitSegmentBuffer(key); setTimeout(() => focusSegment(prev), 0); }
+          }
+        } else if (e.key === 'Tab') {
+          e.preventDefault();
+          commitSegmentBuffer(key);
+          const target = e.shiftKey ? segOrder[idx - 1] : segOrder[idx + 1];
+          if (target) setTimeout(() => focusSegment(target), 0);
+          else blurAllSegments();
+        } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          segState[key] = Math.min(segState[key] + 1, segMax[key]);
+          updateSegmentDisplay();
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          segState[key] = Math.max(segState[key] - 1, 0);
+          updateSegmentDisplay();
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          commitSegmentBuffer(key);
+          blurAllSegments();
+          document.getElementById('confirmStartBtn')?.click();
+        }
+      });
+    });
+
+    // Click outside → blur
+    document.addEventListener('click', (e) => {
+      if (!['segHours','segMinutes','segSeconds'].some(id => document.getElementById(id)?.contains(e.target))) {
+        segOrder.forEach(k => commitSegmentBuffer(k));
+        blurAllSegments();
+      }
+    });
+  }
+
+  function syncSegmentsFromConfig() {
+    segState.hours = configHours; segState.minutes = configMinutes; segState.seconds = configSeconds;
+    updateSegmentDisplay();
+  }
+
+  // ============================================================
+  // SCROLL WHEEL (Touch/iPad)
+  // ============================================================
+  function buildScrollWheel(wheelEl) {
+    const target = wheelEl.dataset.target;
+    const max = parseInt(wheelEl.dataset.max, 10);
+    wheelEl.innerHTML = '';
+    wheelEl.style.cssText = 'height:180px;overflow:hidden;position:relative;cursor:grab;user-select:none;';
+
+    const drum = document.createElement('div');
+    drum.className = 'scroll-wheel-drum';
+    drum.style.cssText = 'position:absolute;top:0;left:0;width:100%;transition:transform 0.15s ease;';
+
+    const itemH = 44;
+    const visibleCount = 5; // items visible at once, center is selected
+
+    // Populate with looping items (3 full cycles for infinite feel)
+    const totalItems = max + 1;
+    for (let rep = 0; rep < 3; rep++) {
+      for (let i = 0; i <= max; i++) {
+        const item = document.createElement('div');
+        item.className = 'scroll-wheel-item';
+        item.textContent = pad(i);
+        item.style.cssText = `height:${itemH}px;line-height:${itemH}px;text-align:center;font-family:'Courier New',monospace;font-size:2rem;font-weight:bold;color:rgba(212,165,116,0.5);transition:color 0.2s,font-size 0.2s;`;
+        drum.appendChild(item);
+      }
+    }
+    wheelEl.appendChild(drum);
+
+    // Selected highlight overlay
+    const highlight = document.createElement('div');
+    highlight.style.cssText = `position:absolute;top:${(Math.floor(visibleCount/2))*itemH}px;left:0;width:100%;height:${itemH}px;border-top:2px solid rgba(212,165,116,0.6);border-bottom:2px solid rgba(212,165,116,0.6);pointer-events:none;background:rgba(212,165,116,0.08);`;
+    wheelEl.appendChild(highlight);
+
+    // Current value from segState
+    let currentVal = segState[target] || 0;
+    // Start drum at middle cycle
+    let offset = -(currentVal + totalItems) * itemH + Math.floor(visibleCount / 2) * itemH;
+    drum.style.transform = `translateY(${offset}px)`;
+    updateWheelItems(drum, currentVal, totalItems, max, itemH);
+
+    function setVal(v) {
+      let val = ((v % (max + 1)) + (max + 1)) % (max + 1);
+      segState[target] = val;
+      configHours = segState.hours; configMinutes = segState.minutes; configSeconds = segState.seconds;
+      updateWheelItems(drum, val, totalItems, max, itemH);
+    }
+
+    // Snap to nearest value
+    function snapToNearest() {
+      const centerOffset = Math.floor(visibleCount / 2) * itemH;
+      const rawIndex = (-offset + centerOffset) / itemH;
+      const snappedIndex = Math.round(rawIndex);
+      const val = ((snappedIndex % (max + 1)) + (max + 1)) % (max + 1);
+      const newOffset = -(snappedIndex) * itemH + centerOffset;
+
+      // Keep in middle cycle range to allow looping
+      const midStart = -totalItems * itemH + centerOffset;
+      const midEnd = -(totalItems * 2 + max) * itemH + centerOffset;
+      let finalIndex = snappedIndex;
+      if (newOffset > midStart + itemH * (max + 1)) finalIndex += totalItems;
+      if (newOffset < midEnd - itemH * (max + 1)) finalIndex -= totalItems;
+
+      offset = -finalIndex * itemH + centerOffset;
+      drum.style.transition = 'transform 0.25s cubic-bezier(0.25,0.1,0.25,1)';
+      drum.style.transform = `translateY(${offset}px)`;
+      setVal(finalIndex);
+    }
+
+    // Touch events
+    let startY = 0, startOffset = 0, lastY = 0, velocity = 0, lastTime = 0, isDragging = false;
+
+    wheelEl.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      isDragging = true;
+      startY = e.touches[0].clientY;
+      startOffset = offset;
+      lastY = startY; lastTime = Date.now(); velocity = 0;
+      drum.style.transition = 'none';
+    }, { passive: false });
+
+    wheelEl.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!isDragging) return;
+      const now = Date.now();
+      const dy = e.touches[0].clientY - lastY;
+      velocity = dy / (now - lastTime + 1);
+      lastY = e.touches[0].clientY;
+      lastTime = now;
+      offset = startOffset + (e.touches[0].clientY - startY);
+      drum.style.transform = `translateY(${offset}px)`;
+    }, { passive: false });
+
+    wheelEl.addEventListener('touchend', () => {
+      isDragging = false;
+      // Apply momentum
+      offset += velocity * 80;
+      snapToNearest();
+    });
+
+    // Mouse wheel for desktop testing
+    wheelEl.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      drum.style.transition = 'none';
+      offset -= e.deltaY * 0.5;
+      drum.style.transform = `translateY(${offset}px)`;
+      clearTimeout(wheelEl._snapTimer);
+      wheelEl._snapTimer = setTimeout(snapToNearest, 150);
+    }, { passive: false });
+  }
+
+  function updateWheelItems(drum, currentVal, totalItems, max, itemH) {
+    Array.from(drum.children).forEach((item, i) => {
+      const v = i % (max + 1);
+      const isCenter = v === currentVal;
+      item.style.color = isCenter ? '#d4a574' : 'rgba(212,165,116,0.4)';
+      item.style.fontSize = isCenter ? '2.2rem' : '1.7rem';
+      item.style.fontWeight = isCenter ? 'bold' : 'normal';
+    });
+  }
+
+  function initScrollWheels() {
+    ['wheelHours', 'wheelMinutes', 'wheelSeconds'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) buildScrollWheel(el);
+    });
+  }
+
+  function syncWheelsFromConfig() {
+    // Rebuild wheels with current config values
+    initScrollWheels();
+  }
+
+  // ---- Detect touch device for input mode ----
+  function isTouchDevice() {
+    return window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window);
+  }
+
+  function initInputMode() {
+    const desktop = document.querySelector('.timer-config-desktop');
+    const touch = document.querySelector('.timer-config-touch');
+    if (!desktop || !touch) return;
+    if (isTouchDevice() || window.innerWidth <= 1024) {
+      desktop.classList.add('hidden');
+      touch.classList.remove('hidden');
+      initScrollWheels();
+    } else {
+      desktop.classList.remove('hidden');
+      touch.classList.add('hidden');
+      initSegmentedInput();
+    }
+    // Also listen for resize to switch modes
+    window.addEventListener('resize', () => {
+      const nowTouch = isTouchDevice() || window.innerWidth <= 1024;
+      if (nowTouch) { desktop.classList.add('hidden'); touch.classList.remove('hidden'); }
+      else { desktop.classList.remove('hidden'); touch.classList.add('hidden'); }
+    });
+  }
+
+  // ============================================================
+  // POP-OUT WINDOW
+  // ============================================================
+  function openPopOut() {
+    if (popOutWindow && !popOutWindow.closed) { popOutWindow.focus(); return; }
+
+    const sounds = JSON.parse(localStorage.getItem('letsfocus_volumes') || '{}');
+    const state = { remaining: remainingSeconds, total: totalSeconds, running: timerRunning, h: timerHours, m: timerMinutes, s: timerSeconds };
+
+    const popHTML = buildPopOutHTML(sounds, state);
+    popOutWindow = window.open('', 'LetsFocusTimer', 'width=400,height=600,resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no');
+    if (!popOutWindow) { showCustomAlert('Pop-out blocked! Please allow pop-ups for this site.'); return; }
+    popOutWindow.document.write(popHTML);
+    popOutWindow.document.close();
+  }
+
+  function buildPopOutHTML(sounds, state) {
+    const SOUND_FILES = {
+      rain:     'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996128/rain_otcmzn.mp3',
+      thunder:  'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996118/thunder_mz7jxe.mp3',
+      ocean:    'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996115/ocean_gedg9j.mp3',
+      forest:   'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996123/forest_pauzav.mp3',
+      fire:     'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996116/fire_kfsnyi.mp3',
+      coffee:   'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996109/coffee_szybju.mp3',
+      wind:     'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996120/wind_duqzyi.mp3',
+      writing:  'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996120/writing_o0e7vi.mp3',
+      keyboard: 'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996477/typing_j9jjie.mp3',
+      ac:       'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996118/ac_nhvrqh.mp3',
+    };
+    const soundEmojis = { rain:'🌧', thunder:'⛈', ocean:'🌊', forest:'🌿', fire:'🔥', coffee:'☕', wind:'💨', writing:'✍️', keyboard:'⌨️', ac:'❄️' };
+    const soundRows = Object.entries(SOUND_FILES).map(([key, url]) => {
+      const vol = sounds[key] !== undefined ? sounds[key] : 50;
+      return `<div class="po-sound-row">
+        <button class="po-sound-btn" data-sound="${key}" data-url="${url}">${soundEmojis[key]} ${key}</button>
+        <input type="range" min="0" max="100" value="${vol}" class="po-vol-slider" data-sound="${key}">
+      </div>`;
+    }).join('');
+
+    const h = String(state.h).padStart(2,'0'), m = String(state.m).padStart(2,'0'), s = String(state.s).padStart(2,'0');
+
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>LetsFocus Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=Source+Sans+Pro&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: linear-gradient(160deg,#2a1a0e,#3d2410,#5c3620,#3d2410,#1e1108); min-height:100vh; font-family:'Source Sans Pro',sans-serif; color:#f5f1eb; overflow-x:hidden; }
+.po-header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid rgba(212,165,116,0.2); }
+.po-title { font-family:'Playfair Display',serif; font-size:1rem; color:#d4a574; font-style:italic; }
+.po-expand { background:rgba(212,165,116,0.15); border:1px solid rgba(212,165,116,0.3); color:#d4a574; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:0.82rem; }
+.po-expand:hover { background:rgba(212,165,116,0.25); }
+.po-timer { text-align:center; padding:24px 16px 16px; }
+.po-display { font-family:'Courier New',monospace; font-size:4rem; font-weight:bold; color:#fff; text-shadow:0 0 30px rgba(212,165,116,0.8); letter-spacing:4px; }
+.po-controls { display:flex; gap:12px; justify-content:center; margin-top:16px; flex-wrap:wrap; }
+.po-btn { padding:10px 22px; border:none; border-radius:10px; font-family:'Playfair Display',serif; font-size:0.95rem; cursor:pointer; font-weight:600; transition:all 0.2s; }
+.po-start { background:linear-gradient(135deg,#10b981,#059669); color:#fff; }
+.po-start.pause { background:linear-gradient(135deg,#f59e0b,#d97706); }
+.po-reset { background:rgba(212,165,116,0.2); border:1px solid rgba(212,165,116,0.4); color:#d4a574; }
+.po-btn:hover { transform:translateY(-2px); opacity:0.9; }
+.po-progress { margin:0 16px 8px; background:rgba(255,255,255,0.1); border-radius:8px; height:6px; overflow:hidden; }
+.po-progress-fill { height:100%; background:linear-gradient(90deg,#8b6f47,#d4a574); border-radius:8px; transition:width 1s linear; width:0%; }
+.po-pct { text-align:center; font-size:0.78rem; color:rgba(212,165,116,0.7); margin-bottom:8px; }
+.po-sounds { padding:0 16px 16px; }
+.po-sounds-title { font-family:'Playfair Display',serif; color:#d4a574; font-size:0.9rem; margin-bottom:10px; text-align:center; letter-spacing:1px; text-transform:uppercase; }
+.po-sound-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.po-sound-btn { background:rgba(212,165,116,0.1); border:1px solid rgba(212,165,116,0.25); color:#d4a574; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:0.82rem; min-width:100px; text-align:left; transition:all 0.2s; text-transform:capitalize; }
+.po-sound-btn.active { background:rgba(212,165,116,0.3); border-color:rgba(212,165,116,0.6); }
+.po-vol-slider { flex:1; accent-color:#d4a574; }
+.po-sync-status { text-align:center; font-size:0.72rem; color:rgba(212,165,116,0.5); padding-bottom:8px; font-style:italic; }
+</style></head><body>
+<div class="po-header">
+  <span class="po-title">☕ LetsFocus Timer</span>
+  <button class="po-expand" id="poExpand">⤡ Expand</button>
+</div>
+<div class="po-timer">
+  <div class="po-display" id="poDisplay">${h}:${m}:${s}</div>
+  <div class="po-controls">
+    <button class="po-btn po-start" id="poStartBtn">${state.running ? '⏸ Pause' : '▶ Start'}</button>
+    <button class="po-btn po-reset" id="poResetBtn">↺ Reset</button>
+  </div>
+</div>
+<div class="po-progress"><div class="po-progress-fill" id="poProgressFill" style="width:${state.total > 0 ? ((state.total - state.remaining) / state.total * 100) : 0}%"></div></div>
+<div class="po-pct" id="poPct">${state.total > 0 ? Math.round((state.total - state.remaining) / state.total * 100) : 0}%</div>
+<div class="po-sync-status" id="poSyncStatus">🔄 Synced with main window</div>
+<div class="po-sounds">
+  <div class="po-sounds-title">🎵 White Noise</div>
+  ${soundRows}
+</div>
+<script>
+const SYNC_KEY = 'letsfocus_timer_sync';
+const CMD_KEY = 'letsfocus_timer_cmd';
+const audios = {};
+let poRunning = ${state.running};
+let poRemaining = ${state.remaining};
+let poTotal = ${state.total};
+let poInterval = null;
+
+function pad(n) { return String(n).padStart(2,'0'); }
+function updateDisplay(rem) {
+  const h = Math.floor(rem/3600), m = Math.floor((rem%3600)/60), s = rem%60;
+  document.getElementById('poDisplay').textContent = pad(h)+':'+pad(m)+':'+pad(s);
+  const pct = poTotal > 0 ? (poTotal - rem) / poTotal * 100 : 0;
+  document.getElementById('poProgressFill').style.width = pct + '%';
+  document.getElementById('poPct').textContent = Math.round(pct) + '%';
+}
+
+// Listen for main window sync
+window.addEventListener('storage', (e) => {
+  if (e.key !== SYNC_KEY) return;
+  try {
+    const data = JSON.parse(e.newValue);
+    poRemaining = data.remaining;
+    poTotal = data.total;
+    if (data.running !== poRunning) {
+      poRunning = data.running;
+      const btn = document.getElementById('poStartBtn');
+      if (poRunning) { btn.textContent = '⏸ Pause'; btn.classList.add('pause'); startLocalTick(); }
+      else { btn.textContent = '▶ Start'; btn.classList.remove('pause'); clearInterval(poInterval); }
+    }
+    updateDisplay(poRemaining);
+    document.getElementById('poSyncStatus').textContent = '🔄 Synced ' + new Date().toLocaleTimeString();
+    if (data.action === 'complete') { clearInterval(poInterval); poRunning = false; }
+  } catch(err) {}
+});
+
+function sendCmd(cmd, extra) {
+  localStorage.setItem(CMD_KEY, JSON.stringify({ cmd, ts: Date.now(), ...extra }));
+}
+
+function startLocalTick() {
+  clearInterval(poInterval);
+  poInterval = setInterval(() => {
+    poRemaining--;
+    if (poRemaining < 0) { clearInterval(poInterval); poRemaining = 0; poRunning = false; }
+    updateDisplay(poRemaining);
+  }, 1000);
+}
+
+document.getElementById('poStartBtn').addEventListener('click', () => {
+  poRunning = !poRunning;
+  const btn = document.getElementById('poStartBtn');
+  if (poRunning) { btn.textContent = '⏸ Pause'; btn.classList.add('pause'); startLocalTick(); sendCmd('toggle'); }
+  else { btn.textContent = '▶ Start'; btn.classList.remove('pause'); clearInterval(poInterval); sendCmd('toggle'); }
+});
+
+document.getElementById('poResetBtn').addEventListener('click', () => { sendCmd('reset'); clearInterval(poInterval); poRunning = false; document.getElementById('poStartBtn').textContent = '▶ Start'; document.getElementById('poStartBtn').classList.remove('pause'); });
+
+document.getElementById('poExpand').addEventListener('click', () => { window.resizeTo(520, 720); });
+
+// Sounds
+document.querySelectorAll('.po-sound-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const sound = btn.dataset.sound, url = btn.dataset.url;
+    if (!audios[sound]) { audios[sound] = new Audio(url); audios[sound].loop = true; }
+    if (!audios[sound].paused) { audios[sound].pause(); btn.classList.remove('active'); }
+    else { audios[sound].play(); btn.classList.add('active'); }
+  });
+});
+document.querySelectorAll('.po-vol-slider').forEach(slider => {
+  slider.addEventListener('input', (e) => {
+    const sound = e.target.dataset.sound;
+    if (audios[sound]) audios[sound].volume = e.target.value / 100;
+    const vols = JSON.parse(localStorage.getItem('letsfocus_volumes') || '{}');
+    vols[sound] = e.target.value;
+    localStorage.setItem('letsfocus_volumes', JSON.stringify(vols));
+  });
+});
+
+// Init if already running
+if (poRunning) { startLocalTick(); document.getElementById('poStartBtn').classList.add('pause'); }
+updateDisplay(poRemaining);
+window.addEventListener('beforeunload', () => { Object.values(audios).forEach(a => a.pause()); });
+<\/script></body></html>`;
+  }
+
+  // Listen for commands from pop-out
+  function listenForPopOutCommands() {
+    const CMD_KEY = 'letsfocus_timer_cmd';
+    let lastCmdTs = 0;
+    window.addEventListener('storage', (e) => {
+      if (e.key !== CMD_KEY) return;
+      try {
+        const data = JSON.parse(e.newValue);
+        if (data.ts <= lastCmdTs) return;
+        lastCmdTs = data.ts;
+        if (data.cmd === 'toggle') toggleTimer();
+        else if (data.cmd === 'reset') resetTimer();
+      } catch(err) {}
+    });
+  }
+
+  // ---- Config overlay ----
   function initConfigOverlay() {
     const overlay = document.getElementById('timerConfirmOverlay');
     const cup = document.getElementById('coffeeCup');
@@ -306,25 +717,25 @@ const TimerModule = (function() {
 
     cup.addEventListener('click', () => {
       const saved = loadTimerData();
-      configHours = saved.hours ?? 0;
-      configMinutes = saved.minutes ?? 25;
-      configSeconds = saved.seconds ?? 0;
-      updateConfigDisplay();
+      configHours = saved.hours ?? 0; configMinutes = saved.minutes ?? 25; configSeconds = saved.seconds ?? 0;
+      segState.hours = configHours; segState.minutes = configMinutes; segState.seconds = configSeconds;
       selectedGoal = null;
       populateGoalPicker();
       showConfigStep(1);
       overlay.classList.remove('hidden');
     });
 
-    // Step 1 → Step 2
     document.getElementById('goalPickerNextBtn')?.addEventListener('click', () => {
       if (!selectedGoal) return;
+      syncSegmentsFromConfig();
+      syncWheelsFromConfig();
       showConfigStep(2);
     });
     document.getElementById('goalPickerCancelBtn')?.addEventListener('click', () => overlay.classList.add('hidden'));
 
-    // Step 2 → Start
     document.getElementById('confirmStartBtn')?.addEventListener('click', () => {
+      // Read from whichever input mode is active
+      configHours = segState.hours; configMinutes = segState.minutes; configSeconds = segState.seconds;
       saveTimerData(configHours, configMinutes, configSeconds);
       cup.classList.add('latte');
       overlay.classList.add('hidden');
@@ -332,72 +743,23 @@ const TimerModule = (function() {
     });
     document.getElementById('confirmBackBtn')?.addEventListener('click', () => showConfigStep(1));
 
-    // Time adjustment buttons
-    overlay.querySelectorAll('.time-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const target = btn.dataset.target;
-        const isUp = btn.classList.contains('up');
-        if (target === 'hours')   configHours   = isUp ? Math.min(configHours + 1, 23)   : Math.max(configHours - 1, 0);
-        if (target === 'minutes') configMinutes = isUp ? Math.min(configMinutes + 1, 59) : Math.max(configMinutes - 1, 0);
-        if (target === 'seconds') configSeconds = isUp ? Math.min(configSeconds + 1, 59) : Math.max(configSeconds - 1, 0);
-        updateConfigDisplay();
-      });
-    });
-
-    ['configHours','configMinutes','configSeconds'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('input', function() {
-        let val = this.textContent.replace(/\D/g,'');
-        if (val.length > 2) val = val.slice(0,2);
-        if (val === '') val = '0';
-        let num = parseInt(val, 10);
-        const max = id === 'configHours' ? 23 : 59;
-        if (num > max) num = max;
-        this.textContent = pad(num);
-        if (id === 'configHours') configHours = num;
-        else if (id === 'configMinutes') configMinutes = num;
-        else configSeconds = num;
-      });
-      el.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') { this.blur(); e.preventDefault(); }
-        if (!/[\d]/.test(e.key) && !['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) e.preventDefault();
-      });
-      el.addEventListener('blur', function() {
-        let val = this.textContent.replace(/\D/g,'');
-        if (val === '') val = '0';
-        let num = parseInt(val, 10);
-        const max = id === 'configHours' ? 23 : 59;
-        if (num > max) num = max;
-        this.textContent = pad(num);
-        if (id === 'configHours') configHours = num;
-        else if (id === 'configMinutes') configMinutes = num;
-        else configSeconds = num;
-      });
-    });
+    initInputMode();
   }
 
   function showTimerPage() {
     document.getElementById('mainPage').classList.add('hidden');
     document.getElementById('timerPage').classList.remove('hidden');
     const saved = loadTimerData();
-    timerHours = saved.hours ?? 0;
-    timerMinutes = saved.minutes ?? 0;
-    timerSeconds = saved.seconds ?? 0;
+    timerHours = saved.hours ?? 0; timerMinutes = saved.minutes ?? 0; timerSeconds = saved.seconds ?? 0;
     totalSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
     remainingSeconds = totalSeconds;
-    elapsedSeconds = 0;
-    lastQuoteMilestone = -1;
-    const textEl = document.getElementById('progressQuoteText');
-    const milestoneEl = document.getElementById('progressQuoteMilestone');
+    elapsedSeconds = 0; lastQuoteMilestone = -1;
+    const textEl = document.getElementById('progressQuoteText'), milestoneEl = document.getElementById('progressQuoteMilestone');
     if (textEl) textEl.textContent = '"The secret of getting ahead is getting started."';
     if (milestoneEl) milestoneEl.textContent = '— Mark Twain';
-    updateTimerDisplay();
-    updateTimerProgress();
-    updateSessionGoalDisplay();
-    renderFocusGoal();
+    updateTimerDisplay(); updateTimerProgress(); updateSessionGoalDisplay(); renderFocusGoal();
     MusicModule.loadPlaylist();
+    broadcastState();
   }
 
   function hideTimerPage() {
@@ -405,11 +767,10 @@ const TimerModule = (function() {
     document.getElementById('mainPage').classList.remove('hidden');
     if (timerRunning) { clearInterval(timerInterval); timerRunning = false; }
     MusicModule.stopAllAudio();
+    broadcastState({ action: 'hide' });
     const btn = document.getElementById('startPauseBtn');
     if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
-    // Refresh goals list so any completions from the timer session are shown immediately
-    GoalsModule.renderGoals();
-    GoalsModule.updateMainProgress();
+    GoalsModule.renderGoals(); GoalsModule.updateMainProgress();
   }
 
   function toggleTimer() {
@@ -434,51 +795,44 @@ const TimerModule = (function() {
       clearInterval(timerInterval); timerRunning = false;
       if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
     }
+    broadcastState();
   }
 
   function resetTimer() {
-    clearInterval(timerInterval); timerRunning = false;
-    lastQuoteMilestone = -1;
+    clearInterval(timerInterval); timerRunning = false; lastQuoteMilestone = -1;
     const btn = document.getElementById('startPauseBtn');
     if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
     const saved = loadTimerData();
     timerHours = saved.hours ?? 0; timerMinutes = saved.minutes ?? 0; timerSeconds = saved.seconds ?? 0;
     totalSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
     remainingSeconds = totalSeconds;
-    const fill = document.getElementById('timerProgressFill');
-    if (fill) fill.style.width = '0%';
-    const pctEl = document.getElementById('progressPctDisplay');
-    if (pctEl) pctEl.textContent = '0%';
-    const elapsed = document.getElementById('elapsedDisplay');
-    if (elapsed) elapsed.textContent = '00:00';
+    const fill = document.getElementById('timerProgressFill'); if (fill) fill.style.width = '0%';
+    const pctEl = document.getElementById('progressPctDisplay'); if (pctEl) pctEl.textContent = '0%';
+    const elapsed = document.getElementById('elapsedDisplay'); if (elapsed) elapsed.textContent = '00:00';
     document.getElementById('timerPage')?.classList.remove('timer-complete');
-    const textEl = document.getElementById('progressQuoteText');
-    const milestoneEl = document.getElementById('progressQuoteMilestone');
+    const textEl = document.getElementById('progressQuoteText'), milestoneEl = document.getElementById('progressQuoteMilestone');
     if (textEl) textEl.textContent = '"The secret of getting ahead is getting started."';
     if (milestoneEl) milestoneEl.textContent = '— Mark Twain';
     updateTimerDisplay(); updateTimerProgress();
+    broadcastState({ action: 'reset' });
   }
 
   function onTimerComplete() {
     updateProgressQuote(100);
     const tp = document.getElementById('timerPage');
     if (tp) { tp.classList.add('timer-complete'); setTimeout(() => tp.classList.remove('timer-complete'), 3000); }
-    // Check if goal is done
-    if (selectedGoal?.subgoals?.length && selectedGoal.subgoals.every(s => s.done)) {
-      triggerGoalComplete();
-    } else {
-      showTimerEndModal();
-    }
+    if (selectedGoal?.subgoals?.length && selectedGoal.subgoals.every(s => s.done)) triggerGoalComplete();
+    else showTimerEndModal();
   }
 
   function init() {
     initConfigOverlay();
+    listenForPopOutCommands();
     document.getElementById('backToGoals')?.addEventListener('click', hideTimerPage);
     document.getElementById('startPauseBtn')?.addEventListener('click', toggleTimer);
     document.getElementById('resetBtn')?.addEventListener('click', resetTimer);
-    document.getElementById('focusGoalDoneBtn')?.addEventListener('click', () => {
-      triggerGoalComplete();
-    });
+    document.getElementById('focusGoalDoneBtn')?.addEventListener('click', triggerGoalComplete);
+    document.getElementById('timerPopOutBtn')?.addEventListener('click', openPopOut);
   }
 
   return { init, showTimerPage, hideTimerPage };

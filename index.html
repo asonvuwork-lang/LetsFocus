@@ -37,6 +37,7 @@
     <!-- Header -->
     <header>
       <div id="welcome-container"></div>
+      <button id="helpBtn" class="help-btn" title="How to use LetsFocus">?</button>
     </header>
 
     <!-- Progress bar -->
@@ -63,10 +64,9 @@
           <div class="goal-controls">
             <div class="controls-center">
               <div class="goal-input-wrap">
-                <input type="text" id="newGoalInput" placeholder="Enter a new goal or subgoal name…">
+                <input type="text" id="newGoalInput" placeholder="Enter a goal or subgoal name…">
                 <button id="deadlineDateToggle" class="deadline-date-toggle" title="Set deadline">📅</button>
                 <input type="date" id="newGoalDeadline" class="new-goal-deadline hidden">
-                <!-- Subgoal parent selector dropdown (appears on input focus) -->
                 <div id="parentGoalDropdown" class="parent-goal-dropdown hidden">
                   <div class="parent-goal-option parent-goal-none active" data-id="">
                     <span class="parent-icon">✦</span>
@@ -141,11 +141,8 @@
           <h2>📅 Deadlines</h2>
           <p class="deadlines-subtitle">Goals with upcoming or past deadlines</p>
         </div>
-        <!-- Overdue notification area -->
         <div id="overdueNotifications" class="overdue-notifications"></div>
-        <!-- Today / tomorrow alerts -->
         <div id="upcomingAlerts" class="upcoming-alerts"></div>
-        <!-- Deadline goal list -->
         <div id="deadlinesList" class="deadlines-list"></div>
       </div>
     </div>
@@ -242,34 +239,44 @@
       <div id="configStep2" class="config-step hidden">
         <div class="timer-config-title">Set Your Focus Time</div>
         <div class="selected-goal-preview" id="selectedGoalPreview"></div>
-        <div class="timer-config">
+
+        <!-- Desktop: segmented HH:MM:SS input boxes -->
+        <div class="timer-config timer-config-desktop">
           <div class="time-section">
             <div class="time-label">HOURS</div>
-            <div class="time-display-large" id="configHours" contenteditable="true">00</div>
-            <div class="time-controls">
-              <button class="time-btn up" data-target="hours">▲</button>
-              <button class="time-btn down" data-target="hours">▼</button>
-            </div>
+            <div class="time-segment-box" id="segHours" data-target="hours" data-max="23" tabindex="0">00</div>
           </div>
           <div class="time-separator">:</div>
           <div class="time-section">
             <div class="time-label">MINUTES</div>
-            <div class="time-display-large" id="configMinutes" contenteditable="true">25</div>
-            <div class="time-controls">
-              <button class="time-btn up" data-target="minutes">▲</button>
-              <button class="time-btn down" data-target="minutes">▼</button>
-            </div>
+            <div class="time-segment-box" id="segMinutes" data-target="minutes" data-max="59" tabindex="0">25</div>
           </div>
           <div class="time-separator">:</div>
           <div class="time-section">
             <div class="time-label">SECONDS</div>
-            <div class="time-display-large" id="configSeconds" contenteditable="true">00</div>
-            <div class="time-controls">
-              <button class="time-btn up" data-target="seconds">▲</button>
-              <button class="time-btn down" data-target="seconds">▼</button>
-            </div>
+            <div class="time-segment-box" id="segSeconds" data-target="seconds" data-max="59" tabindex="0">00</div>
           </div>
         </div>
+        <div class="timer-input-hint">Click a box · type digits · Tab or arrow keys to move</div>
+
+        <!-- Touch/iPad: scroll wheel picker -->
+        <div class="timer-config timer-config-touch hidden">
+          <div class="scroll-wheel-wrap">
+            <div class="scroll-wheel-label">HH</div>
+            <div class="scroll-wheel" id="wheelHours" data-target="hours" data-max="23"></div>
+          </div>
+          <div class="time-separator">:</div>
+          <div class="scroll-wheel-wrap">
+            <div class="scroll-wheel-label">MM</div>
+            <div class="scroll-wheel" id="wheelMinutes" data-target="minutes" data-max="59"></div>
+          </div>
+          <div class="time-separator">:</div>
+          <div class="scroll-wheel-wrap">
+            <div class="scroll-wheel-label">SS</div>
+            <div class="scroll-wheel" id="wheelSeconds" data-target="seconds" data-max="59"></div>
+          </div>
+        </div>
+
         <div class="timer-confirm-controls">
           <button id="confirmStartBtn" class="timer-confirm-btn start">Start Session</button>
           <button id="confirmBackBtn" class="timer-confirm-btn cancel">← Back</button>
@@ -291,6 +298,8 @@
         </div>
       </div>
     </div>
+    <!-- Pop-out button -->
+    <button id="timerPopOutBtn" class="timer-popout-btn" title="Pop out timer window">⤢ Pop Out</button>
 
     <div class="timer-layout">
 

@@ -150,7 +150,6 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.classList.add('active');
       const target = document.getElementById('tab-' + tab);
       if (target) target.classList.add('active');
-      // Refresh deadlines tab whenever it's opened
       if (tab === 'deadlines') GoalsModule.renderDeadlinesTab();
     });
   });
@@ -234,4 +233,105 @@ document.addEventListener('DOMContentLoaded', function() {
   GoalsModule.init();
   TimerModule.init();
   MusicModule.init();
+
+  // ---- Help button ----
+  document.getElementById('helpBtn')?.addEventListener('click', () => showManual(true));
+
+  // ---- First-visit manual ----
+  if (!localStorage.getItem('letsfocus_visited')) showManual(false);
 });
+
+// ============================================================
+// FIRST-VISIT MANUAL
+// ============================================================
+function showManual(forceShow) {
+  const STEPS = [
+    {
+      icon: '☕',
+      title: 'Welcome to LetsFocus!',
+      body: 'Your personal focus companion. Add goals, set deadlines, run focus sessions, and fill the room with ambient sounds — all in one cosy place.',
+      note: 'This guide takes about 30 seconds.'
+    },
+    {
+      icon: '🎯',
+      title: 'Goals Tab',
+      body: 'Type a goal name and press + to add it. Click the 📅 icon to set a deadline before adding. Click any existing goal to select it, then type a new name in the input — the dropdown will let you attach it as a subgoal of the selected one.',
+      note: 'Use Sort and Filter to organise your list. Sort by Deadline to see whats most urgent.'
+    },
+    {
+      icon: '📅',
+      title: 'Deadlines Tab',
+      body: 'Any goal with a deadline appears here, sorted by urgency. Goals within 5 days turn amber, within 2 days turn orange, and overdue goals turn red with a notification card asking you to update or remove the deadline.',
+      note: 'You can change or remove a deadline anytime by clicking the date badge on a goal.'
+    },
+    {
+      icon: '⏱',
+      title: 'Timer & Focus Session',
+      body: 'Click the ☕ coffee cup on the Goals page to configure a session. Pick your goal, then set the time using the HH : MM : SS boxes (type digits, Tab to jump between fields). Hit Start Session and stay in the zone!',
+      note: 'Use ⤢ Pop Out to float the timer in its own window while you work in other tabs.'
+    },
+    {
+      icon: '🎵',
+      title: 'Ambient Sounds',
+      body: 'Head to Music Setup to preview sounds like rain, fire, ocean, and keyboard clicks. Toggle multiple sounds at once and adjust each volume independently. Sounds keep playing during your timer session.',
+      note: 'Volumes are saved automatically so your perfect mix is always ready.'
+    },
+    {
+      icon: '🚀',
+      title: "You're all set!",
+      body: "Start by adding a couple of goals, set a deadline on anything time-sensitive, then click the coffee cup and start your first focus session. You've got this!",
+      note: 'You can reopen this guide anytime with the ? button in the top-right corner.'
+    }
+  ];
+
+  let step = 0;
+  const modal = document.createElement('div');
+  modal.id = 'manualModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(40,22,10,0.78);backdrop-filter:blur(4px);z-index:20000;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.3s ease-out;';
+
+  function render() {
+    const s = STEPS[step];
+    const isFirst = step === 0;
+    const isLast = step === STEPS.length - 1;
+    const dots = STEPS.map((_, i) => `<span style="width:8px;height:8px;border-radius:50%;background:${i === step ? '#d4a574' : 'rgba(212,165,116,0.3)'};display:inline-block;margin:0 3px;transition:background 0.2s;"></span>`).join('');
+
+    modal.innerHTML = `
+      <div style="background:rgba(245,241,235,0.98);backdrop-filter:blur(15px);border-radius:20px;padding:2.5rem;max-width:480px;width:90%;box-shadow:0 24px 70px rgba(0,0,0,0.45);border:2px solid rgba(139,111,71,0.25);position:relative;animation:popUp 0.3s ease-out;">
+        ${isFirst ? `<label style="position:absolute;top:16px;left:20px;font-size:0.78rem;color:rgba(107,81,57,0.7);font-family:'Source Sans Pro',sans-serif;display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="checkbox" id="dontShowAgain" style="accent-color:#8b6f47;"> Don't show again
+        </label>` : ''}
+        <button id="manualSkip" style="position:absolute;top:14px;right:16px;background:none;border:none;color:rgba(107,81,57,0.5);font-size:0.82rem;cursor:pointer;font-family:'Source Sans Pro',sans-serif;padding:4px 8px;">Skip ✕</button>
+        <div style="text-align:center;margin-top:${isFirst ? '1.5rem' : '0'};">
+          <div style="font-size:3.5rem;margin-bottom:0.8rem;">${s.icon}</div>
+          <h2 style="font-family:'Playfair Display',serif;font-size:1.6rem;color:#4a3429;margin-bottom:0.8rem;font-style:italic;">${s.title}</h2>
+          <p style="font-family:'Source Sans Pro',sans-serif;font-size:1rem;color:#6b5139;line-height:1.65;margin-bottom:0.8rem;">${s.body}</p>
+          <p style="font-family:'Source Sans Pro',sans-serif;font-size:0.83rem;color:rgba(107,81,57,0.65);font-style:italic;margin-bottom:1.8rem;padding:8px 16px;background:rgba(139,111,71,0.06);border-radius:8px;border-left:3px solid rgba(139,111,71,0.25);">💡 ${s.note}</p>
+          <div style="margin-bottom:1.4rem;">${dots}</div>
+          <div style="display:flex;gap:10px;justify-content:center;">
+            ${step > 0 ? `<button id="manualBack" style="background:rgba(245,241,235,0.8);color:#6b5139;border:2px solid rgba(139,111,71,0.3);padding:11px 22px;border-radius:12px;font-family:'Playfair Display',serif;cursor:pointer;font-size:0.95rem;">← Back</button>` : ''}
+            <button id="manualNext" style="background:linear-gradient(135deg,#8b6f47,#6b5139);color:#f5f1eb;border:none;padding:11px 28px;border-radius:12px;font-family:'Playfair Display',serif;font-size:0.95rem;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(139,111,71,0.35);">${isLast ? "✓ Let's go!" : 'Next →'}</button>
+          </div>
+        </div>
+      </div>`;
+
+    document.getElementById('manualNext').addEventListener('click', () => {
+      if (isLast) { closeManual(); }
+      else { step++; render(); }
+    });
+    document.getElementById('manualBack')?.addEventListener('click', () => { step--; render(); });
+    document.getElementById('manualSkip')?.addEventListener('click', closeManual);
+    document.getElementById('dontShowAgain')?.addEventListener('change', (e) => {
+      if (e.target.checked) localStorage.setItem('letsfocus_visited', '1');
+      else localStorage.removeItem('letsfocus_visited');
+    });
+  }
+
+  function closeManual() {
+    if (!forceShow) localStorage.setItem('letsfocus_visited', '1');
+    modal.style.animation = 'fadeOut 0.2s ease-out forwards';
+    setTimeout(() => { if (modal.parentNode) document.body.removeChild(modal); }, 200);
+  }
+
+  render();
+  document.body.appendChild(modal);
+}
