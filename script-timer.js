@@ -11,6 +11,14 @@ const TimerModule = (function() {
   let selectedGoal = null;
   let popOutWindow = null;
 
+  // Pomodoro state
+  let pomodoroMode = false;
+  const POMO_WORK = 25 * 60;   // 25 min
+  const POMO_BREAK = 5 * 60;   //  5 min
+  const POMO_CYCLES = 4;
+  let pomoCurrentCycle = 1;     // 1-based
+  let pomoIsWork = true;        // true = work phase
+
   // ---- Sync key for pop-out ----
   const SYNC_KEY = 'letsfocus_timer_sync';
 
@@ -157,6 +165,8 @@ const TimerModule = (function() {
 
   function showTimerEndModal() {
     playSoftChime();
+    // Record stats
+    if (typeof StatsModule !== 'undefined') StatsModule.recordSession(elapsedSeconds, selectedGoal?.text || '');
     const quote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
     const modal = document.createElement('div');
     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(40,22,10,0.72);z-index:10000;display:flex;align-items:center;justify-content:center;';
@@ -581,7 +591,13 @@ body { background: linear-gradient(160deg,#2a1a0e,#3d2410,#5c3620,#3d2410,#1e110
 .po-progress-fill { height:100%; background:linear-gradient(90deg,#8b6f47,#d4a574); border-radius:8px; transition:width 1s linear; width:0%; }
 .po-pct { text-align:center; font-size:0.78rem; color:rgba(212,165,116,0.7); margin-bottom:8px; }
 .po-sounds { padding:0 16px 16px; }
-.po-sounds-title { font-family:'Playfair Display',serif; color:#d4a574; font-size:0.9rem; margin-bottom:10px; text-align:center; letter-spacing:1px; text-transform:uppercase; }
+.po-sounds-toggle { display:flex; align-items:center; justify-content:space-between; cursor:pointer; padding:8px 12px; border-radius:10px; background:rgba(212,165,116,0.08); border:1px solid rgba(212,165,116,0.2); transition:all 0.2s; margin-bottom:0; user-select:none; }
+.po-sounds-toggle:hover { background:rgba(212,165,116,0.15); }
+.po-sounds-title { font-family:'Playfair Display',serif; color:#d4a574; font-size:0.9rem; letter-spacing:1px; text-transform:uppercase; }
+.po-sounds-arrow { color:#d4a574; font-size:0.75rem; transition:transform 0.25s ease; }
+.po-sounds-arrow.open { transform:rotate(180deg); }
+.po-sounds-body { overflow:hidden; max-height:0; transition:max-height 0.35s ease, opacity 0.25s ease, margin-top 0.25s ease; opacity:0; margin-top:0; }
+.po-sounds-body.expanded { max-height:600px; opacity:1; margin-top:10px; }
 .po-sound-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
 .po-sound-btn { background:rgba(212,165,116,0.1); border:1px solid rgba(212,165,116,0.25); color:#d4a574; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:0.82rem; min-width:100px; text-align:left; transition:all 0.2s; text-transform:capitalize; }
 .po-sound-btn.active { background:rgba(212,165,116,0.3); border-color:rgba(212,165,116,0.6); }
@@ -603,8 +619,13 @@ body { background: linear-gradient(160deg,#2a1a0e,#3d2410,#5c3620,#3d2410,#1e110
 <div class="po-pct" id="poPct">${state.total > 0 ? Math.round((state.total - state.remaining) / state.total * 100) : 0}%</div>
 <div class="po-sync-status" id="poSyncStatus">🔄 Synced with main window</div>
 <div class="po-sounds">
-  <div class="po-sounds-title">🎵 White Noise</div>
-  ${soundRows}
+  <div class="po-sounds-toggle" id="poSoundsToggle">
+    <span class="po-sounds-title">🎵 White Noise</span>
+    <span class="po-sounds-arrow" id="poSoundsArrow">▼</span>
+  </div>
+  <div class="po-sounds-body" id="poSoundsBody">
+    ${soundRows}
+  </div>
 </div>
 <script>
 const SYNC_KEY = 'letsfocus_timer_sync';
@@ -690,6 +711,14 @@ document.querySelectorAll('.po-vol-slider').forEach(slider => {
 if (poRunning) { startLocalTick(); document.getElementById('poStartBtn').classList.add('pause'); }
 updateDisplay(poRemaining);
 window.addEventListener('beforeunload', () => { Object.values(audios).forEach(a => a.pause()); });
+
+// White noise collapsible toggle (collapsed by default)
+document.getElementById('poSoundsToggle').addEventListener('click', () => {
+  const body = document.getElementById('poSoundsBody');
+  const arrow = document.getElementById('poSoundsArrow');
+  const isOpen = body.classList.toggle('expanded');
+  arrow.classList.toggle('open', isOpen);
+});
 <\/script></body></html>`;
   }
 
@@ -719,10 +748,28 @@ window.addEventListener('beforeunload', () => { Object.values(audios).forEach(a 
       const saved = loadTimerData();
       configHours = saved.hours ?? 0; configMinutes = saved.minutes ?? 25; configSeconds = saved.seconds ?? 0;
       segState.hours = configHours; segState.minutes = configMinutes; segState.seconds = configSeconds;
-      selectedGoal = null;
+      selectedGoal = null; pomodoroMode = false;
+      document.getElementById('pomoBtnCustom')?.classList.add('active');
+      document.getElementById('pomoBtnPomo')?.classList.remove('active');
+      document.getElementById('pomodoroCycleInfo')?.classList.add('hidden');
       populateGoalPicker();
       showConfigStep(1);
       overlay.classList.remove('hidden');
+    });
+
+    document.getElementById('pomoBtnCustom')?.addEventListener('click', () => {
+      pomodoroMode = false;
+      document.getElementById('pomoBtnCustom').classList.add('active');
+      document.getElementById('pomoBtnPomo').classList.remove('active');
+      document.getElementById('pomodoroCycleInfo')?.classList.add('hidden');
+    });
+    document.getElementById('pomoBtnPomo')?.addEventListener('click', () => {
+      pomodoroMode = true;
+      document.getElementById('pomoBtnPomo').classList.add('active');
+      document.getElementById('pomoBtnCustom').classList.remove('active');
+      document.getElementById('pomodoroCycleInfo')?.classList.remove('hidden');
+      segState.hours = 0; segState.minutes = 25; segState.seconds = 0;
+      updateSegmentDisplay();
     });
 
     document.getElementById('goalPickerNextBtn')?.addEventListener('click', () => {
@@ -734,16 +781,62 @@ window.addEventListener('beforeunload', () => { Object.values(audios).forEach(a 
     document.getElementById('goalPickerCancelBtn')?.addEventListener('click', () => overlay.classList.add('hidden'));
 
     document.getElementById('confirmStartBtn')?.addEventListener('click', () => {
-      // Read from whichever input mode is active
-      configHours = segState.hours; configMinutes = segState.minutes; configSeconds = segState.seconds;
+      if (pomodoroMode) {
+        configHours = 0; configMinutes = 25; configSeconds = 0;
+        pomoCurrentCycle = 1; pomoIsWork = true;
+      } else {
+        configHours = segState.hours; configMinutes = segState.minutes; configSeconds = segState.seconds;
+      }
       saveTimerData(configHours, configMinutes, configSeconds);
       cup.classList.add('latte');
       overlay.classList.add('hidden');
       showTimerPage();
+      updatePomoIndicator();
     });
     document.getElementById('confirmBackBtn')?.addEventListener('click', () => showConfigStep(1));
 
     initInputMode();
+  }
+
+  // ---- Keyboard shortcuts ----
+  function initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      const timerPage = document.getElementById('timerPage');
+      if (!timerPage || timerPage.classList.contains('hidden')) return;
+      if (document.activeElement && document.activeElement.classList.contains('timer-seg-editing')) return;
+      if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); toggleTimer(); }
+      else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); resetTimer(); }
+      else if (e.key === 'Escape') { e.preventDefault(); hideTimerPage(); }
+    });
+  }
+
+  // ---- Sound presets ----
+  const SOUND_PRESETS = {
+    cafe:   { coffee: 70, keyboard: 50, writing: 40 },
+    rainy:  { rain: 70, thunder: 30, wind: 20 },
+    forest: { forest: 75, wind: 35, fire: 25 },
+    deep:   { ac: 40, keyboard: 55, rain: 30 },
+  };
+
+  function initSoundPresets() {
+    document.querySelectorAll('.sound-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const presetKey = btn.dataset.preset;
+        const isActive = btn.classList.contains('active');
+        document.querySelectorAll('.sound-preset-btn').forEach(b => b.classList.remove('active'));
+        if (isActive) { MusicModule.stopAllAudio(); return; }
+        MusicModule.stopAllAudio();
+        btn.classList.add('active');
+        const preset = SOUND_PRESETS[presetKey];
+        if (!preset) return;
+        Object.entries(preset).forEach(([sound, vol]) => {
+          const slider = document.querySelector('#timerPage .ntb-volume-slider[data-sound="' + sound + '"]');
+          if (slider) { slider.value = vol; slider.dispatchEvent(new Event('input')); }
+          const toggleBtn = document.querySelector('#timerPage .noise-toggle-btn[data-sound="' + sound + '"]');
+          if (toggleBtn) toggleBtn.click();
+        });
+      });
+    });
   }
 
   function showTimerPage() {
@@ -821,8 +914,188 @@ window.addEventListener('beforeunload', () => { Object.values(audios).forEach(a 
     updateProgressQuote(100);
     const tp = document.getElementById('timerPage');
     if (tp) { tp.classList.add('timer-complete'); setTimeout(() => tp.classList.remove('timer-complete'), 3000); }
+
+    // Pomodoro auto-cycle
+    if (pomodoroMode) {
+      playSoftChime();
+      if (pomoIsWork) {
+        pomoIsWork = false;
+        remainingSeconds = POMO_BREAK; totalSeconds = POMO_BREAK;
+        timerHours = 0; timerMinutes = 5; timerSeconds = 0;
+        updateTimerDisplay(); updateTimerProgress(); updatePomoIndicator();
+        showPomoBanner('☕ Break time! 5 minutes to recharge.', false);
+        // auto-start break
+        setTimeout(() => { if (!timerRunning) toggleTimer(); }, 1500);
+      } else {
+        pomoIsWork = true;
+        if (pomoCurrentCycle >= POMO_CYCLES) {
+          // All cycles done
+          pomoCurrentCycle = 1;
+          updatePomoIndicator();
+          showTimerEndModal();
+        } else {
+          pomoCurrentCycle++;
+          remainingSeconds = POMO_WORK; totalSeconds = POMO_WORK;
+          timerHours = 0; timerMinutes = 25; timerSeconds = 0;
+          updateTimerDisplay(); updateTimerProgress(); updatePomoIndicator();
+          showPomoBanner(`🍅 Work cycle ${pomoCurrentCycle} of ${POMO_CYCLES} — let's go!`, true);
+          setTimeout(() => { if (!timerRunning) toggleTimer(); }, 1500);
+        }
+      }
+      return;
+    }
+
     if (selectedGoal?.subgoals?.length && selectedGoal.subgoals.every(s => s.done)) triggerGoalComplete();
     else showTimerEndModal();
+  }
+
+  function showPomoBanner(msg, isWork) {
+    const existing = document.getElementById('pomoBanner');
+    if (existing) existing.remove();
+    const banner = document.createElement('div');
+    banner.id = 'pomoBanner';
+    banner.style.cssText = `position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:5000;
+      background:${isWork ? 'rgba(16,185,129,0.92)' : 'rgba(59,130,246,0.92)'};
+      color:#fff;padding:12px 28px;border-radius:30px;font-family:'Playfair Display',serif;
+      font-size:1rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.25);
+      animation:fadeIn 0.3s ease-out;backdrop-filter:blur(6px);`;
+    banner.textContent = msg;
+    document.body.appendChild(banner);
+    setTimeout(() => { banner.style.opacity='0'; banner.style.transition='opacity 0.4s'; setTimeout(() => banner.remove(), 400); }, 3000);
+  }
+
+  function updatePomoIndicator() {
+    const indicator = document.getElementById('pomoSessionIndicator');
+    const phaseLabel = document.getElementById('pomoPhaseLabel');
+    const tracker = document.getElementById('pomoCycleTracker');
+    if (!indicator) return;
+    if (!pomodoroMode) { indicator.classList.add('hidden'); return; }
+    indicator.classList.remove('hidden');
+    if (phaseLabel) {
+      phaseLabel.textContent = pomoIsWork ? '🍅 Work' : '☕ Break';
+      phaseLabel.className = 'pomo-phase-badge' + (pomoIsWork ? '' : ' break');
+    }
+    if (tracker) {
+      tracker.innerHTML = '';
+      for (let i = 1; i <= POMO_CYCLES; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'pomo-cycle-dot' + (i < pomoCurrentCycle ? ' done' : i === pomoCurrentCycle ? ' current' : '');
+        tracker.appendChild(dot);
+      }
+    }
+  }
+
+  // ============================================================
+  // MID-SESSION INLINE TIMER EDITING
+  // ============================================================
+  function initInlineTimerEdit() {
+    const segments = [
+      { id: 'timerHours',   key: 'hours',   max: 23 },
+      { id: 'timerMinutes', key: 'minutes', max: 59 },
+      { id: 'timerSeconds', key: 'seconds', max: 59 },
+    ];
+
+    segments.forEach(({ id, key, max }, idx) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      el.style.cursor = 'pointer';
+      el.title = 'Click to edit';
+
+      let editBuffer = '';
+      let isEditing = false;
+
+      function enterEdit() {
+        // Auto-pause if running
+        if (timerRunning) toggleTimer();
+        isEditing = true;
+        editBuffer = '';
+        el.classList.add('timer-seg-editing');
+        el.style.outline = '3px solid #d4a574';
+        el.style.borderRadius = '8px';
+        el.style.boxShadow = '0 0 18px rgba(212,165,116,0.55)';
+        el.setAttribute('tabindex', '0');
+        el.focus();
+      }
+
+      function exitEdit() {
+        if (editBuffer !== '') {
+          let val = parseInt(editBuffer, 10);
+          if (isNaN(val)) val = 0;
+          val = Math.min(val, max);
+          if (key === 'hours')   { timerHours = val; }
+          if (key === 'minutes') { timerMinutes = val; }
+          if (key === 'seconds') { timerSeconds = val; }
+          remainingSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
+          // keep totalSeconds synced so progress bar reflects new time
+          totalSeconds = remainingSeconds;
+          updateTimerDisplay(); updateTimerProgress(); broadcastState();
+        }
+        editBuffer = '';
+        isEditing = false;
+        el.classList.remove('timer-seg-editing');
+        el.style.outline = '';
+        el.style.boxShadow = '';
+      }
+
+      el.addEventListener('click', (e) => { e.stopPropagation(); if (!isEditing) enterEdit(); });
+
+      el.addEventListener('keydown', (e) => {
+        if (!isEditing) return;
+        if (e.key >= '0' && e.key <= '9') {
+          e.preventDefault();
+          editBuffer += e.key;
+          const partial = parseInt(editBuffer, 10);
+          el.textContent = pad(Math.min(partial, max));
+          if (editBuffer.length >= 2 || (editBuffer.length === 1 && parseInt(e.key, 10) > Math.floor(max / 10))) {
+            exitEdit();
+            // Move focus to next segment
+            const nextId = ['timerHours','timerMinutes','timerSeconds'][idx + 1];
+            if (nextId) { const next = document.getElementById(nextId); if (next) { setTimeout(() => { next.dispatchEvent(new MouseEvent('click')); }, 0); } }
+          }
+        } else if (e.key === 'Backspace') {
+          e.preventDefault();
+          editBuffer = editBuffer.slice(0, -1);
+          el.textContent = editBuffer === '' ? pad(key === 'hours' ? timerHours : key === 'minutes' ? timerMinutes : timerSeconds) : pad(parseInt(editBuffer, 10));
+        } else if (e.key === 'Enter' || e.key === 'Tab') {
+          e.preventDefault();
+          exitEdit();
+        } else if (e.key === 'Escape') {
+          editBuffer = '';
+          isEditing = false;
+          el.classList.remove('timer-seg-editing');
+          el.style.outline = ''; el.style.boxShadow = '';
+          updateTimerDisplay();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const cur = key === 'hours' ? timerHours : key === 'minutes' ? timerMinutes : timerSeconds;
+          const nv = Math.min(cur + 1, max);
+          if (key === 'hours') timerHours = nv;
+          else if (key === 'minutes') timerMinutes = nv;
+          else timerSeconds = nv;
+          remainingSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
+          totalSeconds = remainingSeconds;
+          updateTimerDisplay(); updateTimerProgress();
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const cur = key === 'hours' ? timerHours : key === 'minutes' ? timerMinutes : timerSeconds;
+          const nv = Math.max(cur - 1, 0);
+          if (key === 'hours') timerHours = nv;
+          else if (key === 'minutes') timerMinutes = nv;
+          else timerSeconds = nv;
+          remainingSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
+          totalSeconds = remainingSeconds;
+          updateTimerDisplay(); updateTimerProgress();
+        }
+      });
+
+      el.addEventListener('blur', () => { if (isEditing) exitEdit(); });
+    });
+
+    // Click outside timer display → exit edit
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.timer-seg-editing').forEach(el => el.blur());
+    });
   }
 
   function init() {
@@ -833,6 +1106,9 @@ window.addEventListener('beforeunload', () => { Object.values(audios).forEach(a 
     document.getElementById('resetBtn')?.addEventListener('click', resetTimer);
     document.getElementById('focusGoalDoneBtn')?.addEventListener('click', triggerGoalComplete);
     document.getElementById('timerPopOutBtn')?.addEventListener('click', openPopOut);
+    initInlineTimerEdit();
+    initKeyboardShortcuts();
+    initSoundPresets();
   }
 
   return { init, showTimerPage, hideTimerPage };

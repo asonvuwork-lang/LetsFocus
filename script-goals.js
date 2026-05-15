@@ -84,8 +84,13 @@ const GoalsModule = (function() {
       const chk = document.createElement('input');
       chk.type = 'checkbox'; chk.className = 'goal-checkbox'; chk.checked = goal.completed;
       chk.addEventListener('change', function() {
+        const wasCompleted = goal.completed;
         goal.completed = this.checked;
         if (goal.subgoals && goal.subgoals.length) goal.subgoals.forEach(sg => sg.completed = this.checked);
+        // Record stats on completion
+        if (!wasCompleted && goal.completed && typeof StatsModule !== 'undefined') StatsModule.recordGoalComplete();
+        // Flash deadline card if one exists
+        if (goal.completed && goal.deadline) flashDeadlineCard(goal.id);
         saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab();
       });
 
@@ -103,8 +108,28 @@ const GoalsModule = (function() {
         content.appendChild(catBadge);
       }
 
-      // Deadline badge on the goal card
+      // Deadline badge + progress ring on the goal card
       if (goal.deadline && !goal.completed) {
+        const badgeWrap = document.createElement('span');
+        badgeWrap.style.cssText = 'display:inline-flex;align-items:center;gap:4px;';
+
+        // Progress ring
+        const ringWrap = document.createElement('span');
+        ringWrap.className = 'deadline-ring-wrap';
+        const daysLeft = Math.ceil((new Date(goal.deadline + 'T00:00:00') - new Date()) / 86400000);
+        const totalDays = Math.ceil((new Date(goal.deadline + 'T00:00:00') - new Date(goal.id)) / 86400000) || 30;
+        const pct = Math.max(0, Math.min(1, daysLeft / Math.max(totalDays, 1)));
+        const r = 11, circ = 2 * Math.PI * r;
+        const strokeColor = urgency === 'overdue' ? '#ef4444' : urgency === 'urgent' ? '#f97316' : urgency === 'soon' ? '#f59e0b' : '#22c55e';
+        ringWrap.innerHTML = `<svg class="deadline-ring-svg" viewBox="0 0 28 28">
+          <circle class="deadline-ring-bg" cx="14" cy="14" r="${r}"/>
+          <circle class="deadline-ring-fill" cx="14" cy="14" r="${r}"
+            stroke="${strokeColor}"
+            stroke-dasharray="${circ}"
+            stroke-dashoffset="${circ * (1 - pct)}"/>
+        </svg>`;
+        badgeWrap.appendChild(ringWrap);
+
         const badge = document.createElement('span');
         badge.className = `deadline-badge deadline-badge-${urgency}`;
         badge.title = 'Click to change deadline';
@@ -113,7 +138,8 @@ const GoalsModule = (function() {
           e.stopPropagation();
           openInlineDeadlinePicker(goal, badge);
         });
-        content.appendChild(badge);
+        badgeWrap.appendChild(badge);
+        content.appendChild(badgeWrap);
       }
 
       const del = document.createElement('button');
@@ -176,6 +202,36 @@ const GoalsModule = (function() {
         el.appendChild(subs);
       }
 
+      // Drag handle
+      const dragHandle = document.createElement('span');
+      dragHandle.className = 'drag-handle';
+      dragHandle.innerHTML = '⠿';
+      dragHandle.title = 'Drag to reorder';
+      el.insertBefore(dragHandle, el.firstChild);
+
+      // Drag-to-reorder
+      el.setAttribute('draggable', 'true');
+      el.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', goal.id);
+        setTimeout(() => el.classList.add('dragging'), 0);
+      });
+      el.addEventListener('dragend', () => el.classList.remove('dragging'));
+      el.addEventListener('dragover', (e) => { e.preventDefault(); el.classList.add('drag-over'); });
+      el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+      el.addEventListener('drop', (e) => {
+        e.preventDefault();
+        el.classList.remove('drag-over');
+        const fromId = e.dataTransfer.getData('text/plain');
+        const toId = goal.id;
+        if (fromId === toId) return;
+        const fromIdx = goals.findIndex(g => g.id === fromId);
+        const toIdx = goals.findIndex(g => g.id === toId);
+        if (fromIdx === -1 || toIdx === -1) return;
+        const [moved] = goals.splice(fromIdx, 1);
+        goals.splice(toIdx, 0, moved);
+        saveData(); renderGoals();
+      });
+
       content.addEventListener('click', (e) => {
         if (e.target !== chk && e.target !== del) {
           selectedGoalId = selectedGoalId === goal.id ? null : goal.id;
@@ -188,6 +244,14 @@ const GoalsModule = (function() {
 
     // also refresh parent goal dropdown options if visible
     renderParentGoalDropdown();
+  }
+
+  function flashDeadlineCard(goalId) {
+    // Wait for deadline tab to re-render then flash
+    setTimeout(() => {
+      const card = document.querySelector(`.deadline-card[data-goal-id="${goalId}"]`);
+      if (card) { card.classList.add('completing'); setTimeout(() => card.classList.remove('completing'), 900); }
+    }, 100);
   }
 
   function openInlineDeadlinePicker(goal, badgeEl) {
@@ -332,10 +396,13 @@ const GoalsModule = (function() {
     container.innerHTML = '';
 
     const withDeadline = goals.filter(g => g.deadline);
+    const emptyEl = document.getElementById('deadlinesEmpty');
     if (!withDeadline.length) {
-      container.innerHTML = `<p class="no-goals-message">No goals have deadlines set yet.<br>Add a deadline using 📅 when creating or clicking a goal.</p>`;
+      container.innerHTML = '';
+      if (emptyEl) emptyEl.classList.remove('hidden');
       return;
     }
+    if (emptyEl) emptyEl.classList.add('hidden');
 
     const sorted = [...withDeadline].sort((a, b) => {
       if (a.completed !== b.completed) return a.completed ? 1 : -1;
@@ -346,6 +413,7 @@ const GoalsModule = (function() {
       const urgency = getDeadlineUrgency(goal.deadline);
       const card = document.createElement('div');
       card.className = `deadline-card ${goal.completed ? 'completed' : 'deadline-' + urgency}`;
+      card.dataset.goalId = goal.id;
 
       const subCount = goal.subgoals ? goal.subgoals.length : 0;
       const subDone = goal.subgoals ? goal.subgoals.filter(s => s.completed).length : 0;

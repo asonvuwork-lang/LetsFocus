@@ -1184,7 +1184,151 @@ aside.right {
 .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
 .confetti { position: absolute; top: -10px; width: 12px; height: 12px; border-radius: 3px; animation: confettiFall linear forwards; }
 
-/* ===== RESPONSIVE ===== */
+/* Mid-session inline timer segment editing */
+#timerHours, #timerMinutes, #timerSeconds {
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  padding: 2px 6px;
+}
+#timerHours:hover, #timerMinutes:hover, #timerSeconds:hover {
+  background: rgba(139,111,71,0.12);
+}
+.timer-seg-editing {
+  background: rgba(212,165,116,0.18) !important;
+  outline: 3px solid #d4a574 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 0 18px rgba(212,165,116,0.45) !important;
+}
+
+/* ===== DEADLINES TAB — restyled ===== */
+.deadlines-page {
+  padding: 2rem 2rem 2rem 5rem;
+  max-width: 860px;
+  margin: 1.5rem auto;
+  background: rgba(220,204,181,0.55);
+  backdrop-filter: blur(5px);
+  border-radius: 20px;
+  border: 1px solid rgba(139,111,71,0.15);
+  box-shadow: 0 8px 30px rgba(139,111,71,0.12);
+  animation: popUp 0.5s ease-out;
+  width: calc(100% - 3rem);
+}
+.deadlines-header { text-align: center; margin-bottom: 1.8rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(139,111,71,0.18); }
+.deadlines-header h2 { font-family: 'Playfair Display', serif; font-size: 2rem; color: #6b5139; font-style: italic; margin-bottom: 0.3rem; }
+.deadlines-subtitle { color: rgba(74,52,41,0.65); font-size: 0.95rem; font-style: italic; }
+
+/* Overdue cards */
+.overdue-notifications { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.2rem; }
+.overdue-notification-card {
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(220,38,38,0.05));
+  border: 1.5px solid rgba(239,68,68,0.3);
+  border-left: 5px solid #ef4444;
+  border-radius: 14px; padding: 14px 18px;
+  animation: goalPopIn 0.35s ease-out;
+  box-shadow: 0 4px 14px rgba(239,68,68,0.08);
+}
+.overdue-icon { font-size: 1.6rem; flex-shrink: 0; }
+.overdue-body { flex: 1; min-width: 0; }
+.overdue-title { font-family: 'Playfair Display', serif; font-size: 0.98rem; color: #4a3429; margin-bottom: 3px; }
+.overdue-title strong { color: #dc2626; }
+.overdue-meta { font-size: 0.8rem; color: rgba(107,81,57,0.7); }
+.overdue-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+.overdue-btn { padding: 7px 14px; border: none; border-radius: 9px; font-family: 'Playfair Display', serif; font-size: 0.8rem; cursor: pointer; transition: all 0.2s ease; font-weight: 600; }
+.overdue-btn.change { background: linear-gradient(135deg, #8b6f47, #6b5139); color: #f5f1eb; box-shadow: 0 3px 10px rgba(139,111,71,0.25); }
+.overdue-btn.change:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(139,111,71,0.35); }
+.overdue-btn.remove { background: rgba(245,241,235,0.85); color: #6b5139; border: 1.5px solid rgba(139,111,71,0.3); }
+.overdue-btn.remove:hover { background: #ef4444; color: white; border-color: #ef4444; }
+
+/* Upcoming alert banner */
+.upcoming-alerts { margin-bottom: 1.2rem; }
+.upcoming-alerts-banner {
+  background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(217,119,6,0.05));
+  border: 1.5px solid rgba(245,158,11,0.3);
+  border-left: 5px solid #f59e0b;
+  border-radius: 14px; padding: 14px 18px;
+  box-shadow: 0 4px 14px rgba(245,158,11,0.07);
+}
+.upcoming-alerts-title { font-family: 'Playfair Display', serif; font-size: 0.95rem; color: #92400e; font-weight: 600; margin-bottom: 10px; }
+.upcoming-alert-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid rgba(245,158,11,0.12); font-family: 'Source Sans Pro', sans-serif; font-size: 0.9rem; color: #4a3429; }
+.upcoming-alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: #f59e0b; }
+.alert-urgent .upcoming-alert-dot { background: #ef4444; }
+.upcoming-alert-when { margin-left: auto; flex-shrink: 0; font-size: 0.78rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: rgba(245,158,11,0.15); color: #92400e; }
+.alert-urgent .upcoming-alert-when { background: rgba(239,68,68,0.12); color: #dc2626; }
+
+/* Deadline cards */
+.deadlines-list { display: flex; flex-direction: column; gap: 10px; }
+.deadline-card {
+  display: flex; align-items: stretch;
+  background: rgba(245,241,235,0.92);
+  border-radius: 14px;
+  border: 1px solid rgba(139,111,71,0.15);
+  box-shadow: 0 4px 16px rgba(139,111,71,0.08);
+  overflow: hidden;
+  transition: all 0.25s ease;
+  animation: goalPopIn 0.35s ease-out;
+}
+.deadline-card:hover { box-shadow: 0 8px 28px rgba(139,111,71,0.18); transform: translateY(-2px); }
+.deadline-card.completed { opacity: 0.62; filter: grayscale(0.3); }
+.deadline-card-urgency-bar { width: 6px; flex-shrink: 0; background: #22c55e; }
+.deadline-overdue .deadline-card-urgency-bar  { background: #ef4444; }
+.deadline-urgent  .deadline-card-urgency-bar  { background: #f97316; }
+.deadline-soon    .deadline-card-urgency-bar  { background: #f59e0b; }
+.deadline-safe    .deadline-card-urgency-bar  { background: #22c55e; }
+.deadline-card.completed .deadline-card-urgency-bar { background: #8b6f47; }
+.deadline-card-left { display: flex; align-items: stretch; flex: 1; min-width: 0; }
+.deadline-card-body { flex: 1; padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.deadline-card-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 600; color: #4a3429; line-height: 1.3; }
+.deadline-card-title.completed { text-decoration: line-through; color: rgba(74,52,41,0.55); }
+.deadline-card-sub { font-size: 0.78rem; color: rgba(107,81,57,0.65); font-style: italic; }
+.deadline-card-right { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 5px; padding: 14px 18px; border-left: 1px solid rgba(139,111,71,0.1); flex-shrink: 0; min-width: 110px; background: rgba(237,228,211,0.35); }
+.deadline-card-date { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; color: #6b5139; }
+.deadline-card-days { font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap; background: rgba(34,197,94,0.12); color: #15803d; }
+.deadline-days-overdue { background: rgba(239,68,68,0.12); color: #dc2626; }
+.deadline-days-urgent  { background: rgba(249,115,22,0.12); color: #c2410c; }
+.deadline-days-soon    { background: rgba(245,158,11,0.12); color: #92400e; }
+.deadline-days-safe    { background: rgba(34,197,94,0.12); color: #15803d; }
+.deadline-card-edit-btn { background: linear-gradient(135deg, #8b6f47, #6b5139); color: #f5f1eb; border: none; padding: 5px 12px; border-radius: 8px; font-family: 'Playfair Display', serif; font-size: 0.75rem; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(139,111,71,0.25); white-space: nowrap; }
+.deadline-card-edit-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(139,111,71,0.35); }
+
+/* Floating deadline picker */
+.floating-deadline-picker {
+  position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  z-index: 500;
+  background: rgba(245,241,235,0.99); border-radius: 14px; padding: 14px 16px;
+  box-shadow: 0 12px 35px rgba(139,111,71,0.25); border: 1.5px solid rgba(139,111,71,0.25);
+  display: flex; flex-direction: column; gap: 10px; min-width: 220px;
+  animation: fadeIn 0.2s ease-out;
+}
+.floating-deadline-picker label { font-family: 'Playfair Display', serif; font-size: 0.85rem; color: #6b5139; font-weight: 600; }
+.floating-deadline-picker input[type="date"] { width: 100%; padding: 8px 12px; border: 1.5px solid rgba(139,111,71,0.3); border-radius: 9px; font-size: 0.95rem; font-family: 'Source Sans Pro', sans-serif; background: rgba(245,241,235,0.9); color: #4a3429; }
+.floating-deadline-picker input[type="date"]:focus { outline: none; border-color: #8b6f47; box-shadow: 0 0 0 3px rgba(139,111,71,0.1); }
+.fdp-actions { display: flex; gap: 7px; }
+.fdp-save, .fdp-remove, .fdp-cancel { flex: 1; padding: 8px 6px; border: none; border-radius: 9px; font-family: 'Playfair Display', serif; font-size: 0.8rem; cursor: pointer; transition: all 0.2s ease; font-weight: 600; }
+.fdp-save { background: linear-gradient(135deg, #8b6f47, #6b5139); color: #f5f1eb; box-shadow: 0 2px 8px rgba(139,111,71,0.2); }
+.fdp-save:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(139,111,71,0.3); }
+.fdp-remove { background: rgba(239,68,68,0.08); color: #dc2626; border: 1.5px solid rgba(239,68,68,0.25); }
+.fdp-remove:hover { background: #ef4444; color: white; border-color: #ef4444; }
+.fdp-cancel { background: rgba(245,241,235,0.8); color: #6b5139; border: 1.5px solid rgba(139,111,71,0.2); }
+.fdp-cancel:hover { background: rgba(237,228,211,1); }
+
+/* Deadline badge on goal cards */
+.deadline-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; margin-left: 10px; position: relative; font-family: 'Source Sans Pro', sans-serif; flex-shrink: 0; }
+.deadline-badge-safe    { background: rgba(34,197,94,0.12);  color: #15803d; border: 1px solid rgba(34,197,94,0.25); }
+.deadline-badge-soon    { background: rgba(245,158,11,0.12); color: #92400e; border: 1px solid rgba(245,158,11,0.3); }
+.deadline-badge-urgent  { background: rgba(249,115,22,0.12); color: #c2410c; border: 1px solid rgba(249,115,22,0.3); }
+.deadline-badge-overdue { background: rgba(239,68,68,0.12);  color: #dc2626; border: 1px solid rgba(239,68,68,0.3); }
+.deadline-badge:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(139,111,71,0.15); }
+.deadline-days { opacity: 0.8; font-weight: 400; }
+
+/* Set-deadline link on goal items */
+.goal-set-deadline { margin-top: 8px; padding-left: 35px; display: flex; align-items: center; gap: 8px; }
+.set-deadline-link { background: none; border: 1px dashed rgba(139,111,71,0.4); color: #8b6f47; font-family: 'Playfair Display', serif; font-size: 0.82rem; padding: 4px 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; }
+.set-deadline-link:hover { background: rgba(139,111,71,0.08); border-style: solid; }
+.inline-deadline-input { padding: 5px 10px; border: 1.5px solid rgba(139,111,71,0.3); border-radius: 8px; font-size: 0.85rem; background: rgba(245,241,235,0.9); color: #4a3429; }
+.inline-deadline-input:focus { outline: none; border-color: #8b6f47; }
+
 @media (max-width: 900px) {
   .music-setup-grid { grid-template-columns: 1fr; }
   .timer-layout { flex-direction: column; padding-top: 100px; }
@@ -1461,3 +1605,193 @@ header { position: relative; }
   .time-segment-box { font-size: 4rem; min-width: 110px; padding: 0.6rem 1rem; }
   .time-separator { font-size: 4rem; }
 }
+
+/* ===== KEYBOARD SHORTCUTS HINT ===== */
+.kbd-shortcuts-hint {
+  font-size: 0.72rem; color: rgba(107,81,57,0.55);
+  text-align: center; margin-top: 4px; margin-bottom: 4px;
+  font-family: 'Source Sans Pro', sans-serif; letter-spacing: 0.2px;
+}
+.kbd-key {
+  display: inline-block; background: rgba(139,111,71,0.12);
+  border: 1px solid rgba(139,111,71,0.25); border-radius: 4px;
+  padding: 1px 6px; font-size: 0.68rem; font-family: 'Courier New', monospace;
+  color: #8b6f47; vertical-align: middle; margin: 0 1px;
+}
+
+/* ===== POMODORO TOGGLE (config overlay) ===== */
+.pomodoro-toggle-row {
+  display: flex; gap: 10px; justify-content: center;
+  margin-bottom: 1rem;
+}
+.pomo-mode-btn {
+  padding: 8px 22px; border-radius: 22px;
+  border: 2px solid rgba(212,165,116,0.35);
+  background: rgba(212,165,116,0.08); color: rgba(212,165,116,0.7);
+  font-family: 'Playfair Display', serif; font-size: 0.9rem;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.pomo-mode-btn:hover { background: rgba(212,165,116,0.18); color: #d4a574; }
+.pomo-mode-btn.active {
+  background: rgba(212,165,116,0.28); border-color: #d4a574;
+  color: #fff; box-shadow: 0 0 14px rgba(212,165,116,0.25);
+}
+.pomodoro-cycle-info {
+  display: flex; align-items: center; gap: 10px; justify-content: center;
+  margin-bottom: 1.2rem; flex-wrap: wrap;
+}
+.pomo-cycle-badge {
+  padding: 5px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+  font-family: 'Playfair Display', serif;
+}
+.pomo-cycle-badge.work { background: rgba(16,185,129,0.18); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+.pomo-cycle-badge.break { background: rgba(99,179,237,0.18); color: #3b82f6; border: 1px solid rgba(99,179,237,0.3); }
+.pomo-cycle-sep { color: rgba(212,165,116,0.6); font-size: 1rem; }
+.pomo-cycle-count { color: #d4a574; font-family: 'Playfair Display', serif; font-size: 0.88rem; font-style: italic; }
+
+/* Pomodoro phase indicator on timer page */
+.pomo-session-indicator {
+  display: flex; align-items: center; gap: 10px; justify-content: center;
+  margin-bottom: 8px;
+}
+.pomo-phase-badge {
+  padding: 4px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
+  font-family: 'Playfair Display', serif;
+  background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.25);
+  transition: all 0.4s ease;
+}
+.pomo-phase-badge.break { background: rgba(99,179,237,0.15); color: #3b82f6; border-color: rgba(99,179,237,0.25); }
+.pomo-cycle-tracker { display: flex; gap: 5px; }
+.pomo-cycle-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid rgba(212,165,116,0.4); background: transparent;
+  transition: all 0.3s ease;
+}
+.pomo-cycle-dot.done { background: #d4a574; border-color: #d4a574; }
+.pomo-cycle-dot.current { background: rgba(212,165,116,0.4); border-color: #d4a574; animation: pulse 1s ease-in-out infinite alternate; }
+
+/* ===== SOUND PRESETS ===== */
+.sound-presets-row {
+  display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
+}
+.sound-preset-btn {
+  padding: 6px 14px; border-radius: 20px; border: 1.5px solid rgba(139,111,71,0.25);
+  background: rgba(245,241,235,0.7); color: #6b5139;
+  font-family: 'Playfair Display', serif; font-size: 0.78rem;
+  cursor: pointer; transition: all 0.2s ease; white-space: nowrap;
+}
+.sound-preset-btn:hover { background: rgba(245,241,235,1); border-color: #8b6f47; transform: translateY(-1px); }
+.sound-preset-btn.active { background: linear-gradient(135deg, #8b6f47, #6b5139); color: #f5f1eb; border-color: transparent; box-shadow: 0 3px 10px rgba(139,111,71,0.25); }
+
+/* ===== STATS TAB ===== */
+#tab-stats { overflow-y: auto; }
+.stats-page {
+  padding: 2rem 2rem 2rem 5rem;
+  max-width: 860px; margin: 1.5rem auto;
+  background: rgba(220,204,181,0.55); backdrop-filter: blur(5px);
+  border-radius: 20px; border: 1px solid rgba(139,111,71,0.15);
+  box-shadow: 0 8px 30px rgba(139,111,71,0.12);
+  animation: popUp 0.5s ease-out; width: calc(100% - 3rem);
+}
+.stats-header { text-align: center; margin-bottom: 1.8rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(139,111,71,0.18); }
+.stats-header h2 { font-family: 'Playfair Display', serif; font-size: 2rem; color: #6b5139; font-style: italic; margin-bottom: 0.3rem; }
+.stats-subtitle { color: rgba(74,52,41,0.65); font-size: 0.95rem; font-style: italic; }
+.stats-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 2rem;
+}
+@media (max-width: 700px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+.stat-card {
+  background: rgba(245,241,235,0.9); border-radius: 16px;
+  padding: 1.2rem 1rem; text-align: center;
+  border: 1px solid rgba(139,111,71,0.15);
+  box-shadow: 0 4px 16px rgba(139,111,71,0.08);
+  transition: all 0.25s ease; animation: goalPopIn 0.4s ease-out;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(139,111,71,0.15); }
+.stat-card-primary { border-color: rgba(139,111,71,0.3); background: rgba(245,241,235,1); box-shadow: 0 6px 20px rgba(139,111,71,0.14); }
+.stat-card-icon { font-size: 1.8rem; margin-bottom: 6px; }
+.stat-card-value { font-family: 'Courier New', monospace; font-size: 1.6rem; font-weight: bold; color: #4a3429; margin-bottom: 4px; }
+.stat-card-label { font-family: 'Playfair Display', serif; font-size: 0.75rem; color: #8b6f47; text-transform: uppercase; letter-spacing: 1px; }
+.stats-section { margin-bottom: 1.5rem; }
+.stats-section-title { font-family: 'Playfair Display', serif; font-size: 1rem; color: #6b5139; font-weight: 600; margin-bottom: 12px; }
+.stats-bar-chart {
+  display: flex; align-items: flex-end; gap: 8px; height: 100px;
+  background: rgba(245,241,235,0.7); border-radius: 12px;
+  padding: 12px 14px; border: 1px solid rgba(139,111,71,0.12);
+}
+.stats-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; }
+.stats-bar {
+  width: 100%; border-radius: 5px 5px 0 0;
+  background: linear-gradient(180deg, #a67c5a, #8b6f47);
+  min-height: 4px; transition: height 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+.stats-bar.today { background: linear-gradient(180deg, #d4a574, #8b6f47); box-shadow: 0 0 10px rgba(212,165,116,0.3); }
+.stats-bar-day { font-size: 0.65rem; color: rgba(107,81,57,0.65); font-family: 'Source Sans Pro', sans-serif; white-space: nowrap; }
+.stats-bar-val { font-size: 0.62rem; color: #8b6f47; font-family: 'Courier New', monospace; font-weight: bold; margin-bottom: 3px; }
+.stat-best-session {
+  background: rgba(245,241,235,0.9); border-radius: 12px; padding: 14px 18px;
+  border: 1px solid rgba(139,111,71,0.18); font-family: 'Playfair Display', serif;
+  color: #6b5139; font-style: italic; font-size: 0.95rem;
+}
+.stats-reset-row { text-align: right; margin-top: 1rem; }
+.stats-reset-btn {
+  background: rgba(245,241,235,0.8); color: rgba(107,81,57,0.6);
+  border: 1px solid rgba(139,111,71,0.2); padding: 8px 18px;
+  border-radius: 8px; font-family: 'Playfair Display', serif; font-size: 0.82rem;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.stats-reset-btn:hover { color: #dc2626; border-color: #dc2626; background: rgba(220,38,38,0.05); }
+
+/* ===== DEADLINES EMPTY STATE ===== */
+.deadlines-empty { text-align: center; padding: 3rem 1rem; }
+.deadlines-empty-svg { width: 160px; height: 130px; margin-bottom: 1rem; opacity: 0.85; }
+.deadlines-empty-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: #6b5139; font-style: italic; margin-bottom: 6px; }
+.deadlines-empty-sub { font-size: 0.88rem; color: rgba(107,81,57,0.6); }
+
+/* ===== DEADLINE PROGRESS RING (on goal cards) ===== */
+.deadline-ring-wrap {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; flex-shrink: 0; margin-left: 6px;
+}
+.deadline-ring-svg { width: 28px; height: 28px; transform: rotate(-90deg); }
+.deadline-ring-bg { fill: none; stroke: rgba(139,111,71,0.15); stroke-width: 3; }
+.deadline-ring-fill { fill: none; stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease, stroke 0.4s ease; }
+
+/* ===== DEADLINE CARD COMPLETION FLASH ===== */
+@keyframes deadlineComplete {
+  0%   { background: rgba(245,241,235,0.92); }
+  30%  { background: rgba(34,197,94,0.18); box-shadow: 0 0 20px rgba(34,197,94,0.2); }
+  100% { background: rgba(245,241,235,0.92); opacity: 0.62; }
+}
+.deadline-card.completing { animation: deadlineComplete 0.8s ease forwards; }
+
+/* ===== DRAG TO REORDER GOALS ===== */
+.goal-item { position: relative; }
+.goal-item[draggable="true"] { cursor: grab; }
+.goal-item[draggable="true"]:active { cursor: grabbing; }
+.goal-item.drag-over {
+  border-top: 3px solid #8b6f47 !important;
+  transform: translateY(2px);
+}
+.goal-item.dragging {
+  opacity: 0.45; transform: scale(0.98);
+  box-shadow: 0 12px 30px rgba(139,111,71,0.3);
+}
+.drag-handle {
+  position: absolute; left: -2px; top: 50%; transform: translateY(-50%);
+  color: rgba(139,111,71,0.3); font-size: 1rem; cursor: grab;
+  padding: 4px 6px; opacity: 0; transition: opacity 0.2s ease;
+  line-height: 1;
+}
+.goal-item:hover .drag-handle { opacity: 1; }
+
+/* ===== EDIT HINT TOOLTIP on timer digits ===== */
+.timer-edit-tooltip {
+  position: absolute; top: -28px; left: 50%; transform: translateX(-50%);
+  background: rgba(74,52,41,0.85); color: #f5e8d0;
+  font-size: 0.65rem; font-family: 'Source Sans Pro', sans-serif;
+  padding: 3px 9px; border-radius: 6px; white-space: nowrap;
+  pointer-events: none; opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.timer-display-large:hover .timer-edit-tooltip { opacity: 1; }

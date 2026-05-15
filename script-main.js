@@ -233,6 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
   GoalsModule.init();
   TimerModule.init();
   MusicModule.init();
+  StatsModule.init();
 
   // ---- Help button ----
   document.getElementById('helpBtn')?.addEventListener('click', () => showManual(true));

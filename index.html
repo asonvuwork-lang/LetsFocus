@@ -53,6 +53,7 @@
     <nav class="tab-nav">
       <button class="tab-btn active" data-tab="goals">☕ Goals</button>
       <button class="tab-btn" data-tab="deadlines">📅 Deadlines</button>
+      <button class="tab-btn" data-tab="stats">📊 Stats</button>
       <button class="tab-btn" data-tab="music">♪ Music Setup</button>
     </nav>
 
@@ -144,6 +145,74 @@
         <div id="overdueNotifications" class="overdue-notifications"></div>
         <div id="upcomingAlerts" class="upcoming-alerts"></div>
         <div id="deadlinesList" class="deadlines-list"></div>
+        <!-- Empty state (hidden when there are deadlines) -->
+        <div id="deadlinesEmpty" class="deadlines-empty hidden">
+          <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" class="deadlines-empty-svg">
+            <ellipse cx="100" cy="148" rx="55" ry="8" fill="rgba(139,111,71,0.12)"/>
+            <rect x="62" y="80" width="76" height="58" rx="10" fill="#e8d9c0" stroke="#c4a882" stroke-width="2"/>
+            <rect x="62" y="80" width="76" height="18" rx="10" fill="#c4a882"/>
+            <rect x="62" y="88" width="76" height="10" fill="#c4a882"/>
+            <circle cx="85" cy="89" r="4" fill="#f5f1eb"/>
+            <circle cx="115" cy="89" r="4" fill="#f5f1eb"/>
+            <line x1="74" y1="110" x2="94" y2="110" stroke="#b89870" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="74" y1="120" x2="108" y2="120" stroke="#b89870" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="74" y1="130" x2="100" y2="130" stroke="#b89870" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- coffee cup -->
+            <rect x="86" y="38" width="28" height="22" rx="5" fill="#8b6f47"/>
+            <rect x="89" y="41" width="22" height="16" rx="3" fill="#6b5139"/>
+            <path d="M114 46 Q120 46 120 52 Q120 58 114 58" fill="none" stroke="#8b6f47" stroke-width="3" stroke-linecap="round"/>
+            <ellipse cx="100" cy="38" rx="14" ry="4" fill="#a67c5a"/>
+            <!-- steam -->
+            <path d="M94 30 Q96 24 94 18" fill="none" stroke="rgba(139,111,71,0.4)" stroke-width="2" stroke-linecap="round"/>
+            <path d="M100 28 Q102 22 100 16" fill="none" stroke="rgba(139,111,71,0.4)" stroke-width="2" stroke-linecap="round"/>
+            <path d="M106 30 Q108 24 106 18" fill="none" stroke="rgba(139,111,71,0.4)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <p class="deadlines-empty-title">Nothing due — enjoy your coffee ☕</p>
+          <p class="deadlines-empty-sub">Add a deadline to any goal using the 📅 icon</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Stats -->
+    <div class="tab-content" id="tab-stats">
+      <div class="stats-page">
+        <div class="stats-header">
+          <h2>📊 Focus Stats</h2>
+          <p class="stats-subtitle">Your focus journey at a glance</p>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card stat-card-primary">
+            <div class="stat-card-icon">⏱</div>
+            <div class="stat-card-value" id="statTotalTime">0h 0m</div>
+            <div class="stat-card-label">Total Focus Time</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon">🔥</div>
+            <div class="stat-card-value" id="statStreak">0</div>
+            <div class="stat-card-label">Day Streak</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon">✅</div>
+            <div class="stat-card-value" id="statSessions">0</div>
+            <div class="stat-card-label">Sessions Completed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon">🎯</div>
+            <div class="stat-card-value" id="statGoalsDone">0</div>
+            <div class="stat-card-label">Goals Completed</div>
+          </div>
+        </div>
+        <div class="stats-section">
+          <h3 class="stats-section-title">📅 Daily Focus (last 7 days)</h3>
+          <div class="stats-bar-chart" id="statsBarChart"></div>
+        </div>
+        <div class="stats-section">
+          <h3 class="stats-section-title">🏆 Best Session</h3>
+          <div class="stat-best-session" id="statBestSession">No sessions yet</div>
+        </div>
+        <div class="stats-reset-row">
+          <button id="statsResetBtn" class="stats-reset-btn">↺ Reset Stats</button>
+        </div>
       </div>
     </div>
 
@@ -240,6 +309,19 @@
         <div class="timer-config-title">Set Your Focus Time</div>
         <div class="selected-goal-preview" id="selectedGoalPreview"></div>
 
+        <!-- Pomodoro / Custom toggle -->
+        <div class="pomodoro-toggle-row">
+          <button class="pomo-mode-btn active" id="pomoBtnCustom" data-mode="custom">⚙ Custom</button>
+          <button class="pomo-mode-btn" id="pomoBtnPomo" data-mode="pomodoro">🍅 Pomodoro</button>
+        </div>
+        <div class="pomodoro-cycle-info hidden" id="pomodoroCycleInfo">
+          <span class="pomo-cycle-badge work">25 min work</span>
+          <span class="pomo-cycle-sep">→</span>
+          <span class="pomo-cycle-badge break">5 min break</span>
+          <span class="pomo-cycle-sep">×</span>
+          <span class="pomo-cycle-count" id="pomoCycleCount">4 cycles</span>
+        </div>
+
         <!-- Desktop: segmented HH:MM:SS input boxes -->
         <div class="timer-config timer-config-desktop">
           <div class="time-section">
@@ -307,6 +389,10 @@
       <div class="timer-left-col">
         <div class="focus-session-box">
           <h1 class="timer-title">Focus Session</h1>
+          <div class="pomo-session-indicator hidden" id="pomoSessionIndicator">
+            <span class="pomo-phase-badge" id="pomoPhaseLabel">🍅 Work</span>
+            <span class="pomo-cycle-tracker" id="pomoCycleTracker"></span>
+          </div>
           <div class="timer-display-large">
             <span id="timerHours">00</span>
             <span class="timer-colon">:</span>
@@ -322,6 +408,13 @@
           <div class="timer-controls-large">
             <button id="startPauseBtn" class="timer-btn-large start-btn">▶ Start</button>
             <button id="resetBtn" class="timer-btn-large reset-btn">↺ Reset</button>
+          </div>
+          <!-- Keyboard shortcuts hint -->
+          <div class="kbd-shortcuts-hint">
+            <span class="kbd-key">Space</span> pause &nbsp;·&nbsp;
+            <span class="kbd-key">R</span> reset &nbsp;·&nbsp;
+            <span class="kbd-key">Esc</span> back &nbsp;·&nbsp;
+            <span class="kbd-key">click digit</span> edit
           </div>
           <div class="session-stats">
             <div class="stat-item">
@@ -364,6 +457,13 @@
           <div class="goal-area-box-header">
             <h3>🌿 Ambient Sounds</h3>
             <button id="stopAllNoisesBtn" class="stop-all-btn-small">■ Stop All</button>
+          </div>
+          <!-- Sound presets -->
+          <div class="sound-presets-row">
+            <button class="sound-preset-btn" data-preset="cafe">☕ Café</button>
+            <button class="sound-preset-btn" data-preset="rainy">🌧 Rainy Day</button>
+            <button class="sound-preset-btn" data-preset="forest">🌲 Forest</button>
+            <button class="sound-preset-btn" data-preset="deep">🎧 Deep Work</button>
           </div>
           <div class="noise-toggle-grid">
             <div class="ntb-wrap" data-sound="rain">
@@ -416,6 +516,7 @@
   <script src="script-goals.js"></script>
   <script src="script-timer.js"></script>
   <script src="script-music.js"></script>
+  <script src="script-stats.js"></script>
   <script src="script-main.js"></script>
 </body>
 </html>
