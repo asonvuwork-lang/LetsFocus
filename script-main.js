@@ -79,10 +79,10 @@ function showConfirm(message) {
   });
 }
 
-// ---- Celebration ----
+// ---- Celebration — Coffee Shop Sign Flip ----
 function triggerCelebration() {
   playCompletionChime();
-  createConfetti();
+  showCoffeeShopClosing();
 }
 
 function playCompletionChime() {
@@ -102,19 +102,202 @@ function playCompletionChime() {
   } catch(e) {}
 }
 
-function createConfetti() {
-  const colors = ['#8b6f47','#d4a574','#6b5139','#a67c5a','#c49468','#4a3429'];
-  const container = document.createElement('div'); container.className = 'confetti-container';
-  document.body.appendChild(container);
-  for (let i = 0; i < 60; i++) {
-    const c = document.createElement('div'); c.className = 'confetti';
-    c.style.left = Math.random() * 100 + 'vw';
-    c.style.background = colors[Math.floor(Math.random() * colors.length)];
-    c.style.animationDelay = Math.random() * 3 + 's';
-    c.style.animationDuration = (Math.random() * 3 + 2) + 's';
-    container.appendChild(c);
-  }
-  setTimeout(() => { if (container.parentNode) document.body.removeChild(container); }, 6000);
+const CLOSING_QUOTES = [
+  { text: "The shop is closed. You did the work.", attr: "— LetsFocus" },
+  { text: "Every great session deserves a great ending.", attr: "— LetsFocus" },
+  { text: "You showed up. That's everything.", attr: "— LetsFocus" },
+  { text: "Rest now. You've earned it.", attr: "— LetsFocus" },
+  { text: "The grind is done. The coffee was worth it.", attr: "— LetsFocus" },
+];
+
+function showCoffeeShopClosing() {
+  if (document.getElementById('coffeeShopClosingOverlay')) return;
+
+  const q = CLOSING_QUOTES[Math.floor(Math.random() * CLOSING_QUOTES.length)];
+
+  const overlay = document.createElement('div');
+  overlay.id = 'coffeeShopClosingOverlay';
+  overlay.style.cssText = `
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(28,16,8,0);z-index:20000;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:40px;
+    transition:background 0.7s ease;
+    font-family:'Playfair Display',serif;
+  `;
+
+  overlay.innerHTML = `
+    <style>
+      @keyframes signIdle {
+        0%,100% { transform: rotate(-3deg); }
+        50%      { transform: rotate(3deg);  }
+      }
+      @keyframes signWindup {
+        0%   { transform: rotate(0deg);   }
+        40%  { transform: rotate(-18deg); }
+        70%  { transform: rotate(12deg);  }
+        100% { transform: rotate(0deg);   }
+      }
+      @keyframes signSettle {
+        0%   { transform: rotate(0deg);  }
+        25%  { transform: rotate(14deg); }
+        50%  { transform: rotate(-9deg); }
+        70%  { transform: rotate(5deg);  }
+        85%  { transform: rotate(-2deg); }
+        100% { transform: rotate(0deg);  }
+      }
+      @keyframes quoteReveal {
+        from { opacity:0; transform:translateY(14px); }
+        to   { opacity:1; transform:translateY(0);    }
+      }
+      @keyframes btnsFadeIn {
+        from { opacity:0; transform:translateY(16px); }
+        to   { opacity:1; transform:translateY(0);    }
+      }
+      #csco-rope {
+        width:3px; height:48px;
+        background:linear-gradient(180deg,rgba(212,165,116,0.6),rgba(139,111,71,0.9));
+        margin:0 auto; border-radius:2px;
+      }
+      #csco-sign-flip { perspective:500px; width:200px; height:120px; }
+      #csco-sign-inner {
+        width:200px; height:120px; position:relative;
+        transform-style:preserve-3d;
+        transform:rotateY(0deg);
+        transition:transform 0.7s cubic-bezier(0.4,0,0.2,1);
+      }
+      .csco-sign-face {
+        position:absolute; inset:0; border-radius:10px;
+        display:flex; flex-direction:column;
+        align-items:center; justify-content:center; gap:4px;
+        backface-visibility:hidden;
+        box-shadow:0 8px 30px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.08);
+      }
+      .csco-sign-face::before {
+        content:''; position:absolute; inset:0; border-radius:10px;
+        background:repeating-linear-gradient(90deg,transparent 0px,transparent 18px,rgba(0,0,0,0.06) 18px,rgba(0,0,0,0.06) 20px);
+        pointer-events:none;
+      }
+      #csco-face-open {
+        background:linear-gradient(135deg,#7a5c2e 0%,#5c3d18 50%,#6b4a22 100%);
+        border:3px solid #a07840;
+      }
+      #csco-face-closed {
+        background:linear-gradient(135deg,#5c3d18 0%,#4a2e0e 50%,#5c3d18 100%);
+        border:3px solid #8b6030;
+        transform:rotateY(180deg);
+      }
+      .csco-sign-word {
+        font-family:'Playfair Display',serif;
+        font-weight:700; letter-spacing:4px; text-transform:uppercase;
+      }
+      #csco-word-open   { font-size:1.9rem; color:#a8e6a8; text-shadow:0 0 12px rgba(100,220,100,0.4); }
+      #csco-word-closed { font-size:1.7rem; color:#f08080; text-shadow:0 0 12px rgba(240,80,80,0.4); }
+      .csco-sign-sub {
+        font-family:'Source Sans Pro',sans-serif;
+        font-size:0.7rem; letter-spacing:2px; opacity:0.65;
+        text-transform:uppercase; color:#d4a574;
+      }
+      .csco-screw {
+        position:absolute; width:8px; height:8px; border-radius:50%;
+        background:radial-gradient(circle at 35% 35%,#c0a060,#7a5a20);
+        box-shadow:0 1px 3px rgba(0,0,0,0.5);
+      }
+      .csco-screw.tl{top:10px;left:12px;} .csco-screw.tr{top:10px;right:12px;}
+      .csco-screw.bl{bottom:10px;left:12px;} .csco-screw.br{bottom:10px;right:12px;}
+      #csco-quote { text-align:center; max-width:400px; padding:0 24px; opacity:0; }
+      #csco-quote-text {
+        font-family:'Playfair Display',serif; font-style:italic;
+        font-size:1.25rem; color:#f5e8d0; line-height:1.6; margin-bottom:8px;
+      }
+      #csco-quote-attr {
+        font-size:0.8rem; color:rgba(212,165,116,0.65);
+        letter-spacing:1px; font-family:'Source Sans Pro',sans-serif;
+      }
+      #csco-btns { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; opacity:0; }
+      .csco-btn {
+        padding:13px 28px; border:none; border-radius:14px;
+        font-family:'Playfair Display',serif; font-size:1rem; font-weight:600;
+        cursor:pointer; transition:all 0.2s ease;
+      }
+      .csco-btn-primary {
+        background:linear-gradient(135deg,#d4a574,#8b6f47);
+        color:#fff; box-shadow:0 4px 16px rgba(139,111,71,0.4);
+      }
+      .csco-btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(139,111,71,0.5); }
+      .csco-btn-secondary {
+        background:rgba(245,241,235,0.1); color:rgba(245,241,235,0.8);
+        border:1.5px solid rgba(245,241,235,0.25);
+      }
+      .csco-btn-secondary:hover { background:rgba(245,241,235,0.18); }
+    </style>
+
+    <div style="display:flex;flex-direction:column;align-items:center;">
+      <div id="csco-rope"></div>
+      <div id="csco-sign-wrap" style="transform-origin:top center;">
+        <div id="csco-sign-flip">
+          <div id="csco-sign-inner">
+            <div class="csco-sign-face" id="csco-face-open">
+              <span class="csco-screw tl"></span><span class="csco-screw tr"></span>
+              <span class="csco-screw bl"></span><span class="csco-screw br"></span>
+              <span class="csco-sign-word" id="csco-word-open">Open</span>
+              <span class="csco-sign-sub">Come in, we're open</span>
+            </div>
+            <div class="csco-sign-face" id="csco-face-closed">
+              <span class="csco-screw tl"></span><span class="csco-screw tr"></span>
+              <span class="csco-screw bl"></span><span class="csco-screw br"></span>
+              <span class="csco-sign-word" id="csco-word-closed">Closed</span>
+              <span class="csco-sign-sub">See you next session</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="csco-quote">
+      <div id="csco-quote-text">"${q.text}"</div>
+      <div id="csco-quote-attr">${q.attr}</div>
+    </div>
+
+    <div id="csco-btns">
+      <button class="csco-btn csco-btn-primary" id="csco-new-session">☕ Another Round</button>
+      <button class="csco-btn csco-btn-secondary" id="csco-back-goals">← Back to Goals</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const signWrap  = overlay.querySelector('#csco-sign-wrap');
+  const signInner = overlay.querySelector('#csco-sign-inner');
+  const quoteEl   = overlay.querySelector('#csco-quote');
+  const btnsEl    = overlay.querySelector('#csco-btns');
+
+  requestAnimationFrame(() => { overlay.style.background = 'rgba(28,16,8,0.92)'; });
+
+  // Idle sway
+  setTimeout(() => { signWrap.style.animation = 'signIdle 2.5s ease-in-out infinite'; }, 600);
+  // Windup
+  setTimeout(() => { signWrap.style.animation = 'signWindup 0.6s ease-in-out forwards'; }, 1600);
+  // Flip
+  setTimeout(() => { signInner.style.transform = 'rotateY(180deg)'; }, 2100);
+  // Settle
+  setTimeout(() => { signWrap.style.animation = 'signSettle 1.2s ease-out forwards'; }, 2300);
+  // Back to gentle sway
+  setTimeout(() => { signWrap.style.animation = 'signIdle 3s ease-in-out infinite'; }, 3600);
+  // Quote
+  setTimeout(() => { quoteEl.style.animation = 'quoteReveal 0.7s ease-out forwards'; }, 3800);
+  // Buttons
+  setTimeout(() => { btnsEl.style.animation = 'btnsFadeIn 0.6s ease-out forwards'; }, 4500);
+
+  const dismiss = () => {
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 0.4s ease';
+    setTimeout(() => overlay.remove(), 400);
+  };
+  overlay.querySelector('#csco-new-session').addEventListener('click', () => {
+    dismiss(); setTimeout(() => document.getElementById('coffeeCup')?.click(), 420);
+  });
+  overlay.querySelector('#csco-back-goals').addEventListener('click', dismiss);
 }
 
 // ---- Main init ----
