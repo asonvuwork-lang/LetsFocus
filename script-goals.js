@@ -5,10 +5,10 @@
 const GoalsModule = (function() {
 
   let goals = JSON.parse(localStorage.getItem('goals')) || [];
-  let categories = JSON.parse(localStorage.getItem('categories')) || ['work', 'personal', 'health'];
+  // categories now stored in CategoriesModule; keep local list as names only for legacy
   let selectedCategory = null;
   let selectedGoalId = null;
-  let selectedParentId = null; // for subgoal-via-dropdown flow
+  let selectedParentId = null;
   let sortBy = 'none';
   let sortDirection = 'asc';
   let activeFilters = [];
@@ -17,7 +17,65 @@ const GoalsModule = (function() {
 
   function saveData() {
     localStorage.setItem('goals', JSON.stringify(goals));
-    localStorage.setItem('categories', JSON.stringify(categories));
+    // Keep bill board in sync
+    if (typeof DrinkModule !== 'undefined') setTimeout(() => DrinkModule.renderBillBoard(), 50);
+  }
+
+  function getCategoryList() {
+    if (typeof CategoriesModule !== 'undefined') return CategoriesModule.getAll().map(c => c.name);
+    return JSON.parse(localStorage.getItem('categories') || '["Work","Personal","Fitness"]');
+  }
+
+  function getCategoryColor(name) {
+    if (!name) return null;
+    if (typeof CategoriesModule !== 'undefined') return CategoriesModule.getColor(name);
+    return '#8a6a5a';
+  }
+
+  // ---- Recurring goals — check & reset at day/week boundary ----
+  function checkRecurringGoals() {
+    const now = new Date();
+    const todayKey = now.toISOString().slice(0, 10);
+    const weekKey  = `${now.getFullYear()}-W${getWeekNumber(now)}`;
+    let changed = false;
+
+    goals.forEach(goal => {
+      if (!goal.recurring) return;
+      if (goal.recurring === 'daily') {
+        if (goal.lastResetDate !== todayKey) {
+          goal.completed = false;
+          if (goal.subgoals) goal.subgoals.forEach(sg => sg.completed = false);
+          goal.lastResetDate = todayKey;
+          goal.refreshedToday = true;
+          changed = true;
+        }
+      } else if (goal.recurring === 'weekly') {
+        if (goal.lastResetWeek !== weekKey) {
+          goal.completed = false;
+          if (goal.subgoals) goal.subgoals.forEach(sg => sg.completed = false);
+          goal.lastResetWeek = weekKey;
+          goal.refreshedToday = true;
+          changed = true;
+        }
+      }
+    });
+
+    if (changed) { saveData(); }
+  }
+
+  function getWeekNumber(d) {
+    const onejan = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+  }
+
+  function onCategoryDeleted(catName) {
+    goals.forEach(g => { if (g.category === catName) g.category = null; });
+    saveData(); renderGoals();
+  }
+
+  function addGoalProgrammatic(text, category) {
+    goals.push({ id: Date.now() + Math.random(), text, category: category || null, completed: false, subgoals: [], deadline: null });
+    saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab();
   }
 
   function getGoals() { return goals; }
@@ -87,10 +145,14 @@ const GoalsModule = (function() {
         const wasCompleted = goal.completed;
         goal.completed = this.checked;
         if (goal.subgoals && goal.subgoals.length) goal.subgoals.forEach(sg => sg.completed = this.checked);
-        // Record stats on completion
-        if (!wasCompleted && goal.completed && typeof StatsModule !== 'undefined') StatsModule.recordGoalComplete();
-        // Flash deadline card if one exists
-        if (goal.completed && goal.deadline) flashDeadlineCard(goal.id);
+        if (!wasCompleted && goal.completed) {
+          // Check if overdue
+          const isLate = goal.deadline && new Date(goal.deadline + 'T00:00:00') < new Date();
+          const overdueStreak = typeof XPModule !== 'undefined' ? XPModule.getOverdueStreak() : 0;
+          if (typeof XPModule !== 'undefined') XPModule.onGoalComplete(goal, isLate, overdueStreak);
+          if (typeof StatsModule !== 'undefined') StatsModule.recordGoalComplete();
+          if (goal.completed && goal.deadline) flashDeadlineCard(goal.id);
+        }
         saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab();
       });
 
@@ -105,7 +167,27 @@ const GoalsModule = (function() {
         const catBadge = document.createElement('span');
         catBadge.className = 'goal-category';
         catBadge.textContent = goal.category;
+        catBadge.dataset.cat = goal.category;
+        const color = getCategoryColor(goal.category);
+        if (color) {
+          catBadge.style.background = color + '22';
+          catBadge.style.color = color;
+          catBadge.style.borderColor = color + '55';
+        }
         content.appendChild(catBadge);
+      }
+
+      // Recurring badge
+      if (goal.recurring) {
+        const recBadge = document.createElement('span');
+        recBadge.className = 'goal-recurring-badge';
+        recBadge.title = `Resets ${goal.recurring}`;
+        recBadge.textContent = goal.recurring === 'daily' ? '↺ Daily' : '↺ Weekly';
+        if (goal.refreshedToday) {
+          recBadge.classList.add('refreshed');
+          recBadge.title = '✨ Refreshed today';
+        }
+        content.appendChild(recBadge);
       }
 
       // Deadline badge + progress ring on the goal card
@@ -169,6 +251,27 @@ const GoalsModule = (function() {
           saveData(); renderGoals(); renderDeadlinesTab();
         });
         el.appendChild(setDl);
+      }
+
+      // Recurring toggle (shown when goal is selected)
+      if (!goal.completed && selectedGoalId === goal.id) {
+        const recRow = document.createElement('div');
+        recRow.className = 'goal-recurring-row';
+        recRow.innerHTML = `
+          <span class="goal-recurring-label">↺ Repeat:</span>
+          <button class="goal-rec-btn ${!goal.recurring ? 'active' : ''}" data-val="">None</button>
+          <button class="goal-rec-btn ${goal.recurring === 'daily' ? 'active' : ''}" data-val="daily">Daily</button>
+          <button class="goal-rec-btn ${goal.recurring === 'weekly' ? 'active' : ''}" data-val="weekly">Weekly</button>
+        `;
+        recRow.querySelectorAll('.goal-rec-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            goal.recurring = btn.dataset.val || null;
+            if (!goal.recurring) goal.refreshedToday = false;
+            saveData(); renderGoals();
+          });
+        });
+        el.appendChild(recRow);
       }
 
       // Subgoals
@@ -415,6 +518,14 @@ const GoalsModule = (function() {
       card.className = `deadline-card ${goal.completed ? 'completed' : 'deadline-' + urgency}`;
       card.dataset.goalId = goal.id;
 
+      // Build overdue streak pill if applicable
+      const overdueStreak = typeof XPModule !== 'undefined' ? XPModule.getOverdueStreak() : 0;
+      const overduePill = (urgency === 'overdue' && overdueStreak > 0) ? `
+        <div class="overdue-streak-pill" title="You have ${overdueStreak} consecutive overdue goal${overdueStreak > 1 ? 's' : ''} — this reduces your XP gain">
+          🔥 ${overdueStreak} overdue streak
+          <span class="overdue-streak-xp">−${overdueStreak >= 7 ? 35 : overdueStreak >= 4 ? 20 : overdueStreak >= 2 ? 10 : 5} XP/goal</span>
+        </div>` : '';
+
       const subCount = goal.subgoals ? goal.subgoals.length : 0;
       const subDone = goal.subgoals ? goal.subgoals.filter(s => s.completed).length : 0;
 
@@ -423,8 +534,9 @@ const GoalsModule = (function() {
           <div class="deadline-card-urgency-bar"></div>
           <div class="deadline-card-body">
             <div class="deadline-card-title ${goal.completed ? 'completed' : ''}">${goal.text}</div>
-            ${goal.category ? `<span class="goal-category">${goal.category}</span>` : ''}
+            ${goal.category ? `<span class="goal-category" data-cat="${goal.category}" style="background:${getCategoryColor(goal.category)}22;color:${getCategoryColor(goal.category)};border-color:${getCategoryColor(goal.category)}55">${goal.category}</span>` : ''}
             ${subCount ? `<div class="deadline-card-sub">${subDone}/${subCount} subtasks done</div>` : ''}
+            ${overduePill}
           </div>
         </div>
         <div class="deadline-card-right">
@@ -566,10 +678,15 @@ const GoalsModule = (function() {
     const list = document.getElementById('pickCategoryList');
     if (!list) return;
     list.innerHTML = '';
+    const cats = getCategoryList();
     const addTag = (name, isNull = false) => {
       const el = document.createElement('div');
       el.className = `category-tag ${(isNull && !selectedCategory) || selectedCategory === name ? 'active' : ''}`;
       el.textContent = isNull ? 'No Category' : name;
+      if (!isNull) {
+        const color = getCategoryColor(name);
+        if (color) { el.style.borderLeft = `4px solid ${color}`; }
+      }
       el.addEventListener('click', () => {
         selectedCategory = isNull ? null : (selectedCategory === name ? null : name);
         renderPickCategories();
@@ -577,7 +694,7 @@ const GoalsModule = (function() {
       list.appendChild(el);
     };
     addTag(null, true);
-    categories.forEach(c => addTag(c));
+    cats.forEach(c => addTag(c));
   }
 
   function renderFilterCategories() {
@@ -607,8 +724,14 @@ const GoalsModule = (function() {
     const allTag = document.createElement('span'); allTag.className = `filter-tag ${activeFilters.length === 0 ? 'active' : ''}`; allTag.textContent = 'All Categories';
     allTag.addEventListener('click', (e) => { e.stopPropagation(); activeFilters = []; renderFilterCategories(); renderGoals(); });
     catTags.appendChild(allTag);
+    const categories = getCategoryList();
     categories.forEach(cat => {
-      const t = document.createElement('span'); t.className = `filter-tag ${activeFilters.includes(cat) ? 'active' : ''}`; t.textContent = cat;
+      const t = document.createElement('span');
+      const color = getCategoryColor(cat);
+      t.className = `filter-tag ${activeFilters.includes(cat) ? 'active' : ''}`;
+      t.textContent = cat;
+      t.dataset.cat = cat;
+      if (color && activeFilters.includes(cat)) { t.style.background = color + '33'; t.style.color = color; t.style.borderColor = color; }
       t.addEventListener('click', (e) => {
         e.stopPropagation();
         if (activeFilters.includes(cat)) activeFilters = activeFilters.filter(f => f !== cat);
@@ -634,11 +757,10 @@ const GoalsModule = (function() {
   }
 
   async function addNewCategory() {
-    const name = await showCustomPrompt('Enter new category name:');
-    if (!name || !name.trim()) return;
-    if (categories.includes(name.trim())) { showCustomAlert('Category already exists!'); return; }
-    categories.push(name.trim()); saveData();
-    renderPickCategories(); renderFilterCategories();
+    // Redirect to Categories tab
+    const btn = document.querySelector('.tab-btn[data-tab="categories"]');
+    if (btn) btn.click();
+    else showCustomAlert('Open the Categories tab to manage categories.');
   }
 
   // ---- Sort ----
@@ -789,6 +911,7 @@ const GoalsModule = (function() {
     initSortDropdown();
     initParentGoalDropdown();
     initDeadlineDateToggle();
+    checkRecurringGoals();
     renderGoals();
     renderPickCategories();
     renderFilterCategories();
@@ -809,5 +932,5 @@ const GoalsModule = (function() {
     saveData();
   }
 
-  return { init, renderGoals, updateMainProgress, getGoals, getCompletionRate, completeGoalByIndex, renderDeadlinesTab };
+  return { init, renderGoals, updateMainProgress, getGoals, getCompletionRate, completeGoalByIndex, renderDeadlinesTab, addGoalProgrammatic, onCategoryDeleted, renderPickCategories, renderFilterCategories };
 })();

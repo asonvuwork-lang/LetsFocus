@@ -259,6 +259,12 @@ function showCoffeeShopClosing() {
       <div id="csco-quote-attr">${q.attr}</div>
     </div>
 
+    <!-- Session Notes -->
+    <div id="csco-notes" style="opacity:0;width:100%;max-width:400px;padding:0 24px;">
+      <div style="font-family:'Playfair Display',serif;font-size:0.8rem;color:rgba(212,165,116,0.7);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">✍️ What did you accomplish?</div>
+      <textarea id="csco-notes-input" placeholder="Jot down what you got done this session…" style="width:100%;min-height:72px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(212,165,116,0.25);border-radius:12px;padding:10px 14px;color:#f5e8d0;font-family:'Source Sans Pro',sans-serif;font-size:0.9rem;resize:vertical;outline:none;box-sizing:border-box;"></textarea>
+    </div>
+
     <div id="csco-btns">
       <button class="csco-btn csco-btn-primary" id="csco-new-session">☕ Another Round</button>
       <button class="csco-btn csco-btn-secondary" id="csco-back-goals">← Back to Goals</button>
@@ -270,26 +276,30 @@ function showCoffeeShopClosing() {
   const signWrap  = overlay.querySelector('#csco-sign-wrap');
   const signInner = overlay.querySelector('#csco-sign-inner');
   const quoteEl   = overlay.querySelector('#csco-quote');
+  const notesEl   = overlay.querySelector('#csco-notes');
   const btnsEl    = overlay.querySelector('#csco-btns');
 
   requestAnimationFrame(() => { overlay.style.background = 'rgba(28,16,8,0.92)'; });
-
-  // Idle sway
   setTimeout(() => { signWrap.style.animation = 'signIdle 2.5s ease-in-out infinite'; }, 600);
-  // Windup
   setTimeout(() => { signWrap.style.animation = 'signWindup 0.6s ease-in-out forwards'; }, 1600);
-  // Flip
   setTimeout(() => { signInner.style.transform = 'rotateY(180deg)'; }, 2100);
-  // Settle
   setTimeout(() => { signWrap.style.animation = 'signSettle 1.2s ease-out forwards'; }, 2300);
-  // Back to gentle sway
   setTimeout(() => { signWrap.style.animation = 'signIdle 3s ease-in-out infinite'; }, 3600);
-  // Quote
   setTimeout(() => { quoteEl.style.animation = 'quoteReveal 0.7s ease-out forwards'; }, 3800);
-  // Buttons
-  setTimeout(() => { btnsEl.style.animation = 'btnsFadeIn 0.6s ease-out forwards'; }, 4500);
+  setTimeout(() => { if (notesEl) { notesEl.style.animation = 'quoteReveal 0.6s ease-out forwards'; } }, 4300);
+  setTimeout(() => { btnsEl.style.animation = 'btnsFadeIn 0.6s ease-out forwards'; }, 4800);
+
+  const saveNotes = () => {
+    const text = overlay.querySelector('#csco-notes-input')?.value?.trim();
+    if (text) {
+      const log = JSON.parse(localStorage.getItem('letsfocus_session_notes') || '[]');
+      log.unshift({ text, date: new Date().toISOString() });
+      localStorage.setItem('letsfocus_session_notes', JSON.stringify(log.slice(0, 100)));
+    }
+  };
 
   const dismiss = () => {
+    saveNotes();
     overlay.style.opacity = '0';
     overlay.style.transition = 'opacity 0.4s ease';
     setTimeout(() => overlay.remove(), 400);
@@ -334,6 +344,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const target = document.getElementById('tab-' + tab);
       if (target) target.classList.add('active');
       if (tab === 'deadlines') GoalsModule.renderDeadlinesTab();
+      if (tab === 'categories') { CategoriesModule.renderTab(); CategoriesModule.injectCategoryStyles(); }
     });
   });
 
@@ -342,22 +353,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const themeToggle = document.getElementById('themeToggle');
   const themeOverlay = document.getElementById('themeOverlay');
   let themeExpanded = false;
-
   themeToggle?.addEventListener('click', () => {
-    if (themeExpanded) {
-      themePanel.classList.remove('expanded');
-      themeOverlay.classList.remove('visible'); themeOverlay.classList.add('hidden');
-      themeExpanded = false;
-    } else {
-      themePanel.classList.add('expanded');
-      themeOverlay.classList.remove('hidden'); themeOverlay.classList.add('visible');
-      themeExpanded = true;
-    }
+    themeExpanded = !themeExpanded;
+    themePanel.classList.toggle('expanded', themeExpanded);
+    themeOverlay.classList.toggle('hidden', !themeExpanded);
+    themeOverlay.classList.toggle('visible', themeExpanded);
   });
   themeOverlay?.addEventListener('click', () => {
-    themePanel.classList.remove('expanded');
-    themeOverlay.classList.remove('visible'); themeOverlay.classList.add('hidden');
-    themeExpanded = false;
+    themePanel.classList.remove('expanded'); themeOverlay.classList.remove('visible'); themeOverlay.classList.add('hidden'); themeExpanded = false;
   });
 
   // ---- Select bar panel ----
@@ -365,65 +368,139 @@ document.addEventListener('DOMContentLoaded', function() {
   const selectbarToggle = document.getElementById('selectbarToggle');
   const selectbarOverlay = document.getElementById('selectbarOverlay');
   let selectbarExpanded = false;
-
   selectbarToggle?.addEventListener('click', () => {
-    if (selectbarExpanded) {
-      selectbarPanel.classList.remove('expanded');
-      selectbarOverlay.classList.remove('visible'); selectbarOverlay.classList.add('hidden');
-      selectbarExpanded = false;
-    } else {
-      selectbarPanel.classList.add('expanded');
-      selectbarOverlay.classList.remove('hidden'); selectbarOverlay.classList.add('visible');
-      selectbarExpanded = true;
-    }
+    selectbarExpanded = !selectbarExpanded;
+    selectbarPanel.classList.toggle('expanded', selectbarExpanded);
+    selectbarOverlay.classList.toggle('hidden', !selectbarExpanded);
+    selectbarOverlay.classList.toggle('visible', selectbarExpanded);
   });
   selectbarOverlay?.addEventListener('click', () => {
-    selectbarPanel.classList.remove('expanded');
-    selectbarOverlay.classList.remove('visible'); selectbarOverlay.classList.add('hidden');
-    selectbarExpanded = false;
+    selectbarPanel.classList.remove('expanded'); selectbarOverlay.classList.remove('visible'); selectbarOverlay.classList.add('hidden'); selectbarExpanded = false;
   });
-
-  // ---- Progress bar styles ----
   document.querySelectorAll('.progress-bar-option').forEach(btn => {
     btn.addEventListener('click', () => {
       const style = btn.dataset.style;
       const progress = document.querySelector('.progress');
       if (!progress) return;
-      if (style === 'classic') progress.style.background = 'linear-gradient(90deg, #8b6f47 0%, #a67c5a 50%, #8b6f47 100%)';
-      else if (style === 'striped') progress.style.background = 'repeating-linear-gradient(45deg, #8b6f47, #8b6f47 10px, #a67c5a 10px, #a67c5a 20px)';
-      else if (style === 'gradient') progress.style.background = 'radial-gradient(circle at 30% 50%, #8b6f47, #6b5139)';
-      selectbarPanel.classList.remove('expanded');
-      selectbarOverlay.classList.remove('visible'); selectbarOverlay.classList.add('hidden');
-      selectbarExpanded = false;
+      if (style === 'classic') progress.style.background = 'linear-gradient(90deg,#8b6f47,#a67c5a 50%,#8b6f47)';
+      else if (style === 'striped') progress.style.background = 'repeating-linear-gradient(45deg,#8b6f47,#8b6f47 10px,#a67c5a 10px,#a67c5a 20px)';
+      else if (style === 'gradient') progress.style.background = 'radial-gradient(circle at 30% 50%,#8b6f47,#6b5139)';
+      selectbarPanel.classList.remove('expanded'); selectbarOverlay.classList.remove('visible'); selectbarOverlay.classList.add('hidden'); selectbarExpanded = false;
     });
   });
-
-  // ---- Close panels when clicking outside ----
   document.addEventListener('click', (e) => {
-    if (themeExpanded && !themePanel.contains(e.target)) {
-      themePanel.classList.remove('expanded');
-      themeOverlay.classList.remove('visible'); themeOverlay.classList.add('hidden');
-      themeExpanded = false;
-    }
-    if (selectbarExpanded && !selectbarPanel.contains(e.target)) {
-      selectbarPanel.classList.remove('expanded');
-      selectbarOverlay.classList.remove('visible'); selectbarOverlay.classList.add('hidden');
-      selectbarExpanded = false;
+    if (themeExpanded && !themePanel.contains(e.target)) { themePanel.classList.remove('expanded'); themeOverlay.classList.remove('visible'); themeOverlay.classList.add('hidden'); themeExpanded = false; }
+    if (selectbarExpanded && !selectbarPanel.contains(e.target)) { selectbarPanel.classList.remove('expanded'); selectbarOverlay.classList.remove('visible'); selectbarOverlay.classList.add('hidden'); selectbarExpanded = false; }
+  });
+
+  // ---- Help button → Tour ----
+  document.getElementById('helpBtn')?.addEventListener('click', () => {
+    if (typeof TourModule !== 'undefined') TourModule.start(0);
+  });
+
+  // ---- Goal Settings Gear (Export/Import) ----
+  document.getElementById('goalSettingsBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('goalSettingsDropdown')?.classList.toggle('hidden');
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.goal-settings-wrap')) {
+      document.getElementById('goalSettingsDropdown')?.classList.add('hidden');
     }
   });
 
+  document.getElementById('exportBtn')?.addEventListener('click', () => {
+    const data = {
+      goals: JSON.parse(localStorage.getItem('goals') || '[]'),
+      categories: JSON.parse(localStorage.getItem('letsfocus_categories_v2') || '[]'),
+      stats: JSON.parse(localStorage.getItem('letsfocus_stats') || '{}'),
+      xp: JSON.parse(localStorage.getItem('letsfocus_xp') || '{}'),
+      volumes: JSON.parse(localStorage.getItem('letsfocus_volumes') || '{}'),
+      exportedAt: new Date().toISOString(),
+      version: '2.1',
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'letsfocus-backup.json'; a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('importBtn')?.addEventListener('click', () => {
+    document.getElementById('importFileInput')?.click();
+  });
+
+  document.getElementById('importFileInput')?.addEventListener('change', async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const ok = await showConfirm('Import this backup? Your current data will be replaced.');
+    if (!ok) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (data.goals)      localStorage.setItem('goals', JSON.stringify(data.goals));
+      if (data.categories) localStorage.setItem('letsfocus_categories_v2', JSON.stringify(data.categories));
+      if (data.stats)      localStorage.setItem('letsfocus_stats', JSON.stringify(data.stats));
+      if (data.xp)         localStorage.setItem('letsfocus_xp', JSON.stringify(data.xp));
+      if (data.volumes)    localStorage.setItem('letsfocus_volumes', JSON.stringify(data.volumes));
+      showCustomAlert('✅ Import successful! Refreshing…');
+      setTimeout(() => location.reload(), 1200);
+    } catch(err) {
+      showCustomAlert('❌ Invalid backup file. Please check the file and try again.');
+    }
+    e.target.value = '';
+    e.target.value = '';
+  });
+
+  // ---- Daily Quote ----
+  async function loadDailyQuote() {
+    const el = document.getElementById('dailyQuoteText');
+    const src = document.getElementById('dailyQuoteSource');
+    if (!el) return;
+    const cacheKey = 'letsfocus_daily_quote';
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    const today = new Date().toISOString().slice(0,10);
+    if (cached && cached.date === today) {
+      el.textContent = '"' + cached.text + '"';
+      if (src) src.textContent = cached.author ? '— ' + cached.author : '';
+      return;
+    }
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 120,
+          messages: [{ role: 'user', content: 'Give me one short inspiring quote about focus, productivity, or perseverance. Reply with only JSON: {"text":"...","author":"..."}' }]
+        })
+      });
+      const data = await res.json();
+      const raw = data.content?.[0]?.text || '';
+      const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+      localStorage.setItem(cacheKey, JSON.stringify({ ...parsed, date: today }));
+      el.textContent = '"' + parsed.text + '"';
+      if (src) src.textContent = parsed.author ? '— ' + parsed.author : '';
+    } catch(e) {
+      const fallbacks = ["Focus is the art of knowing what to ignore.","One task at a time. One breath at a time.","Small consistent actions build extraordinary results."];
+      el.textContent = '"' + fallbacks[Math.floor(Math.random()*fallbacks.length)] + '"';
+      if (src) src.textContent = '';
+    }
+  }
+  loadDailyQuote();
+
+
   // ---- Bootstrap all modules ----
+  CategoriesModule.init();
   GoalsModule.init();
   TimerModule.init();
   MusicModule.init();
   StatsModule.init();
+  DrinkModule.init();
+  XPModule.init();
+  TemplatesModule.init();
+  TourModule.init();
 
-  // ---- Help button ----
-  document.getElementById('helpBtn')?.addEventListener('click', () => showManual(true));
-
-  // ---- First-visit manual ----
-  if (!localStorage.getItem('letsfocus_visited')) showManual(false);
-});
+}); // end DOMContentLoaded
 
 // ============================================================
 // FIRST-VISIT MANUAL

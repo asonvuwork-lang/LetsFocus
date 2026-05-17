@@ -37,8 +37,19 @@
     <!-- Header -->
     <header>
       <div id="welcome-container"></div>
-      <button id="helpBtn" class="help-btn" title="How to use LetsFocus">?</button>
+      <div class="header-actions">
+        <button id="helpBtn" class="help-btn" title="Guided tour — learn how to use LetsFocus">?</button>
+      </div>
     </header>
+
+    <!-- Hidden import file input (still used by export in settings if needed) -->
+    <input type="file" id="importFileInput" accept=".json" style="display:none">
+
+    <!-- Focus mode banner (hidden by default) -->
+    <div id="focusModeBanner" class="focus-mode-banner hidden">
+      <span class="focus-mode-text">☕ Focus mode — you're doing great, stay with it</span>
+      <button class="focus-mode-close" id="focusModeClose">✕</button>
+    </div>
 
     <!-- Progress bar -->
     <section class="progress-section">
@@ -54,6 +65,7 @@
       <button class="tab-btn active" data-tab="goals">☕ Goals</button>
       <button class="tab-btn" data-tab="deadlines">📅 Deadlines</button>
       <button class="tab-btn" data-tab="stats">📊 Stats</button>
+      <button class="tab-btn" data-tab="categories">🏷️ Categories</button>
       <button class="tab-btn" data-tab="music">♪ Music Setup</button>
     </nav>
 
@@ -85,6 +97,14 @@
               <button id="filterCategoryBtn" class="filter-category-btn">
                 <span>Filter</span><span class="dropdown-arrow">▼</span>
               </button>
+              <!-- Data settings gear — styled to match Sort/Filter -->
+              <div class="goal-settings-wrap">
+                <button id="goalSettingsBtn" class="goal-settings-btn" title="Export / Import data">⚙</button>
+                <div class="goal-settings-dropdown hidden" id="goalSettingsDropdown">
+                  <button id="exportBtn">⬇ Export Data</button>
+                  <button id="importBtn">⬆ Import Data</button>
+                </div>
+              </div>
               <button id="clearAllGoalsBtn" class="clear-all-goals-small hidden">Clear All</button>
               <div id="filterCategoryDropdown" class="filter-category-dropdown hidden">
                 <div class="categories-list" id="filterCategoryList"></div>
@@ -131,6 +151,16 @@
               </div>
             </div>
           </div>
+
+          <!-- Bill Board -->
+          <div class="widget bill-board-widget">
+            <div class="bill-board-header">
+              <span class="bill-board-title">📋 Order Board</span>
+              <button class="bill-board-clear-btn" id="billBoardClearBtn" title="Remove completed bills">Clear Done</button>
+            </div>
+            <div class="bill-board-corkboard" id="billBoard"></div>
+            <div class="bill-board-badge" id="billBoardBadge"></div>
+          </div>
         </aside>
       </div>
     </div>
@@ -173,6 +203,11 @@
       </div>
     </div>
 
+    <!-- TAB: Categories -->
+    <div class="tab-content" id="tab-categories">
+      <div id="categoriesTabContent" class="categories-page"></div>
+    </div>
+
     <!-- TAB: Stats -->
     <div class="tab-content" id="tab-stats">
       <div class="stats-page">
@@ -180,6 +215,21 @@
           <h2>📊 Focus Stats</h2>
           <p class="stats-subtitle">Your focus journey at a glance</p>
         </div>
+
+        <!-- XP Rank Section -->
+        <div class="stats-section xp-section">
+          <div class="xp-rank-card" id="xpRankBadge"></div>
+          <div class="xp-bar-wrap">
+            <div class="xp-bar-track">
+              <div class="xp-bar-fill" id="xpProgressBar"></div>
+            </div>
+            <div class="xp-bar-meta">
+              <span class="xp-current-val" id="xpCurrentValue">0 XP</span>
+              <span class="xp-progress-label" id="xpProgressLabel">Loading…</span>
+            </div>
+          </div>
+        </div>
+
         <div class="stats-grid">
           <div class="stat-card stat-card-primary">
             <div class="stat-card-icon">⏱</div>
@@ -202,14 +252,35 @@
             <div class="stat-card-label">Goals Completed</div>
           </div>
         </div>
+
         <div class="stats-section">
           <h3 class="stats-section-title">📅 Daily Focus (last 7 days)</h3>
           <div class="stats-bar-chart" id="statsBarChart"></div>
         </div>
+
         <div class="stats-section">
           <h3 class="stats-section-title">🏆 Best Session</h3>
           <div class="stat-best-session" id="statBestSession">No sessions yet</div>
         </div>
+
+        <!-- XP Log -->
+        <div class="stats-section">
+          <div class="xp-log-header">
+            <h3 class="stats-section-title" style="margin:0;">⚡ XP Log</h3>
+            <div class="xp-log-tabs">
+              <button class="xp-log-tab active" id="xpLogTabToday">Today</button>
+              <button class="xp-log-tab" id="xpLogTabWeek">Last 7 Days</button>
+            </div>
+          </div>
+          <div class="xp-log-list" id="xpLogList" data-active-tab="today"></div>
+        </div>
+
+        <!-- Achievements -->
+        <div class="stats-section">
+          <h3 class="stats-section-title">🏅 Achievements</h3>
+          <div class="achievements-list" id="achievementsList"></div>
+        </div>
+
         <div class="stats-reset-row">
           <button id="statsResetBtn" class="stats-reset-btn">↺ Reset Stats</button>
         </div>
@@ -430,6 +501,16 @@
               <div class="stat-value" id="progressPctDisplay">0%</div>
             </div>
           </div>
+
+          <!-- Working On card — between controls block and quote -->
+          <div class="focus-goal-card-inline" id="focusGoalCard">
+            <div class="focus-goal-header">
+              <div class="focus-goal-label">🎯 Working On</div>
+              <button class="focus-goal-done-btn" id="focusGoalDoneBtn">✓ Mark Complete</button>
+            </div>
+            <div class="focus-goal-title" id="focusGoalTitle">No goal selected</div>
+            <div class="focus-subgoals" id="focusSubgoals"></div>
+          </div>
         </div>
 
         <!-- Progress Quote -->
@@ -439,18 +520,8 @@
         </div>
       </div>
 
-      <!-- RIGHT: Working On + Sounds -->
+      <!-- RIGHT: Sounds only -->
       <div class="timer-right-col">
-
-        <!-- Focused Goal Card (moved to right) -->
-        <div class="goal-area-box focus-goal-card-right" id="focusGoalCard">
-          <div class="focus-goal-header">
-            <div class="focus-goal-label">🎯 Working On</div>
-            <button class="focus-goal-done-btn" id="focusGoalDoneBtn">✓ Mark Complete</button>
-          </div>
-          <div class="focus-goal-title" id="focusGoalTitle">No goal selected</div>
-          <div class="focus-subgoals" id="focusSubgoals"></div>
-        </div>
 
         <!-- Ambient Sounds — toggle button style -->
         <div class="goal-area-box">
@@ -509,14 +580,29 @@
           </div>
         </div>
 
+        <!-- Drink Progress Cup -->
+        <div class="goal-area-box drink-progress-box" id="drinkProgressBox">
+          <div class="drink-progress-header">
+            <span class="drink-progress-title" id="drinkProgressTitle">☕ Your Drink</span>
+            <button class="drink-swap-btn" id="drinkSwapBtn" title="Change drink">⟳</button>
+          </div>
+          <div class="drink-scene" id="drinkScene"></div>
+          <div class="drink-progress-label" id="drinkProgressLabel">Start your session to begin filling your drink</div>
+        </div>
+
       </div>
     </div>
   </div><!-- end timerPage -->
 
+  <script src="script-categories.js"></script>
   <script src="script-goals.js"></script>
   <script src="script-timer.js"></script>
   <script src="script-music.js"></script>
   <script src="script-stats.js"></script>
+  <script src="script-drink.js"></script>
+  <script src="script-xp.js"></script>
+  <script src="script-templates.js"></script>
+  <script src="script-tour.js"></script>
   <script src="script-main.js"></script>
 </body>
 </html>

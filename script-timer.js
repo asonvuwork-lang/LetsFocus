@@ -165,8 +165,9 @@ const TimerModule = (function() {
 
   function showTimerEndModal() {
     playSoftChime();
-    // Record stats
+    // Record stats + XP
     if (typeof StatsModule !== 'undefined') StatsModule.recordSession(elapsedSeconds, selectedGoal?.text || '');
+    if (typeof XPModule !== 'undefined') XPModule.onSessionComplete(elapsedSeconds, false, selectedGoal?.text || '');
     const quote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
     const modal = document.createElement('div');
     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(40,22,10,0.72);z-index:10000;display:flex;align-items:center;justify-content:center;';
@@ -237,6 +238,8 @@ const TimerModule = (function() {
       fill.style.width = pct + '%';
       if (pctEl) pctEl.textContent = Math.round(pct) + '%';
       updateProgressQuote(pct);
+      // Update drink progress
+      if (typeof DrinkModule !== 'undefined') DrinkModule.onProgressUpdate(pct);
     } else { fill.style.width = '0%'; if (pctEl) pctEl.textContent = '0%'; }
     if (elapsed) {
       const e = totalSeconds - remainingSeconds;
@@ -853,6 +856,13 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
     updateTimerDisplay(); updateTimerProgress(); updateSessionGoalDisplay(); renderFocusGoal();
     MusicModule.loadPlaylist();
     broadcastState();
+    if (typeof window.showFocusModeBanner === 'function') window.showFocusModeBanner();
+    // Init drink for this session based on selected goal's category
+    if (typeof DrinkModule !== 'undefined') {
+      const goals = GoalsModule.getGoals();
+      const selGoal = selectedGoal ? goals.find((_, i) => i === selectedGoal.index) : null;
+      DrinkModule.onSessionStart(selGoal?.category || null);
+    }
   }
 
   function hideTimerPage() {
@@ -864,6 +874,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
     const btn = document.getElementById('startPauseBtn');
     if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
     GoalsModule.renderGoals(); GoalsModule.updateMainProgress();
+    if (typeof window.hideFocusModeBanner === 'function') window.hideFocusModeBanner();
   }
 
   function toggleTimer() {
@@ -929,7 +940,8 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
       } else {
         pomoIsWork = true;
         if (pomoCurrentCycle >= POMO_CYCLES) {
-          // All cycles done
+          // All cycles done — full pomodoro bonus
+          if (typeof XPModule !== 'undefined') XPModule.onSessionComplete(elapsedSeconds, true, selectedGoal?.text || '');
           pomoCurrentCycle = 1;
           updatePomoIndicator();
           showTimerEndModal();
