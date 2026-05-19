@@ -148,5 +148,5 @@ const TemplatesModule = (function () {
     addBtn.parentNode.insertBefore(tmplBtn, addBtn.nextSibling);
   }
 
-  return { init };
+  return { init, showModal };
 })();

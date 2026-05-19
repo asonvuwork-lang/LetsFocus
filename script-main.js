@@ -398,6 +398,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof TourModule !== 'undefined') TourModule.start(0);
   });
 
+  // ---- Inline Templates button ----
+  document.getElementById('templatesBtn')?.addEventListener('click', () => {
+    if (typeof TemplatesModule !== 'undefined') TemplatesModule.showModal?.() ?? TemplatesModule.init?.();
+  });
+
   // ---- Goal Settings Gear (Export/Import) ----
   document.getElementById('goalSettingsBtn')?.addEventListener('click', (e) => {
     e.stopPropagation();

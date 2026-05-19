@@ -330,26 +330,22 @@ const DrinkModule = (function () {
     '#f9e4b7', '#fcd5ce', '#d4e8c2', '#c9e4f0', '#e8d4f0', '#fce4c9', '#d4f0e8', '#f0e4d4',
   ];
 
-  function getBillColor(categoryName) {
+  // Persistent positions stored per goal id
+  const POSITIONS_KEY = 'letsfocus_bill_positions';
+  function loadPositions() { try { return JSON.parse(localStorage.getItem(POSITIONS_KEY)||'{}'); } catch(e) { return {}; } }
+  function savePositions(p) { try { localStorage.setItem(POSITIONS_KEY, JSON.stringify(p)); } catch(e) {} }
+
+  function getCatColor(categoryName) {
     if (categoryName && typeof CategoriesModule !== 'undefined') {
       const cat = CategoriesModule.getByName(categoryName);
-      if (cat) {
-        // Lighten the category color for the bill background
-        return hexToLightBill(cat.color);
-      }
+      if (cat) return cat.color;
     }
-    return DEFAULT_BILL_COLORS[Math.floor(Math.random() * DEFAULT_BILL_COLORS.length)];
+    return DEFAULT_BILL_COLORS[Math.abs(Math.round(categoryName?.charCodeAt(0)||Math.random()*999)) % DEFAULT_BILL_COLORS.length];
   }
 
   function hexToLightBill(hex) {
-    // Parse hex and make it very light (mix with white)
-    const r = parseInt(hex.slice(1,3),16);
-    const g = parseInt(hex.slice(3,5),16);
-    const b = parseInt(hex.slice(5,7),16);
-    const lr = Math.round(r * 0.25 + 235 * 0.75);
-    const lg = Math.round(g * 0.25 + 228 * 0.75);
-    const lb = Math.round(b * 0.25 + 211 * 0.75);
-    return `rgb(${lr},${lg},${lb})`;
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return `rgb(${Math.round(r*0.35+235*0.65)},${Math.round(g*0.35+228*0.65)},${Math.round(b*0.35+211*0.65)})`;
   }
 
   function renderBillBoard() {
@@ -359,62 +355,135 @@ const DrinkModule = (function () {
     board.innerHTML = '';
 
     if (!goals.length) {
-      board.innerHTML = `<div class="bill-empty">No goals yet — add some goals to see your order board!</div>`;
+      board.innerHTML = `<div class="bill-empty">Add goals to see them pinned here!</div>`;
       return;
     }
 
-    // Assign stable random rotation per goal id
+    const positions = loadPositions();
+    const boardW = board.offsetWidth || 200;
+    const boardH = Math.max(280, goals.length * 60);
+    board.style.height = boardH + 'px';
+    board.style.position = 'relative';
+    board.style.overflowY = 'auto';
+    board.style.overflowX = 'hidden';
+
     goals.forEach((goal, idx) => {
-      const bill = document.createElement('div');
-      const color = getBillColor(goal.category);
-      const rot = ((goal.id % 1000) % 7) - 3; // deterministic rotation -3 to +3 deg
-      const catColor = goal.category && typeof CategoriesModule !== 'undefined'
-        ? CategoriesModule.getColor(goal.category)
-        : '#8b6f47';
+      const catColor = getCatColor(goal.category);
+      const lightColor = catColor.startsWith('#') ? hexToLightBill(catColor) : catColor;
+      const pinColor = catColor.startsWith('#') ? catColor : '#c0392b';
 
-      bill.className = `bill-card ${goal.completed ? 'bill-done' : ''}`;
-      bill.style.cssText = `
-        background:${color};
-        transform:rotate(${rot}deg);
-        border-left:4px solid ${catColor || '#8b6f47'};
+      // Stable default position — grid layout
+      const cols = Math.max(2, Math.floor((boardW - 20) / 65));
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+      const defaultX = 12 + col * 65;
+      const defaultY = 20 + row * 75;
+
+      const pos = positions[goal.id] || { x: defaultX, y: defaultY };
+
+      const note = document.createElement('div');
+      note.className = `bill-square ${goal.completed ? 'bill-square-done' : ''}`;
+      note.dataset.goalId = goal.id;
+      note.title = goal.text + (goal.category ? ' · ' + goal.category : '');
+      note.style.cssText = `
+        position:absolute;
+        left:${pos.x}px; top:${pos.y}px;
+        width:52px; height:52px;
+        background:${lightColor};
+        border-radius:4px;
+        box-shadow: 2px 3px 8px rgba(0,0,0,0.35);
+        cursor:grab;
+        user-select:none;
+        transition: box-shadow 0.15s ease, transform 0.15s ease;
+        z-index:1;
       `;
-      bill.dataset.goalId = goal.id;
 
-      bill.innerHTML = `
-        <div class="bill-pin" style="background:${catColor || '#c0392b'}"></div>
-        <div class="bill-text ${goal.completed ? 'bill-text-done' : ''}">${goal.text}</div>
-        ${goal.category ? `<div class="bill-cat" style="color:${catColor};opacity:0.7;">${goal.category}</div>` : ''}
-        ${goal.subgoals && goal.subgoals.length ? `
-          <div class="bill-subcount">${goal.subgoals.filter(s=>s.completed).length}/${goal.subgoals.length} done</div>` : ''}
-        ${goal.completed ? '<div class="bill-stamp">✓</div>' : ''}
+      // Pin
+      note.innerHTML = `
+        <div class="bill-sq-pin" style="background:${pinColor}; box-shadow: 0 2px 4px rgba(0,0,0,0.4), inset 0 -1px 2px rgba(0,0,0,0.2);"></div>
+        ${goal.completed ? '<div class="bill-sq-check">✓</div>' : ''}
       `;
 
-      // Click to toggle completion
-      bill.addEventListener('click', () => {
-        const goals = GoalsModule.getGoals();
-        const g = goals.find(g => String(g.id) === String(goal.id));
+      // Double-click to toggle done
+      note.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        const g = GoalsModule.getGoals().find(g => String(g.id) === String(goal.id));
         if (!g) return;
         g.completed = !g.completed;
         if (g.subgoals) g.subgoals.forEach(sg => sg.completed = g.completed);
-        // Save via GoalsModule
-        if (typeof GoalsModule !== 'undefined') {
-          GoalsModule.updateMainProgress();
-          GoalsModule.renderGoals();
-          GoalsModule.renderDeadlinesTab();
-        }
+        GoalsModule.updateMainProgress(); GoalsModule.renderGoals(); GoalsModule.renderDeadlinesTab();
         renderBillBoard();
       });
 
-      board.appendChild(bill);
+      // Free drag
+      let dragging = false, startX, startY, origX, origY;
+      note.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        origX = parseInt(note.style.left); origY = parseInt(note.style.top);
+        note.style.cursor = 'grabbing';
+        note.style.zIndex = '100';
+        note.style.boxShadow = '4px 6px 16px rgba(0,0,0,0.5)';
+        note.style.transform = 'scale(1.08) rotate(2deg)';
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX, dy = e.clientY - startY;
+        const nx = Math.max(0, Math.min(boardW - 56, origX + dx));
+        const ny = Math.max(0, origY + dy);
+        note.style.left = nx + 'px'; note.style.top = ny + 'px';
+        // Expand board height if dragged down
+        if (ny + 60 > board.scrollHeight) board.style.height = (ny + 80) + 'px';
+      });
+      document.addEventListener('mouseup', () => {
+        if (!dragging) return;
+        dragging = false;
+        note.style.cursor = 'grab';
+        note.style.zIndex = '1';
+        note.style.boxShadow = '2px 3px 8px rgba(0,0,0,0.35)';
+        note.style.transform = '';
+        // Save position
+        const p = loadPositions();
+        p[goal.id] = { x: parseInt(note.style.left), y: parseInt(note.style.top) };
+        savePositions(p);
+      });
+
+      // Touch drag
+      note.addEventListener('touchstart', (e) => {
+        const t = e.touches[0];
+        startX = t.clientX; startY = t.clientY;
+        origX = parseInt(note.style.left); origY = parseInt(note.style.top);
+        note.style.zIndex = '100'; note.style.transform = 'scale(1.08)';
+        dragging = true;
+      }, { passive: true });
+      note.addEventListener('touchmove', (e) => {
+        if (!dragging) return;
+        const t = e.touches[0];
+        const nx = Math.max(0, Math.min(boardW - 56, origX + t.clientX - startX));
+        const ny = Math.max(0, origY + t.clientY - startY);
+        note.style.left = nx + 'px'; note.style.top = ny + 'px';
+        e.preventDefault();
+      }, { passive: false });
+      note.addEventListener('touchend', () => {
+        dragging = false; note.style.zIndex = '1'; note.style.transform = '';
+        const p = loadPositions();
+        p[goal.id] = { x: parseInt(note.style.left), y: parseInt(note.style.top) };
+        savePositions(p);
+      });
+
+      board.appendChild(note);
     });
   }
 
   function clearDoneBills() {
     if (typeof GoalsModule === 'undefined') return;
     const goals = GoalsModule.getGoals();
-    // Remove completed goals from the board visually — they stay in goals list
-    // Just re-render (user can clear from goals tab)
-    showCustomAlert('To permanently remove completed goals, use "Clear All" in the Goals tab after they\'re all done. The board reflects your goals list.');
+    const positions = loadPositions();
+    goals.filter(g => g.completed).forEach(g => delete positions[g.id]);
+    savePositions(positions);
+    renderBillBoard();
   }
 
   // ---- Init ----

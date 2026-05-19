@@ -74,11 +74,19 @@ const CategoriesModule = (function () {
   function buildCatRow(cat, cats) {
     const row = document.createElement('div');
     row.className = 'cat-row';
+    // Light tinted background from category color
+    const r = parseInt(cat.color.slice(1,3),16), g = parseInt(cat.color.slice(3,5),16), b = parseInt(cat.color.slice(5,7),16);
+    const tint = `rgba(${r},${g},${b},0.08)`;
+    const border = `rgba(${r},${g},${b},0.2)`;
+    row.style.background = tint;
+    row.style.borderColor = border;
     row.innerHTML = `
-      <div class="cat-row-color-dot" style="background:${cat.color};" title="${cat.color}"></div>
-      <div class="cat-row-info">
-        <span class="cat-row-name">${cat.name}</span>
-        <span class="cat-row-drink">${cat.drink}</span>
+      <div style="display:flex;align-items:center;gap:10px;width:100%;">
+        <div class="cat-row-color-dot" style="background:${cat.color};" title="${cat.color}"></div>
+        <div class="cat-row-info">
+          <span class="cat-row-name">${cat.name}</span>
+          <span class="cat-row-drink">${cat.drink}</span>
+        </div>
       </div>
       <div class="cat-row-actions">
         <button class="cat-row-btn edit-btn" title="Edit">✏️</button>
