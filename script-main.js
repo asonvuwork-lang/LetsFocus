@@ -295,6 +295,10 @@ function showCoffeeShopClosing() {
       const log = JSON.parse(localStorage.getItem('letsfocus_session_notes') || '[]');
       log.unshift({ text, date: new Date().toISOString() });
       localStorage.setItem('letsfocus_session_notes', JSON.stringify(log.slice(0, 100)));
+      // Also save to Supabase if signed in
+      if (typeof SupabaseModule !== 'undefined' && SupabaseModule.uid()) {
+        SupabaseModule.saveSessionNote(text);
+      }
     }
   };
 
@@ -333,6 +337,18 @@ document.addEventListener('DOMContentLoaded', function() {
   const quotes = ["Believe you can","Stay focused","One step at a time","You got this","Make it happen","Dream big","Never give up","Small steps, big results","Today is your day","Keep going","Do it now","Success awaits","Progress over perfection","Enjoy the journey"];
   const quoteEl = document.getElementById('inspirationalQuote');
   if (quoteEl) quoteEl.textContent = quotes[Math.floor(Math.random() * quotes.length)];
+
+  // Auth init — this gates the rest of the app
+  if (typeof AuthModule !== 'undefined') {
+    AuthModule.init();
+  } else {
+    // Fallback: no auth, boot directly
+    document.dispatchEvent(new CustomEvent('letsfocus:ready'));
+  }
+});
+
+// ---- App bootstrap (fires after auth is confirmed) ----
+document.addEventListener('letsfocus:ready', function() {
 
   // ---- Tab switching ----
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -505,7 +521,7 @@ document.addEventListener('DOMContentLoaded', function() {
   TemplatesModule.init();
   TourModule.init();
 
-}); // end DOMContentLoaded
+}); // end letsfocus:ready
 
 // ============================================================
 // FIRST-VISIT MANUAL
