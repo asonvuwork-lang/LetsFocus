@@ -101,6 +101,12 @@ const XPModule = (function () {
     if (data.todayEarlySession&&data.todayEveningSession) data.allDayAchiever=true;
     if (isPomodoroCycle){data.pomoCycles=(data.pomoCycles||0)+1;addXP(50,'Full Pomodoro cycle BONUS',data);}
     save(data); checkLevelUp(oldRank,data); checkAchievements(data); refreshUI();
+    if(typeof ShopModule!=='undefined'){
+      const _key=todayKey();
+      ShopModule.awardBeans(mins,'focus session');
+      if(!data._lastBeanSession||data._lastBeanSession!==_key){ShopModule.awardBeans(10,'first session today');data._lastBeanSession=_key;save(data);}
+      if(isPomodoroCycle)ShopModule.awardBeans(20,'Pomodoro cycle');
+    }
   }
 
   function onGoalComplete(goal, isLate, overdueStreak) {
@@ -125,6 +131,7 @@ const XPModule = (function () {
     if (!data.goalsDateKey||data.goalsDateKey!==key){data.goalsToday=0;data.goalsDateKey=key;if(!data.goalDays)data.goalDays={};data.goalDays[key]=true;data.weeklyGoalDays=Object.keys(data.goalDays).sort().slice(-7).length;}
     data.goalsToday=(data.goalsToday||0)+1;
     save(data); checkLevelUp(oldRank,data); checkAchievements(data); refreshUI();
+    if(typeof ShopModule!=='undefined')ShopModule.awardBeans(10,'goal completed');
   }
 
   function onOverdueDetected(overdueCount, currentStreak) {
@@ -172,6 +179,7 @@ const XPModule = (function () {
     ACHIEVEMENTS.forEach(a=>{if(data.unlockedAchievements.includes(a.id))return;if(a.check(m)){data.unlockedAchievements.push(a.id);addXP(a.xp,'Achievement unlocked: '+a.name+' BONUS',data);nu.push(a);}});
     save(data);
     nu.forEach((a,i)=>setTimeout(()=>showAchievementToast(a),500+i*900));
+    if(nu.length&&typeof ShopModule!=='undefined')ShopModule.awardBeans(25*nu.length,'achievement unlocked');
   }
 
   function showAchievementToast(ach){
@@ -234,8 +242,7 @@ const XPModule = (function () {
       });
     }
     render(at);
-    tt?.addEventListener('click',()=>render('today'));
-    wt?.addEventListener('click',()=>render('week'));
+    // Tab listeners are wired once in init() to avoid stacking
   }
 
   function renderAchievementTab(){
@@ -326,11 +333,15 @@ const XPModule = (function () {
 
   function init(){
     checkOverdueOnOpen();
-    setTimeout(refreshUI,100);
+    setTimeout(refreshUI,200);
+    // Wire XP log tabs ONCE so they don't stack up on repeated opens
+    const _tt=document.getElementById('xpLogTabToday'),_wt=document.getElementById('xpLogTabWeek');
+    _tt?.addEventListener('click',()=>{const c=document.getElementById('xpLogList');if(c)c.dataset.activeTab='today';renderXPLog();});
+    _wt?.addEventListener('click',()=>{const c=document.getElementById('xpLogList');if(c)c.dataset.activeTab='week';renderXPLog();});
     document.querySelectorAll('.tab-btn').forEach(b=>{
       b.addEventListener('click',()=>{
-        if(b.dataset.tab==='stats')setTimeout(()=>{renderXPBar();renderXPLog();renderAchievements();},60);
-        if(b.dataset.tab==='achievements')setTimeout(()=>renderAchievementTab(),60);
+        if(b.dataset.tab==='stats')setTimeout(()=>{renderXPBar();renderXPLog();renderAchievements();},80);
+        if(b.dataset.tab==='achievements')setTimeout(()=>renderAchievementTab(),80);
       });
     });
   }

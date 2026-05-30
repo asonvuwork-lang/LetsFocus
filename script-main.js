@@ -361,6 +361,7 @@ document.addEventListener('letsfocus:ready', function() {
       if (target) target.classList.add('active');
       if (tab === 'deadlines') GoalsModule.renderDeadlinesTab();
       if (tab === 'categories') { CategoriesModule.renderTab(); CategoriesModule.injectCategoryStyles(); }
+      if (tab === 'collection') { if (typeof CollectionModule !== 'undefined') CollectionModule.renderCollectionTab(); }
     });
   });
 
@@ -520,6 +521,37 @@ document.addEventListener('letsfocus:ready', function() {
   XPModule.init();
   TemplatesModule.init();
   TourModule.init();
+  if (typeof ShopModule !== 'undefined') { ShopModule.init(); ShopModule.updateBeanDisplay(); }
+  if (typeof CollectionModule !== 'undefined') CollectionModule.init();
+
+  // ---- Goals: List ↔ Board view toggle ----
+  const _listBtn  = document.getElementById('viewListBtn');
+  const _boardBtn = document.getElementById('viewBoardBtn');
+  const _listView = document.getElementById('goalListView');
+  const _boardView = document.getElementById('goalBoardView');
+  _listBtn?.addEventListener('click', () => {
+    _listView?.classList.remove('hidden'); _boardView?.classList.add('hidden');
+    _listBtn.classList.add('active'); _boardBtn?.classList.remove('active');
+  });
+  _boardBtn?.addEventListener('click', () => {
+    _boardView?.classList.remove('hidden'); _listView?.classList.add('hidden');
+    _boardBtn.classList.add('active'); _listBtn?.classList.remove('active');
+    if (typeof DrinkModule !== 'undefined') DrinkModule.renderBillBoard();
+  });
+
+  // ---- Shop full page open/close ----
+  function openShopPage() {
+    document.getElementById('mainPage')?.classList.add('hidden');
+    const sp = document.getElementById('shopPage');
+    sp?.classList.remove('hidden');
+    if (typeof ShopModule !== 'undefined') ShopModule.renderShopTab();
+  }
+  function closeShopPage() {
+    document.getElementById('shopPage')?.classList.add('hidden');
+    document.getElementById('mainPage')?.classList.remove('hidden');
+  }
+  document.getElementById('openShopPageBtn')?.addEventListener('click', openShopPage);
+  document.getElementById('backFromShop')?.addEventListener('click', closeShopPage);
 
 }); // end letsfocus:ready
 

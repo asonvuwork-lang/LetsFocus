@@ -3083,3 +3083,426 @@ aside.right {
   box-shadow: 0 2px 6px rgba(74,52,41,0.2) !important;
 }
 .set-deadline-link:hover { transform: translateY(-1px) !important; box-shadow: 0 4px 10px rgba(74,52,41,0.3) !important; }
+
+/* =================================================================
+   GOAL VIEW TOGGLE (List / Board)
+   ================================================================= */
+.goal-view-toggle {
+  display: flex; gap: 6px;
+  padding: 8px 0 6px; flex-shrink: 0;
+}
+.view-toggle-btn {
+  background: rgba(139,111,71,0.12);
+  border: 1.5px solid rgba(139,111,71,0.22);
+  border-radius: 10px; padding: 7px 16px;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.82rem; color: rgba(107,81,57,0.65);
+  cursor: pointer; transition: all 0.2s ease;
+}
+.view-toggle-btn.active {
+  background: linear-gradient(135deg,#8b6f47,#6b5139);
+  border-color: transparent; color: #f5f1eb;
+  box-shadow: 0 2px 8px rgba(74,52,41,0.25);
+}
+.view-toggle-btn:not(.active):hover { background: rgba(139,111,71,0.2); color: #6b5139; }
+
+.goal-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.goal-view.hidden { display: none !important; }
+
+/* goalPanel must be flex column */
+#goalPanel { display: flex !important; flex-direction: column !important; overflow: hidden !important; min-height: 0 !important; }
+
+/* Board view fills main panel */
+.board-view-inner {
+  flex: 1; display: flex; flex-direction: column;
+  background: rgba(180,150,110,0.12);
+  border-radius: 14px; border: 1.5px solid rgba(139,111,71,0.18);
+  overflow: hidden; margin-top: 4px;
+}
+.board-view-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: rgba(139,111,71,0.08);
+  border-bottom: 1.5px solid rgba(139,111,71,0.13); flex-shrink: 0;
+}
+.board-view-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.95rem; color: #4a3429; font-weight: 700;
+}
+#goalBoardView .bill-board-corkboard {
+  flex: 1; overflow-y: auto; padding: 10px; position: relative;
+}
+#goalBoardView .bill-board-badge {
+  padding: 7px 14px; border-top: 1px solid rgba(139,111,71,0.1);
+  font-family: 'Playfair Display', serif; font-size: 0.78rem; color: #8b6f47;
+}
+
+/* =================================================================
+   BILL POPOVER (click on bill to see goal details)
+   ================================================================= */
+.bill-popover {
+  position: absolute;
+  background: rgba(245,241,235,0.98);
+  border: 1.5px solid rgba(139,111,71,0.25);
+  border-radius: 14px; padding: 14px 14px 12px;
+  min-width: 190px; max-width: 240px;
+  box-shadow: 0 8px 24px rgba(74,52,41,0.25);
+  z-index: 200;
+  animation: popoverFadeIn 0.18s ease;
+}
+@keyframes popoverFadeIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+.bill-pop-close {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(139,111,71,0.1); border: none;
+  width: 22px; height: 22px; border-radius: 50%;
+  font-size: 0.65rem; color: #6b5139; cursor: pointer;
+}
+.bill-pop-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.9rem; color: #4a3429; font-weight: 700;
+  margin-bottom: 6px; padding-right: 20px; line-height: 1.3;
+}
+.bill-pop-cat {
+  display: inline-block; font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; background: rgba(139,111,71,0.1);
+  color: #8b6f47; border-radius: 6px; padding: 2px 7px;
+  margin-bottom: 6px;
+}
+.bill-pop-deadline {
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.75rem; color: rgba(107,81,57,0.7); margin-bottom: 4px;
+}
+.bill-pop-sub {
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.72rem; color: rgba(107,81,57,0.55); margin-bottom: 6px;
+}
+.bill-pop-sublist {
+  border-top: 1px solid rgba(139,111,71,0.1);
+  padding-top: 6px; margin-bottom: 8px;
+}
+.bill-pop-subitem {
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.72rem; color: #4a3429; padding: 2px 0; line-height: 1.4;
+}
+.bill-pop-subitem.done { text-decoration: line-through; color: rgba(107,81,57,0.4); }
+.bill-pop-done-btn {
+  width: 100%; padding: 7px;
+  background: linear-gradient(135deg,#8b6f47,#6b5139);
+  border: none; border-radius: 8px;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.78rem; color: #f5f1eb; cursor: pointer;
+  transition: box-shadow 0.2s; margin-top: 6px;
+}
+.bill-pop-done-btn:hover { box-shadow: 0 3px 10px rgba(139,111,71,0.4); }
+
+/* =================================================================
+   INLINE SUBGOAL ADD ROW
+   ================================================================= */
+.goal-add-subgoal-row {
+  display: flex; gap: 6px; align-items: center;
+  margin: 6px 0 2px 24px;
+}
+.subgoal-inline-input {
+  flex: 1; padding: 6px 10px;
+  background: rgba(245,241,235,0.8);
+  border: 1.5px solid rgba(139,111,71,0.2);
+  border-radius: 8px;
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.8rem; color: #4a3429;
+  outline: none;
+}
+.subgoal-inline-input:focus { border-color: rgba(139,111,71,0.5); }
+.subgoal-inline-input::placeholder { color: rgba(107,81,57,0.4); }
+.subgoal-inline-add {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg,#8b6f47,#6b5139);
+  border: none; border-radius: 7px;
+  font-size: 1rem; color: #f5f1eb; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: box-shadow 0.2s;
+}
+.subgoal-inline-add:hover { box-shadow: 0 2px 8px rgba(139,111,71,0.4); }
+
+/* =================================================================
+   GOAL PAGE TOOLBAR — uniform button style
+   ================================================================= */
+/* Calendar button matches the espresso-gradient toolbar style */
+#deadlineDateToggle,
+.deadline-date-toggle {
+  background: linear-gradient(135deg,#8b6f47,#6b5139) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  width: 50px !important; height: 50px !important;
+  font-size: 1.2rem !important;
+  color: #f5f1eb !important;
+  cursor: pointer !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  box-shadow: 0 4px 12px rgba(139,111,71,0.3) !important;
+  transition: all 0.2s ease !important; flex-shrink: 0 !important;
+}
+#deadlineDateToggle:hover, .deadline-date-toggle:hover {
+  background: linear-gradient(135deg,#9d7c53,#7a5c43) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Gear button — cream/parchment reversed style */
+.goal-settings-btn {
+  background: linear-gradient(135deg,#8b6f47,#6b5139) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  width: 50px !important; height: 50px !important;
+  font-size: 1.2rem !important;
+  color: #f5e8d0 !important;
+  cursor: pointer !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  box-shadow: 0 4px 12px rgba(139,111,71,0.3) !important;
+  transition: all 0.2s ease !important; flex-shrink: 0 !important;
+}
+.goal-settings-btn:hover {
+  background: linear-gradient(135deg,#9d7c53,#7a5c43) !important;
+  transform: translateY(-2px) rotate(30deg) !important;
+}
+
+/* =================================================================
+   SHOP SIDE WIDGET
+   ================================================================= */
+.shop-side-widget {
+  background: rgba(42,26,10,0.82) !important;
+  border: 1.5px solid rgba(212,165,116,0.2) !important;
+  border-radius: 16px !important;
+  display: flex !important; flex-direction: column !important;
+  align-items: center !important; justify-content: center !important;
+  padding: 16px 12px !important; gap: 10px !important;
+}
+.shop-side-cup-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: rgba(212,165,116,0.1);
+  border: 1.5px solid rgba(212,165,116,0.25);
+  border-radius: 14px; padding: 14px 22px;
+  cursor: pointer; transition: all 0.2s ease; width: 100%;
+}
+.shop-side-cup-btn:hover {
+  background: rgba(212,165,116,0.2); border-color: rgba(212,165,116,0.45);
+  transform: translateY(-2px);
+}
+.shop-side-cup-icon { font-size: 2rem; line-height: 1; }
+.shop-side-label {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.85rem; color: #f5e8d0; font-style: italic;
+}
+.shop-side-beans {
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.8rem; color: rgba(212,165,116,0.65);
+  display: flex; align-items: center; gap: 4px;
+}
+
+/* =================================================================
+   SHOP FULL PAGE — same as timerPage theme
+   ================================================================= */
+.shop-page-full {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at center, transparent 40%, rgba(50,28,12,0.55) 100%),
+    repeating-linear-gradient(-45deg, rgba(101,67,33,0.08) 0px, rgba(101,67,33,0.08) 18px, transparent 18px, transparent 36px),
+    linear-gradient(160deg, #2a1a0e 0%, #3d2410 25%, #5c3620 50%, #3d2410 75%, #1e1108 100%);
+  position: fixed; inset: 0; z-index: 9000;
+  overflow-y: auto;
+}
+.shop-page-full.hidden { display: none !important; }
+.shop-page-full::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    repeating-linear-gradient(90deg, transparent 0px, transparent 60px, rgba(0,0,0,0.1) 60px, rgba(0,0,0,0.1) 62px),
+    repeating-linear-gradient(180deg, transparent 0px, transparent 80px, rgba(0,0,0,0.06) 80px, rgba(0,0,0,0.06) 81px);
+}
+.shop-page-full .hanging-sign-container { position: fixed; top: 30px; left: 30px; z-index: 1000; }
+.shop-page-inner {
+  position: relative; z-index: 1;
+  max-width: 1100px; margin: 0 auto;
+  padding: 90px 2.5rem 4rem;
+}
+
+/* =================================================================
+   SHOP CHALKBOARD STYLE — matches timer page warmth
+   ================================================================= */
+.chalkboard-shop { color: #f5e8d0; }
+.chalk-header { text-align: center; margin-bottom: 2.5rem; }
+.chalk-title-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 1.5rem; flex-wrap: wrap; margin-bottom: 0.6rem;
+}
+.chalk-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem; color: #f5e8d0; font-style: italic; margin: 0;
+  text-shadow: 0 0 30px rgba(212,165,116,0.25); letter-spacing: 1px;
+}
+.chalk-beans-display {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(245,241,235,0.08);
+  border: 1px solid rgba(212,165,116,0.25);
+  border-radius: 20px; padding: 6px 16px;
+  backdrop-filter: blur(8px);
+}
+.chalk-beans-icon { font-size: 1rem; }
+.chalk-beans-val { font-size: 1.1rem; font-weight: 700; color: #d4a574; }
+.chalk-beans-label { font-size: 0.72rem; color: rgba(212,165,116,0.5); }
+.chalk-subtitle { font-family: 'Source Sans Pro', sans-serif; font-size: 0.88rem; color: rgba(245,232,208,0.45); margin-bottom: 4px; }
+.chalk-earn-hint { font-family: 'Source Sans Pro', sans-serif; font-size: 0.75rem; color: rgba(212,165,116,0.35); }
+
+.chalk-menu-board { max-width: 1050px; margin: 0 auto; }
+.chalk-divider-top, .chalk-divider-bottom { border: none; border-top: 1px solid rgba(245,232,208,0.1); margin: 0 0 1.8rem; }
+.chalk-divider-bottom { margin: 1.8rem 0 0; }
+
+.chalk-slots {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 18px;
+}
+@media (max-width:900px) { .chalk-slots { grid-template-columns: repeat(2,1fr); } }
+@media (max-width:520px) { .chalk-slots { grid-template-columns: 1fr; } }
+
+.chalk-card {
+  background: rgba(245,241,235,0.06);
+  border: 1px solid rgba(245,232,208,0.1);
+  border-radius: 6px; padding: 1.6rem 1.1rem 1.3rem;
+  text-align: center; position: relative;
+  transition: background 0.2s, transform 0.2s;
+  backdrop-filter: blur(4px);
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.3);
+}
+.chalk-card:not(.chalk-owned):hover { background: rgba(245,241,235,0.1); transform: translateY(-3px); }
+.chalk-card.chalk-owned { opacity: 0.4; }
+.chalk-card.chalk-combo { border-style: dashed; }
+
+.chalk-card.chalk-rarity-common    { border-left: 3px solid #d4c5a9; }
+.chalk-card.chalk-rarity-uncommon  { border-left: 3px solid #7ec8c8; }
+.chalk-card.chalk-rarity-rare      { border-left: 3px solid #c39bd3; }
+.chalk-card.chalk-rarity-epic      { border-left: 3px solid #f0a500; }
+.chalk-card.chalk-rarity-legendary { border-left: 3px solid #ffd700; box-shadow: inset 0 0 40px rgba(0,0,0,0.25), 0 4px 24px rgba(255,215,0,0.12); }
+.chalk-card.chalk-rarity-equipment { border-left: 3px solid #a8c5a0; }
+
+.chalk-combo-tag { font-family: 'Source Sans Pro', sans-serif; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(212,165,116,0.5); margin-bottom: 6px; }
+.chalk-card-emoji { font-size: 3rem; margin: 4px 0 10px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4)); }
+.chalk-card-name { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: #f5e8d0; font-style: italic; margin-bottom: 4px; line-height: 1.3; }
+.chalk-card-rarity { font-family: 'Source Sans Pro', sans-serif; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.chalk-card-desc { font-family: 'Source Sans Pro', sans-serif; font-size: 0.76rem; color: rgba(245,232,208,0.42); line-height: 1.45; margin-bottom: 14px; font-style: italic; }
+.chalk-discount { font-family: 'Source Sans Pro', sans-serif; font-size: 0.66rem; font-weight: 700; color: #7ec8a0; margin-bottom: 4px; }
+.chalk-price-row { margin-bottom: 14px; }
+.chalk-price-old { font-family: 'Source Sans Pro', sans-serif; font-size: 0.75rem; color: rgba(245,232,208,0.3); text-decoration: line-through; margin-right: 6px; }
+.chalk-price-final { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: #d4a574; font-weight: 700; }
+.chalk-buy-btn {
+  width: 100%; padding: 10px 6px;
+  background: rgba(212,165,116,0.14);
+  border: 1px solid rgba(212,165,116,0.35);
+  border-radius: 6px; font-family: 'Playfair Display', serif;
+  font-size: 0.85rem; color: #f5e8d0; cursor: pointer;
+  transition: all 0.2s; letter-spacing: 0.3px;
+}
+.chalk-buy-btn:hover { background: rgba(212,165,116,0.25); border-color: rgba(212,165,116,0.55); }
+.chalk-owned-stamp { font-family: 'Source Sans Pro', sans-serif; font-size: 0.75rem; color: rgba(126,200,160,0.7); padding: 8px; letter-spacing: 0.5px; }
+.chalk-combo-note { font-family: 'Source Sans Pro', sans-serif; font-size: 0.62rem; color: rgba(212,165,116,0.3); margin-top: 6px; font-style: italic; }
+.chalk-footer-note { text-align: center; margin-top: 1.8rem; font-family: 'Playfair Display', serif; font-size: 0.78rem; color: rgba(245,232,208,0.2); font-style: italic; letter-spacing: 0.5px; }
+
+/* =================================================================
+   MY COLLECTION TAB — scrollable, rarity sections
+   ================================================================= */
+#tab-collection { overflow-y: auto; padding-bottom: 3rem; }
+.col-page { padding: 1.8rem 2rem 3rem; max-width: 1200px; margin: 0 auto; }
+.col-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 2rem; }
+.col-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: #4a3429; margin: 0 0 4px; }
+.col-subtitle { font-family: 'Source Sans Pro', sans-serif; font-size: 0.85rem; color: rgba(107,81,57,0.6); margin: 0; }
+.col-progress-pill { background: rgba(139,111,71,0.1); border: 1.5px solid rgba(139,111,71,0.2); border-radius: 20px; padding: 6px 16px; font-family: 'Source Sans Pro', sans-serif; font-size: 0.82rem; color: #8b6f47; font-weight: 600; white-space: nowrap; }
+.col-section { margin-bottom: 2.5rem; }
+.col-section-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: #4a3429; margin-bottom: 1.2rem; }
+.col-rarity-section { margin-bottom: 1.8rem; }
+.col-rarity-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 0.8rem; padding-bottom: 6px; border-bottom: 1px solid rgba(139,111,71,0.12); }
+.col-rarity-icon { font-size: 1.1rem; }
+.col-rarity-label { font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 700; flex: 1; }
+.col-rarity-count { font-family: 'Source Sans Pro', sans-serif; font-size: 0.75rem; color: rgba(107,81,57,0.5); background: rgba(139,111,71,0.08); padding: 2px 10px; border-radius: 10px; }
+
+.col-drinks-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: rgba(139,111,71,0.3) transparent; }
+.col-drinks-row::-webkit-scrollbar { height: 4px; }
+.col-drinks-row::-webkit-scrollbar-thumb { background: rgba(139,111,71,0.3); border-radius: 2px; }
+
+.col-drink-card { flex-shrink: 0; width: 115px; background: rgba(245,241,235,0.7); border: 2px solid rgba(139,111,71,0.15); border-radius: 14px; padding: 0.9rem 0.6rem 0.8rem; text-align: center; position: relative; transition: transform 0.2s, box-shadow 0.2s; }
+.col-drink-card.col-owned { cursor: pointer; }
+.col-drink-card.col-owned:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(139,111,71,0.2); }
+.col-drink-card.col-locked { opacity: 0.38; filter: grayscale(0.85); }
+.col-drink-card.col-active { box-shadow: 0 0 0 2px rgba(212,165,116,0.8), 0 0 14px rgba(212,165,116,0.25); }
+.col-drink-card.col-rarity-uncommon { border-color: rgba(126,200,200,0.3); }
+.col-drink-card.col-rarity-rare { border-color: rgba(195,155,211,0.35); }
+.col-drink-card.col-rarity-epic { border-color: rgba(240,165,0,0.4); }
+.col-drink-card.col-rarity-legendary { border-color: rgba(255,215,0,0.5); box-shadow: 0 0 12px rgba(255,215,0,0.1); }
+
+.col-rarity-dot { position: absolute; top: 6px; left: 6px; width: 7px; height: 7px; border-radius: 50%; }
+.col-drink-emoji { font-size: 2rem; margin: 2px 0 6px; }
+.col-drink-name { font-family: 'Source Sans Pro', sans-serif; font-size: 0.67rem; color: #4a3429; font-weight: 600; line-height: 1.3; }
+.col-active-badge { position: absolute; top: 5px; right: 5px; font-size: 0.55rem; font-weight: 700; background: rgba(212,165,116,0.9); color: #4a3429; border-radius: 4px; padding: 1px 4px; font-family: 'Source Sans Pro', sans-serif; }
+.col-lock-icon { position: absolute; inset: 0; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; background: rgba(245,241,235,0.2); }
+
+.col-equipment-shelf { display: flex; flex-wrap: wrap; gap: 10px; background: linear-gradient(180deg,rgba(139,111,71,0.06) 0%,rgba(139,111,71,0.12) 100%); border-radius: 14px; padding: 1.2rem; border: 1.5px solid rgba(139,111,71,0.15); }
+.col-equip-item { display: flex; flex-direction: column; align-items: center; width: 78px; text-align: center; }
+.col-equip-item.col-owned .col-equip-emoji { filter: drop-shadow(0 0 5px rgba(212,165,116,0.45)); }
+.col-equip-item.col-locked { opacity: 0.35; filter: grayscale(1); }
+.col-equip-emoji { font-size: 1.7rem; margin-bottom: 3px; }
+.col-equip-name { font-family: 'Source Sans Pro', sans-serif; font-size: 0.6rem; color: #6b5139; line-height: 1.2; text-align: center; }
+
+/* Info panel slide-up */
+.col-info-panel { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(245,241,235,0.99); border-top: 2px solid rgba(139,111,71,0.25); border-radius: 20px 20px 0 0; max-height: 78vh; overflow-y: auto; z-index: 5000; box-shadow: 0 -8px 40px rgba(74,52,41,0.25); animation: panelSlideUp 0.35s cubic-bezier(0.175,0.885,0.32,1.275); }
+@keyframes panelSlideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.col-info-panel.hidden { display: none; }
+.col-panel-handle { width: 40px; height: 4px; border-radius: 2px; background: rgba(139,111,71,0.25); margin: 10px auto 0; }
+.col-panel-close { position: absolute; top: 10px; right: 14px; width: 28px; height: 28px; border-radius: 50%; background: rgba(139,111,71,0.1); border: none; font-size: 0.75rem; color: #6b5139; cursor: pointer; }
+.col-panel-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; padding: 1rem 1.5rem 2rem; }
+@media (max-width:600px) { .col-panel-inner { grid-template-columns: 1fr; } }
+.col-panel-emoji { font-size: 3rem; margin-bottom: 6px; }
+.col-panel-name { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: #4a3429; margin: 0 0 4px; font-style: italic; }
+.col-panel-desc { font-family: 'Source Sans Pro', sans-serif; font-size: 0.83rem; color: rgba(107,81,57,0.65); margin-bottom: 1.2rem; }
+.col-tiers { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.2rem; }
+.col-tier { display: flex; gap: 10px; align-items: flex-start; background: rgba(139,111,71,0.06); border: 1.5px solid rgba(139,111,71,0.12); border-radius: 10px; padding: 9px 12px; opacity: 0.45; }
+.col-tier.unlocked { opacity: 1; border-color: rgba(212,165,116,0.35); }
+.col-tier-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+.col-tier-body { flex: 1; }
+.col-tier-label { font-family: 'Source Sans Pro', sans-serif; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(107,81,57,0.45); margin-bottom: 1px; }
+.col-tier-name { font-family: 'Playfair Display', serif; font-size: 0.85rem; color: #4a3429; margin-bottom: 3px; }
+.col-eq-tag { display: inline-block; margin-right: 6px; font-family: 'Source Sans Pro', sans-serif; font-size: 0.72rem; }
+.col-eq-tag.owned { color: #6b5139; }
+.col-eq-tag.locked { color: #dc2626; }
+.col-tier-free { font-family: 'Source Sans Pro', sans-serif; font-size: 0.7rem; color: rgba(107,81,57,0.4); font-style: italic; }
+.col-set-active { width: 100%; padding: 11px; background: linear-gradient(135deg,#8b6f47,#6b5139); border: none; border-radius: 12px; font-family: 'Playfair Display', serif; font-size: 0.9rem; color: #f5f1eb; cursor: pointer; transition: box-shadow 0.2s; }
+.col-set-active:hover { box-shadow: 0 4px 14px rgba(139,111,71,0.4); }
+.col-set-active.is-active { background: rgba(139,111,71,0.12); color: #8b6f47; cursor: default; }
+.col-recipe-title { font-family: 'Playfair Display', serif; font-size: 0.95rem; color: #4a3429; margin: 0 0 1rem; font-style: italic; }
+.col-recipe-block { margin-bottom: 1rem; }
+.col-recipe-label { font-family: 'Source Sans Pro', sans-serif; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(107,81,57,0.5); margin-bottom: 5px; }
+.col-recipe-list { margin: 0; padding-left: 16px; font-family: 'Source Sans Pro', sans-serif; font-size: 0.8rem; color: #4a3429; line-height: 1.7; }
+.col-recipe-method { font-family: 'Source Sans Pro', sans-serif; font-size: 0.8rem; color: #4a3429; line-height: 1.6; background: rgba(139,111,71,0.06); border-left: 3px solid rgba(139,111,71,0.25); padding: 8px 12px; border-radius: 0 8px 8px 0; margin: 0; }
+.col-recipe-meta { display: flex; gap: 16px; margin-top: 10px; font-family: 'Source Sans Pro', sans-serif; font-size: 0.72rem; color: rgba(107,81,57,0.55); }
+.col-recipe-unknown { font-family: 'Playfair Display', serif; font-style: italic; color: rgba(107,81,57,0.5); }
+
+/* =================================================================
+   STATS — scrollable, no bottom overlap
+   ================================================================= */
+#tab-stats { overflow-y: auto !important; }
+.stats-page { padding-bottom: 3rem !important; }
+
+/* =================================================================
+   ACHIEVEMENTS — full width, bigger cards
+   ================================================================= */
+#tab-achievements { overflow-y: auto !important; padding-bottom: 3rem; }
+#achievementsTabContent { width: 100%; max-width: 100%; }
+.achievement-card {
+  min-width: 0 !important;
+}
+/* Make achievement grid use more columns */
+.achievements-list {
+  grid-template-columns: repeat(auto-fill, minmax(280px,1fr)) !important;
+  gap: 16px !important;
+}
+
+/* =================================================================
+   BEANS TOAST
+   ================================================================= */
+.beans-toast { position: fixed; bottom: 80px; right: 20px; background: rgba(42,26,10,0.96); border: 1.5px solid rgba(212,165,116,0.45); border-radius: 12px; padding: 9px 20px; font-family: 'Source Sans Pro', sans-serif; font-size: 0.85rem; color: #f5e8d0; z-index: 99999; opacity: 0; transform: translateY(12px); transition: opacity 0.3s ease, transform 0.3s ease; pointer-events: none; }
+.beans-toast.show { opacity: 1; transform: translateY(0); }

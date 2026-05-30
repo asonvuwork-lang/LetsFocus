@@ -305,6 +305,29 @@ const GoalsModule = (function() {
         el.appendChild(subs);
       }
 
+      // Inline "add subgoal" row (shown when goal is selected)
+      if (!goal.completed && selectedGoalId === goal.id) {
+        const addSubRow = document.createElement('div');
+        addSubRow.className = 'goal-add-subgoal-row';
+        addSubRow.innerHTML = `
+          <input type="text" class="subgoal-inline-input" placeholder="Add a subgoal…" autocomplete="off">
+          <button class="subgoal-inline-add">+</button>
+        `;
+        const subInp = addSubRow.querySelector('.subgoal-inline-input');
+        const subAdd = addSubRow.querySelector('.subgoal-inline-add');
+        const doAddSubgoal = () => {
+          const txt = subInp.value.trim();
+          if (!txt) return;
+          if (!goal.subgoals) goal.subgoals = [];
+          goal.subgoals.push({ id: Date.now().toString(), text: txt, completed: false });
+          saveData(); renderGoals();
+        };
+        subAdd.addEventListener('click', (e) => { e.stopPropagation(); doAddSubgoal(); });
+        subInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.stopPropagation(); doAddSubgoal(); } });
+        subInp.addEventListener('click', (e) => e.stopPropagation());
+        el.appendChild(addSubRow);
+      }
+
       // Drag handle
       const dragHandle = document.createElement('span');
       dragHandle.className = 'drag-handle';

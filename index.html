@@ -68,6 +68,7 @@
       <button class="tab-btn" data-tab="achievements">🏅 Achievements</button>
       <button class="tab-btn" data-tab="categories">🏷️ Categories</button>
       <button class="tab-btn" data-tab="music">♪ Music Setup</button>
+      <button class="tab-btn" data-tab="collection">🍵 My Collection</button>
     </nav>
 
     <!-- TAB: Goals -->
@@ -82,11 +83,6 @@
                 <button id="deadlineDateToggle" class="deadline-date-toggle" title="Set deadline">📅</button>
                 <input type="date" id="newGoalDeadline" class="new-goal-deadline hidden">
                 <div id="parentGoalDropdown" class="parent-goal-dropdown hidden">
-                  <div class="parent-goal-option parent-goal-none active" data-id="">
-                    <span class="parent-icon">✦</span>
-                    <span>Add as new goal</span>
-                  </div>
-                  <div class="parent-goal-divider">— or make a subgoal of —</div>
                   <div id="parentGoalList" class="parent-goal-list"></div>
                 </div>
               </div>
@@ -119,8 +115,29 @@
               </div>
             </div>
           </div>
-          <div class="goals-wrapper">
-            <div class="goals-container" id="goalsContainer"></div>
+          <!-- View toggle -->
+          <div class="goal-view-toggle">
+            <button class="view-toggle-btn active" id="viewListBtn">☰ List</button>
+            <button class="view-toggle-btn" id="viewBoardBtn">📋 Board</button>
+          </div>
+
+          <!-- LIST VIEW -->
+          <div class="goal-view" id="goalListView">
+            <div class="goals-wrapper">
+              <div class="goals-container" id="goalsContainer"></div>
+            </div>
+          </div>
+
+          <!-- BOARD VIEW -->
+          <div class="goal-view hidden" id="goalBoardView">
+            <div class="board-view-inner">
+              <div class="board-view-header">
+                <span class="board-view-title">☕ Order Board</span>
+                <button class="bill-board-clear-btn" id="billBoardClearBtn">Clear Done</button>
+              </div>
+              <div class="bill-board-corkboard" id="billBoard"></div>
+              <div class="bill-board-badge" id="billBoardBadge"></div>
+            </div>
           </div>
         </main>
 
@@ -153,14 +170,13 @@
             </div>
           </div>
 
-          <!-- Bill Board -->
-          <div class="widget bill-board-widget">
-            <div class="bill-board-header">
-              <span class="bill-board-title">📋 Order Board</span>
-              <button class="bill-board-clear-btn" id="billBoardClearBtn" title="Remove completed bills">Clear Done</button>
-            </div>
-            <div class="bill-board-corkboard" id="billBoard"></div>
-            <div class="bill-board-badge" id="billBoardBadge"></div>
+          <!-- Shop Widget — cup + beans, opens shop full page -->
+          <div class="widget shop-side-widget" id="shopSideWidget">
+            <button class="shop-side-cup-btn" id="openShopPageBtn" title="Open Shop">
+              <div class="shop-side-cup-icon">🛒</div>
+              <div class="shop-side-label">Shop</div>
+            </button>
+            <div class="shop-side-beans">☕ <span class="beans-count">0</span> beans</div>
           </div>
         </aside>
       </div>
@@ -365,7 +381,23 @@
       </div>
     </div>
 
+    <!-- TAB: My Collection -->
+    <div class="tab-content" id="tab-collection">
+      <div id="collectionTabContent"></div>
+    </div>
+
   </div><!-- end mainPage -->
+
+  <!-- SHOP FULL PAGE — mirrors timerPage structure -->
+  <div id="shopPage" class="shop-page-full hidden">
+    <div class="hanging-sign-container">
+      <div class="hanging-chain"></div>
+      <div class="hanging-sign" id="backFromShop">
+        <div class="sign-wood"><div class="wood-grain"></div><div class="sign-text">← Goals</div></div>
+      </div>
+    </div>
+    <div id="shopTabContent" class="shop-page-inner"></div>
+  </div>
 
   <!-- ===== TIMER CONFIGURATION OVERLAY ===== -->
   <div id="timerConfirmOverlay" class="timer-confirm-overlay hidden">
@@ -616,6 +648,8 @@
   <script src="script-tour.js"></script>
   <script src="script-supabase.js"></script>
   <script src="script-auth.js"></script>
+  <script src="script-shop.js"></script>
+  <script src="script-collection.js"></script>
   <script src="script-main.js"></script>
 </body>
 </html>
