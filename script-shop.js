@@ -142,38 +142,55 @@ const ShopModule = (function () {
   }
 
   function generateSlots() {
-    const level = getUserLevel();
-    const pool  = [...DRINKS, ...EQUIPMENT];
-    const owned = getOwned();
+    const level    = getUserLevel();
+    const owned    = getOwned();
     const allOwned = [...owned.drinks, ...owned.equipment];
-    const slots = []; const used = new Set();
+    const slots = [];
+    const used  = new Set();
 
-    // 15% chance of a combo occupying slots 0+1
+    // 15% combo chance — 2 equipment items linked
     if (Math.random() < 0.15) {
-      const eligible = COMBO_PAIRS.filter(cp => cp.items.every(id => EQUIPMENT.find(e=>e.id===id) && !allOwned.includes(id)));
+      const eligible = COMBO_PAIRS.filter(cp =>
+        cp.items.every(id => EQUIPMENT.find(e => e.id === id) && !allOwned.includes(id))
+      );
       if (eligible.length) {
-        const combo = eligible[Math.floor(Math.random()*eligible.length)];
+        const combo = eligible[Math.floor(Math.random() * eligible.length)];
         combo.items.forEach(id => {
-          const item = EQUIPMENT.find(e=>e.id===id);
+          const item = EQUIPMENT.find(e => e.id === id);
           if (item && slots.length < 2) {
-            const discount = calcTimeDiscount(id);
-            slots.push({...item, type:'equipment', comboId:combo.name, comboBonus:combo.bonus, owned:false, discount});
+            slots.push({ ...item, type:'equipment', comboId:combo.name, comboBonus:combo.bonus,
+                         owned: allOwned.includes(id), discount: calcTimeDiscount(id) });
             used.add(id);
           }
         });
       }
     }
 
+    // Fill remaining slots — alternate drinks and equipment roughly 70/30
     while (slots.length < 4) {
-      const rarity = rollRarity(level);
-      const candidates = pool.filter(item => !used.has(item.id) && (item.rarity||'equipment') === (DRINKS.find(d=>d.id===item.id) ? rarity : rarity === 'uncommon' ? 'equipment' : rarity));
-      // fallback: any unused
-      const pool2 = candidates.length ? candidates : pool.filter(item => !used.has(item.id));
-      if (!pool2.length) break;
-      const pick = pool2[Math.floor(Math.random()*pool2.length)];
-      const type = DRINKS.find(d=>d.id===pick.id) ? 'drink' : 'equipment';
-      const discount = calcTimeDiscount(pick.id);
-      slots.push({...pick, type, owned: allOwned.includes(pick.id), discount});
+      const rarity   = rollRarity(level);
+      const useDrink = Math.random() < 0.7;
+
+      // Primary candidates: drinks or equipment matching rarity
+      let candidates = useDrink
+        ? DRINKS.filter(d => !used.has(d.id) && d.rarity === rarity)
+        : EQUIPMENT.filter(e => !used.has(e.id));
+
+      // Fallback 1: same type, any rarity
+      if (!candidates.length) {
+        candidates = useDrink
+          ? DRINKS.filter(d => !used.has(d.id))
+          : EQUIPMENT.filter(e => !used.has(e.id));
+      }
+      // Fallback 2: anything unused
+      if (!candidates.length) {
+        candidates = [...DRINKS, ...EQUIPMENT].filter(x => !used.has(x.id));
+      }
+      if (!candidates.length) break;
+
+      const pick = candidates[Math.floor(Math.random() * candidates.length)];
+      const type = DRINKS.find(d => d.id === pick.id) ? 'drink' : 'equipment';
+      slots.push({ ...pick, type, owned: allOwned.includes(pick.id), discount: calcTimeDiscount(pick.id) });
       used.add(pick.id);
     }
     return slots;
@@ -319,7 +336,7 @@ const ShopModule = (function () {
         </div>
         <div class="chalk-card-desc">${slot.desc}</div>
         ${slot.discount ? `
-          <div class="chalk-discount">-${slot.discount}% ${slot.discount>=30 ? '☕ Morning' : '🌙 Evening'}</div>
+          <div class="chalk-discount">-${slot.discount}% ${slot.discount>=30 ? '☕ Morning deal' : '🌙 Evening deal'}</div>
           <div class="chalk-price-row">
             <span class="chalk-price-old">${slot.cost} ☕</span>
             <span class="chalk-price-final">${cost} ☕</span>
@@ -327,7 +344,7 @@ const ShopModule = (function () {
         ` : `<div class="chalk-price-row"><span class="chalk-price-final">${cost} ☕</span></div>`}
         ${isOwnedNow
           ? `<div class="chalk-owned-stamp">✓ In Your Collection</div>`
-          : `<button class="chalk-buy-btn" data-index="${i}">Order — ${cost} ☕</button>`
+          : `<button class="chalk-buy-btn" data-index="${i}">Order</button>`
         }
         ${slot.comboId ? `<div class="chalk-combo-note">Part of <em>${slot.comboId}</em></div>` : ''}
       `;

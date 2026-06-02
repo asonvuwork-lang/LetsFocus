@@ -141,6 +141,8 @@ const StatsModule = (function () {
       const ok = await showConfirm('Reset all focus stats? This cannot be undone.');
       if (ok) resetStats();
     });
+    // Render once on load so stats are populated immediately
+    setTimeout(renderStats, 300);
   }
 
   return { init, recordSession, recordGoalComplete, renderStats };

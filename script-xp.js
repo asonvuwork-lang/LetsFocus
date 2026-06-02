@@ -334,13 +334,14 @@ const XPModule = (function () {
   function init(){
     checkOverdueOnOpen();
     setTimeout(refreshUI,200);
+    setTimeout(()=>{renderXPLog();},400);
     // Wire XP log tabs ONCE so they don't stack up on repeated opens
     const _tt=document.getElementById('xpLogTabToday'),_wt=document.getElementById('xpLogTabWeek');
     _tt?.addEventListener('click',()=>{const c=document.getElementById('xpLogList');if(c)c.dataset.activeTab='today';renderXPLog();});
     _wt?.addEventListener('click',()=>{const c=document.getElementById('xpLogList');if(c)c.dataset.activeTab='week';renderXPLog();});
     document.querySelectorAll('.tab-btn').forEach(b=>{
       b.addEventListener('click',()=>{
-        if(b.dataset.tab==='stats')setTimeout(()=>{renderXPBar();renderXPLog();renderAchievements();},80);
+        if(b.dataset.tab==='stats')setTimeout(()=>{renderXPBar();renderXPLog();},80);
         if(b.dataset.tab==='achievements')setTimeout(()=>renderAchievementTab(),80);
       });
     });

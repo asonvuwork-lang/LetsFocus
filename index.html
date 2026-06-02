@@ -80,11 +80,6 @@
             <div class="controls-center">
               <div class="goal-input-wrap">
                 <input type="text" id="newGoalInput" placeholder="Enter a goal or subgoal name…">
-                <button id="deadlineDateToggle" class="deadline-date-toggle" title="Set deadline">📅</button>
-                <input type="date" id="newGoalDeadline" class="new-goal-deadline hidden">
-                <div id="parentGoalDropdown" class="parent-goal-dropdown hidden">
-                  <div id="parentGoalList" class="parent-goal-list"></div>
-                </div>
               </div>
               <button id="addGoalBtn" class="add-goal-btn">+</button>
               <button id="sortGoalsBtn" class="sort-goals-btn"><span>Sort</span></button>
@@ -94,6 +89,10 @@
               <button id="filterCategoryBtn" class="filter-category-btn">
                 <span>Filter</span><span class="dropdown-arrow">▼</span>
               </button>
+              <div class="goal-deadline-toolbar-wrap">
+                <button id="deadlineDateToggle" class="deadline-date-toggle toolbar-deadline-btn" title="Set deadline for new goal">📅 Deadline</button>
+                <input type="date" id="newGoalDeadline" class="new-goal-deadline hidden">
+              </div>
               <div class="goal-settings-wrap">
                 <button id="goalSettingsBtn" class="goal-settings-btn" title="Export / Import data">⚙</button>
                 <div class="goal-settings-dropdown hidden" id="goalSettingsDropdown">
@@ -115,21 +114,22 @@
               </div>
             </div>
           </div>
-          <!-- View toggle -->
+
+          <!-- List / Board toggle -->
           <div class="goal-view-toggle">
             <button class="view-toggle-btn active" id="viewListBtn">☰ List</button>
             <button class="view-toggle-btn" id="viewBoardBtn">📋 Board</button>
           </div>
 
           <!-- LIST VIEW -->
-          <div class="goal-view" id="goalListView">
+          <div id="goalListView" class="goal-view">
             <div class="goals-wrapper">
               <div class="goals-container" id="goalsContainer"></div>
             </div>
           </div>
 
           <!-- BOARD VIEW -->
-          <div class="goal-view hidden" id="goalBoardView">
+          <div id="goalBoardView" class="goal-view goal-view-hidden">
             <div class="board-view-inner">
               <div class="board-view-header">
                 <span class="board-view-title">☕ Order Board</span>
@@ -170,7 +170,7 @@
             </div>
           </div>
 
-          <!-- Shop Widget — cup + beans, opens shop full page -->
+          <!-- Shop Widget -->
           <div class="widget shop-side-widget" id="shopSideWidget">
             <button class="shop-side-cup-btn" id="openShopPageBtn" title="Open Shop">
               <div class="shop-side-cup-icon">🛒</div>
@@ -299,12 +299,6 @@
           <div class="xp-log-list" id="xpLogList" data-active-tab="today"></div>
         </div>
 
-        <!-- Achievements -->
-        <div class="stats-section">
-          <h3 class="stats-section-title">🏅 Achievements</h3>
-          <div class="achievements-list" id="achievementsList"></div>
-        </div>
-
         <div class="stats-reset-row">
           <button id="statsResetBtn" class="stats-reset-btn">↺ Reset Stats</button>
         </div>
@@ -388,7 +382,7 @@
 
   </div><!-- end mainPage -->
 
-  <!-- SHOP FULL PAGE — mirrors timerPage structure -->
+  <!-- SHOP FULL PAGE — mirrors timerPage -->
   <div id="shopPage" class="shop-page-full hidden">
     <div class="hanging-sign-container">
       <div class="hanging-chain"></div>

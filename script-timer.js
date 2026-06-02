@@ -102,7 +102,7 @@ const TimerModule = (function() {
       item.addEventListener('click', () => {
         document.querySelectorAll('.goal-picker-item').forEach(el => el.classList.remove('selected'));
         item.classList.add('selected');
-        selectedGoal = { index: i, text: goal.text, subgoals: (goal.subgoals || []).map(s => ({ text: s.text || s, done: s.done || false })) };
+        selectedGoal = { index: i, text: goal.text, category: goal.category || null, subgoals: (goal.subgoals || []).map(s => ({ text: s.text || s, done: s.done || false })) };
         if (nextBtn) nextBtn.disabled = false;
         const preview = document.getElementById('selectedGoalPreview');
         if (preview) preview.textContent = '🎯 ' + goal.text;
@@ -859,9 +859,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
     if (typeof window.showFocusModeBanner === 'function') window.showFocusModeBanner();
     // Init drink for this session based on selected goal's category
     if (typeof DrinkModule !== 'undefined') {
-      const goals = GoalsModule.getGoals();
-      const selGoal = selectedGoal ? goals.find((_, i) => i === selectedGoal.index) : null;
-      DrinkModule.onSessionStart(selGoal?.category || null);
+      DrinkModule.onSessionStart(selectedGoal?.category || null);
     }
   }
 

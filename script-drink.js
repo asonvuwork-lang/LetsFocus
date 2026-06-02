@@ -360,7 +360,7 @@ const DrinkModule = (function () {
     }
 
     const positions = loadPositions();
-    const boardW = board.offsetWidth || 200;
+    const boardW = board.offsetWidth || board.parentElement?.offsetWidth || 400;
     const boardH = Math.max(280, goals.length * 60);
     board.style.height = boardH + 'px';
     board.style.position = 'relative';
@@ -473,75 +473,61 @@ const DrinkModule = (function () {
         savePositions(p);
       });
 
-      board.appendChild(note);
-
-      // Single-click: show goal detail popover
-      let clickTimer = null;
+      // Single click → show detail popover
       note.addEventListener('click', (e) => {
-        // Only fire if not a drag (check if moved)
-        const movedX = Math.abs(parseInt(note.style.left) - origX);
-        const movedY = Math.abs(parseInt(note.style.top) - origY);
-        if (movedX > 4 || movedY > 4) return;
-        clearTimeout(clickTimer);
-        clickTimer = setTimeout(() => showBillPopover(goal, note), 160);
+        e.stopPropagation();
+        showBillPopover(goal, note);
       });
-      note.addEventListener('dblclick', () => clearTimeout(clickTimer));
-    });  // end goals.forEach
-  }  // end renderBillBoard
+
+      board.appendChild(note);
+    });
+  }
 
   function showBillPopover(goal, noteEl) {
     document.getElementById('billPopover')?.remove();
-    const board = document.getElementById('billBoard');
+    const board = noteEl.closest('.bill-board-corkboard');
     if (!board) return;
+
+    const subDone  = (goal.subgoals || []).filter(s => s.completed).length;
+    const subTotal = (goal.subgoals || []).length;
 
     const pop = document.createElement('div');
     pop.id = 'billPopover';
     pop.className = 'bill-popover';
-
-    const subgoalsDone = (goal.subgoals || []).filter(s => s.completed).length;
-    const subgoalsTotal = (goal.subgoals || []).length;
-    const deadlineStr = goal.deadline
-      ? `<div class="bill-pop-deadline">📅 ${new Date(goal.deadline + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>`
-      : '';
-    const subStr = subgoalsTotal
-      ? `<div class="bill-pop-sub">${subgoalsDone}/${subgoalsTotal} subgoals done</div>` : '';
-    const catStr = goal.category
-      ? `<span class="bill-pop-cat">${goal.category}</span>` : '';
-
     pop.innerHTML = `
       <button class="bill-pop-close">✕</button>
       <div class="bill-pop-title">${goal.text}</div>
-      ${catStr}
-      ${deadlineStr}
-      ${subStr}
-      ${(goal.subgoals||[]).length ? `
-        <div class="bill-pop-sublist">
-          ${goal.subgoals.map(sg => `
-            <div class="bill-pop-subitem ${sg.completed ? 'done' : ''}">
-              ${sg.completed ? '✓' : '○'} ${sg.text}
-            </div>
-          `).join('')}
-        </div>` : ''}
+      ${goal.category ? `<span class="bill-pop-cat">${goal.category}</span>` : ''}
+      ${goal.deadline ? `<div class="bill-pop-deadline">📅 ${new Date(goal.deadline + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>` : ''}
+      ${subTotal ? `<div class="bill-pop-sub">${subDone}/${subTotal} subgoals done</div>` : ''}
+      ${subTotal ? `<div class="bill-pop-sublist">${(goal.subgoals||[]).map(sg =>
+        `<div class="bill-pop-subitem${sg.completed ? ' done' : ''}">${sg.completed ? '✓' : '○'} ${sg.text}</div>`
+      ).join('')}</div>` : ''}
       <button class="bill-pop-done-btn">${goal.completed ? '↩ Mark Undone' : '✓ Mark Done'}</button>
     `;
 
     const boardRect = board.getBoundingClientRect();
     const noteRect  = noteEl.getBoundingClientRect();
-    const popLeft = Math.min(noteRect.left - boardRect.left + 60, boardRect.width - 220);
-    const popTop  = noteRect.top  - boardRect.top  - 10;
-    pop.style.cssText = `position:absolute;left:${Math.max(4,popLeft)}px;top:${Math.max(4,popTop)}px;z-index:200;`;
+    const left = Math.min(noteRect.left - boardRect.left + 64, boardRect.width - 230);
+    const top  = noteRect.top - boardRect.top - 8;
+    pop.style.cssText = `position:absolute;left:${Math.max(4,left)}px;top:${Math.max(4,top)}px;z-index:500;`;
+    board.appendChild(pop);
 
-    pop.querySelector('.bill-pop-close').addEventListener('click', (e) => { e.stopPropagation(); pop.remove(); });
+    pop.querySelector('.bill-pop-close').addEventListener('click', (e) => {
+      e.stopPropagation(); pop.remove();
+    });
     pop.querySelector('.bill-pop-done-btn').addEventListener('click', (e) => {
       e.stopPropagation();
-      const g = GoalsModule.getGoals().find(g => String(g.id) === String(goal.id));
+      const g = GoalsModule.getGoals().find(x => String(x.id) === String(goal.id));
       if (!g) return;
       g.completed = !g.completed;
       if (g.subgoals) g.subgoals.forEach(sg => sg.completed = g.completed);
-      GoalsModule.updateMainProgress(); GoalsModule.renderGoals(); GoalsModule.renderDeadlinesTab();
-      renderBillBoard(); pop.remove();
+      GoalsModule.updateMainProgress();
+      GoalsModule.renderGoals();
+      renderBillBoard();
+      pop.remove();
     });
-    board.appendChild(pop);
+
     setTimeout(() => {
       document.addEventListener('click', function h(e) {
         if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('click', h); }

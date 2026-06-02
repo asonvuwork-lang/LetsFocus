@@ -521,34 +521,44 @@ document.addEventListener('letsfocus:ready', function() {
   XPModule.init();
   TemplatesModule.init();
   TourModule.init();
+
+  // ---- Shop + Collection ----
   if (typeof ShopModule !== 'undefined') { ShopModule.init(); ShopModule.updateBeanDisplay(); }
   if (typeof CollectionModule !== 'undefined') CollectionModule.init();
 
-  // ---- Goals: List ↔ Board view toggle ----
-  const _listBtn  = document.getElementById('viewListBtn');
-  const _boardBtn = document.getElementById('viewBoardBtn');
-  const _listView = document.getElementById('goalListView');
-  const _boardView = document.getElementById('goalBoardView');
-  _listBtn?.addEventListener('click', () => {
-    _listView?.classList.remove('hidden'); _boardView?.classList.add('hidden');
-    _listBtn.classList.add('active'); _boardBtn?.classList.remove('active');
-  });
-  _boardBtn?.addEventListener('click', () => {
-    _boardView?.classList.remove('hidden'); _listView?.classList.add('hidden');
-    _boardBtn.classList.add('active'); _listBtn?.classList.remove('active');
-    if (typeof DrinkModule !== 'undefined') DrinkModule.renderBillBoard();
-  });
+  // ---- List / Board toggle ----
+  const _lBtn  = document.getElementById('viewListBtn');
+  const _bBtn  = document.getElementById('viewBoardBtn');
+  const _lView = document.getElementById('goalListView');
+  const _bView = document.getElementById('goalBoardView');
 
-  // ---- Shop full page open/close ----
+  function showListView() {
+    if (!_lView || !_bView) return;
+    _lView.classList.remove('goal-view-hidden');
+    _bView.classList.add('goal-view-hidden');
+    _lBtn?.classList.add('active');
+    _bBtn?.classList.remove('active');
+  }
+  function showBoardView() {
+    if (!_lView || !_bView) return;
+    _bView.classList.remove('goal-view-hidden');
+    _lView.classList.add('goal-view-hidden');
+    _bBtn?.classList.add('active');
+    _lBtn?.classList.remove('active');
+    if (typeof DrinkModule !== 'undefined') DrinkModule.renderBillBoard();
+  }
+  _lBtn?.addEventListener('click', showListView);
+  _bBtn?.addEventListener('click', showBoardView);
+
+  // ---- Shop full page ----
   function openShopPage() {
-    document.getElementById('mainPage')?.classList.add('hidden');
-    const sp = document.getElementById('shopPage');
-    sp?.classList.remove('hidden');
+    document.getElementById('mainPage').classList.add('hidden');
+    document.getElementById('shopPage').classList.remove('hidden');
     if (typeof ShopModule !== 'undefined') ShopModule.renderShopTab();
   }
   function closeShopPage() {
-    document.getElementById('shopPage')?.classList.add('hidden');
-    document.getElementById('mainPage')?.classList.remove('hidden');
+    document.getElementById('shopPage').classList.add('hidden');
+    document.getElementById('mainPage').classList.remove('hidden');
   }
   document.getElementById('openShopPageBtn')?.addEventListener('click', openShopPage);
   document.getElementById('backFromShop')?.addEventListener('click', closeShopPage);

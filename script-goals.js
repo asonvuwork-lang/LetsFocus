@@ -235,10 +235,10 @@ const GoalsModule = (function() {
       content.appendChild(del);
       el.appendChild(content);
 
-      // Inline deadline setter (shown when goal is selected, no deadline yet)
+      // Inline deadline setter — add directly to content row so it stays on same line
       if (!goal.deadline && !goal.completed) {
-        const setDl = document.createElement('div');
-        setDl.className = `goal-set-deadline ${selectedGoalId === goal.id ? '' : 'hidden'}`;
+        const setDl = document.createElement('span');
+        setDl.className = `goal-set-deadline-inline ${selectedGoalId === goal.id ? '' : 'hidden'}`;
         setDl.innerHTML = `<button class="set-deadline-link">📅 Set deadline</button><input type="date" class="inline-deadline-input hidden">`;
         setDl.querySelector('.set-deadline-link').addEventListener('click', (e) => {
           e.stopPropagation();
@@ -250,7 +250,7 @@ const GoalsModule = (function() {
           goal.deadline = e.target.value || null;
           saveData(); renderGoals(); renderDeadlinesTab();
         });
-        el.appendChild(setDl);
+        content.appendChild(setDl);
       }
 
       // Recurring toggle (shown when goal is selected)
@@ -305,7 +305,7 @@ const GoalsModule = (function() {
         el.appendChild(subs);
       }
 
-      // Inline "add subgoal" row (shown when goal is selected)
+      // Inline "add subgoal" — shown when goal is selected and not completed
       if (!goal.completed && selectedGoalId === goal.id) {
         const addSubRow = document.createElement('div');
         addSubRow.className = 'goal-add-subgoal-row';
@@ -315,15 +315,15 @@ const GoalsModule = (function() {
         `;
         const subInp = addSubRow.querySelector('.subgoal-inline-input');
         const subAdd = addSubRow.querySelector('.subgoal-inline-add');
-        const doAddSubgoal = () => {
+        const doAdd = () => {
           const txt = subInp.value.trim();
           if (!txt) return;
           if (!goal.subgoals) goal.subgoals = [];
           goal.subgoals.push({ id: Date.now().toString(), text: txt, completed: false });
           saveData(); renderGoals();
         };
-        subAdd.addEventListener('click', (e) => { e.stopPropagation(); doAddSubgoal(); });
-        subInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.stopPropagation(); doAddSubgoal(); } });
+        subAdd.addEventListener('click', (e) => { e.stopPropagation(); doAdd(); });
+        subInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.stopPropagation(); doAdd(); } });
         subInp.addEventListener('click', (e) => e.stopPropagation());
         el.appendChild(addSubRow);
       }
@@ -594,6 +594,8 @@ const GoalsModule = (function() {
         saveData(); renderGoals(); renderDeadlinesTab();
         input.value = '';
         if (deadlineInput) { deadlineInput.value = ''; deadlineInput.classList.add('hidden'); }
+        const dlBtnSub = document.getElementById('deadlineDateToggle');
+        if (dlBtnSub) dlBtnSub.innerHTML = '📅 Deadline';
         resetParentSelection();
         input.focus();
         return;
@@ -605,6 +607,8 @@ const GoalsModule = (function() {
     saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab();
     input.value = '';
     if (deadlineInput) { deadlineInput.value = ''; deadlineInput.classList.add('hidden'); }
+    const dlBtnMain = document.getElementById('deadlineDateToggle');
+    if (dlBtnMain) dlBtnMain.innerHTML = '📅 Deadline';
     resetParentSelection();
     input.classList.remove('expanded');
     input.focus();
@@ -688,12 +692,39 @@ const GoalsModule = (function() {
     const btn = document.getElementById('deadlineDateToggle');
     const inp = document.getElementById('newGoalDeadline');
     if (!btn || !inp) return;
+
+    // Apply dropdown positioning class so the date picker floats below the toolbar button
+    inp.classList.add('toolbar-date');
+
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      inp.classList.toggle('hidden');
-      if (!inp.classList.contains('hidden')) inp.focus();
+      const visible = !inp.classList.contains('hidden');
+      inp.classList.toggle('hidden', visible);
+      if (!visible) inp.focus();
+      // Show active state on button
+      btn.classList.toggle('active', !visible);
     });
+
     inp.addEventListener('click', (e) => e.stopPropagation());
+    inp.addEventListener('change', () => {
+      // Update button label to show chosen date
+      const val = inp.value;
+      if (val) {
+        const d = new Date(val + 'T00:00:00');
+        const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        btn.innerHTML = `📅 ${label}`;
+      } else {
+        btn.innerHTML = '📅 Deadline';
+      }
+      inp.classList.add('hidden');
+      btn.classList.remove('active');
+    });
+
+    // Clicking outside closes it
+    document.addEventListener('click', () => {
+      inp.classList.add('hidden');
+      btn.classList.remove('active');
+    });
   }
 
   // ---- Categories ----
@@ -932,7 +963,7 @@ const GoalsModule = (function() {
     });
 
     initSortDropdown();
-    initParentGoalDropdown();
+    // parentGoalDropdown intentionally disabled — subgoals are added inline on each goal card
     initDeadlineDateToggle();
     checkRecurringGoals();
     renderGoals();

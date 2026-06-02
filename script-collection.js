@@ -100,16 +100,24 @@ const CollectionModule = (function () {
         </div>
 
         <div class="col-body">
-          <!-- DRINKS section grouped by rarity -->
+          <!-- DRINKS — one shelf per rarity -->
           <section class="col-section">
             <h3 class="col-section-title">🍹 Drinks</h3>
             <div id="col-drinks-sections"></div>
           </section>
 
-          <!-- EQUIPMENT section -->
+          <!-- EQUIPMENT — single shelf -->
           <section class="col-section">
             <h3 class="col-section-title">🔧 Equipment (${ownedE.length}/${ShopModule.EQUIPMENT.length})</h3>
-            <div class="col-equipment-shelf" id="col-equipment-shelf"></div>
+            <div class="col-shelf col-shelf-equipment" id="col-equipment-shelf">
+              <div class="col-shelf-label">
+                <span class="col-shelf-label-icon">🔧</span>
+                <span class="col-shelf-label-text">Tools & Equipment</span>
+                <span class="col-rarity-count">${ownedE.length}/${ShopModule.EQUIPMENT.length}</span>
+              </div>
+              <div class="col-shelf-cards" id="col-equip-cards"></div>
+              <div class="col-shelf-plank"></div>
+            </div>
           </section>
         </div>
 
@@ -118,28 +126,28 @@ const CollectionModule = (function () {
       </div>
     `;
 
-    // ---- Drinks by rarity ----
+    // ---- Drinks shelves by rarity ----
     const drinksBySections = document.getElementById('col-drinks-sections');
     RARITY_ORDER.forEach(rarity => {
       const group = ShopModule.DRINKS.filter(d => d.rarity === rarity);
       if (!group.length) return;
       const meta = RARITY_META[rarity];
-
-      const sec = document.createElement('div');
-      sec.className = 'col-rarity-section';
-
       const ownedInGroup = group.filter(d => ownedD.includes(d.id)).length;
-      sec.innerHTML = `
-        <div class="col-rarity-heading" style="color:${meta.chalk}">
-          <span class="col-rarity-icon">${meta.icon}</span>
-          <span class="col-rarity-label">${meta.label}</span>
+
+      const shelf = document.createElement('div');
+      shelf.className = `col-shelf col-shelf-${rarity}`;
+      shelf.innerHTML = `
+        <div class="col-shelf-label">
+          <span class="col-shelf-label-icon">${meta.icon}</span>
+          <span class="col-shelf-label-text" style="color:${meta.chalk}">${meta.label}</span>
           <span class="col-rarity-count">${ownedInGroup}/${group.length}</span>
         </div>
-        <div class="col-drinks-row" id="col-row-${rarity}"></div>
+        <div class="col-shelf-cards" id="col-row-${rarity}"></div>
+        <div class="col-shelf-plank"></div>
       `;
-      drinksBySections.appendChild(sec);
+      drinksBySections.appendChild(shelf);
 
-      const row = sec.querySelector(`#col-row-${rarity}`);
+      const row = shelf.querySelector(`#col-row-${rarity}`);
       group.forEach(drink => {
         const isOwn    = ownedD.includes(drink.id);
         const isActive = activeD === drink.id;
@@ -152,25 +160,23 @@ const CollectionModule = (function () {
           ${isActive ? '<div class="col-active-badge">Active</div>' : ''}
           ${!isOwn   ? '<div class="col-lock-icon">🔒</div>'       : ''}
         `;
-        if (isOwn) {
-          card.addEventListener('click', () => showDrinkInfo(drink, ownedE, activeD));
-        }
+        if (isOwn) card.addEventListener('click', () => showDrinkInfo(drink, ownedE, activeD));
         row.appendChild(card);
       });
     });
 
-    // ---- Equipment shelf ----
-    const shelf = document.getElementById('col-equipment-shelf');
+    // ---- Equipment shelf cards ----
+    const equipCards = document.getElementById('col-equip-cards');
     ShopModule.EQUIPMENT.forEach(eq => {
       const isOwn = ownedE.includes(eq.id);
       const item = document.createElement('div');
-      item.className = `col-equip-item${isOwn ? ' col-owned' : ' col-locked'}`;
+      item.className = `col-drink-card col-rarity-equipment${isOwn ? ' col-owned' : ' col-locked'}`;
       item.title = isOwn ? `${eq.name} — ${eq.desc}` : 'Not yet unlocked';
       item.innerHTML = `
-        <div class="col-equip-emoji">${isOwn ? eq.emoji : '🔒'}</div>
-        <div class="col-equip-name">${isOwn ? eq.name : '???'}</div>
+        <div class="col-drink-emoji">${isOwn ? eq.emoji : '🔒'}</div>
+        <div class="col-drink-name">${isOwn ? eq.name : '???'}</div>
       `;
-      shelf.appendChild(item);
+      equipCards.appendChild(item);
     });
   }
 
