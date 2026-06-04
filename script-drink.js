@@ -3,6 +3,82 @@
 // =============================================
 const DrinkModule = (function () {
 
+  // ---- Equipment ID map: shop IDs → Gemini recipe names ----
+  const EQUIP_ID_MAP = {
+    espresso_machine: 'EspressoMachine',
+    frother:          'MilkFrother',
+    steam_wand:       'SteamWand',
+    syrup_shelf:      'SyrupShelf',
+    ice_bucket:       'IceBucket',
+    boba_cooker:      'BobaCooker',
+    pour_over:        'PourOverSet',
+    cold_brew_tower:  'ColdBrewTower',
+    siphon:           'SiphonBrewer',
+    oat_dispenser:    'OatMilkDispenser',
+    petal_press:      'PetalPress',
+    gold_flake:       'GoldFlakeJar',
+    crushed_ice:      'CrushedIceMaker',
+  };
+
+  // ---- Drink key (emoji or shop ID) → DRINK_RECIPES key ----
+  const DRINK_KEY_TO_RECIPE = {
+    '☕ Coffee':        'espresso',
+    '🍵 Matcha':        'matchaLatte',
+    '🧋 Milk Tea':      'brownSugarBoba',
+    '🍊 Orange Juice':  null,
+    '🫖 Chamomile Tea': null,
+    '🥤 Smoothie':      null,
+    '🍋 Lemonade':      null,
+    // Shop drinks — original 20
+    espresso:           'espresso',
+    americano:          'americano',
+    flat_white:         'flatWhite',
+    hot_choc:           'hotChocolate',
+    matcha_latte:       'matchaLatte',
+    egg_coffee:         'eggCoffee',
+    boba:               'brownSugarBoba',
+    caramel_mac:        'caramelMacchiato',
+    ca_phe_sua_da:      'caPhedaSuaDa',
+    lavender_latte:     'lavenderHoneyLatte',
+    dalgona:            'dalgonaCoffee',
+    iced_matcha:        'icedMatcha',
+    rose_gold:          'roseGoldLatte',
+    galaxy_brew:        'galaxyColdBrew',
+    midnight_esp:       'midnightEspresso',
+    cherry_blossom:     'cherryBlossomLatte',
+    barista_secret:     'baristasSecretBrew',
+    golden_hour:        'goldenHourLatte',
+    aurora_brew:        'auroraBrew',
+    the_void:           'theVoid',
+    // New drinks added in updated recipe file
+    latte:              'latte',
+    cappuccino:         'cappuccino',
+    mocha:              'mocha',
+    macchiato:          'macchiato',
+    irish_coffee:       'irishCoffee',
+    vienna_coffee:      'viennaCoffee',
+    affogato:           'affogato',
+  };
+
+  // ---- Shop drink ID → closest base visual key (for cup look) ----
+  const SHOP_ID_TO_VISUAL = {
+    espresso: '☕ Coffee', americano: '☕ Coffee', flat_white: '☕ Coffee',
+    hot_choc: '☕ Coffee', matcha_latte: '🍵 Matcha', egg_coffee: '☕ Coffee',
+    boba: '🧋 Milk Tea', caramel_mac: '☕ Coffee', ca_phe_sua_da: '☕ Coffee',
+    lavender_latte: '🍵 Matcha', dalgona: '☕ Coffee', iced_matcha: '🍵 Matcha',
+    rose_gold: '🥤 Smoothie', galaxy_brew: '☕ Coffee', midnight_esp: '☕ Coffee',
+    cherry_blossom: '🥤 Smoothie', barista_secret: '🍋 Lemonade',
+    golden_hour: '☕ Coffee', aurora_brew: '🧋 Milk Tea', the_void: '☕ Coffee',
+    // New drinks
+    latte:          '☕ Coffee',
+    cappuccino:     '☕ Coffee',
+    mocha:          '☕ Coffee',
+    macchiato:      '☕ Coffee',
+    irish_coffee:   '☕ Coffee',
+    vienna_coffee:  '☕ Coffee',
+    affogato:       '🍊 Orange Juice', // iced/layered look
+  };
+
   // ---- Drink definitions ----
   const DRINKS = {
     '☕ Coffee': {
@@ -90,9 +166,32 @@ const DrinkModule = (function () {
 
   const DRINK_KEYS = Object.keys(DRINKS).filter(k => k !== '🎲 Random');
 
-  let currentDrink = null;
-  let currentPct = 0;
-  let isFinished = false;
+  let currentDrink  = null;
+  let currentDrinkId = null;   // tracks the actual key for recipe lookup
+  let currentPct    = 0;
+  let isFinished    = false;
+
+  // ---- Recipe tier resolution ----
+  function getCurrentTierConfig(recipeKey) {
+    if (!recipeKey || typeof DRINK_RECIPES === 'undefined') return null;
+    const recipe = DRINK_RECIPES[recipeKey];
+    if (!recipe) return null;
+    const ownedEquip = (typeof ShopModule !== 'undefined' ? ShopModule.getOwned().equipment : null) || [];
+    const ownedGemini = ownedEquip.map(id => EQUIP_ID_MAP[id]).filter(Boolean);
+    const hasAll = (reqs) => !reqs || reqs.every(r => ownedGemini.includes(r));
+    if (recipe.mastercraft && hasAll(recipe.mastercraft.requires)) return { tier: 'mastercraft', ...recipe.mastercraft };
+    if (recipe.signature  && hasAll(recipe.signature.requires))  return { tier: 'signature',  ...recipe.signature  };
+    return { tier: 'house', ...recipe.house };
+  }
+
+  // Returns the highest step config whose threshold ≤ pct
+  function getStepConfig(tierCfg, pct) {
+    if (!tierCfg?.steps) return null;
+    const thresholds = Object.keys(tierCfg.steps).map(Number).sort((a, b) => a - b);
+    let chosen = thresholds[0];
+    for (const t of thresholds) { if (pct >= t) chosen = t; else break; }
+    return tierCfg.steps[chosen] || null;
+  }
 
   // ---- Pick drink from goal's category ----
   function pickDrinkForGoal(goalCategoryName) {
@@ -105,13 +204,22 @@ const DrinkModule = (function () {
   }
 
   function setDrink(drinkKey) {
-    currentDrink = DRINKS[drinkKey] || DRINKS[DRINK_KEYS[Math.floor(Math.random() * DRINK_KEYS.length)]];
+    currentDrinkId = drinkKey;
+    // If key is a shop ID rather than an emoji key, map to the visual DRINKS entry
+    const visualKey = DRINKS[drinkKey] ? drinkKey : (SHOP_ID_TO_VISUAL[drinkKey] || DRINK_KEYS[Math.floor(Math.random() * DRINK_KEYS.length)]);
+    currentDrink = DRINKS[visualKey] || DRINKS[DRINK_KEYS[Math.floor(Math.random() * DRINK_KEYS.length)]];
     currentPct = 0;
     isFinished = false;
-    renderCup(0);   // show empty cup immediately
+    renderCup(0);
     updateLabel(0);
+    // Update title — prefer the recipe name if available
     const titleEl = document.getElementById('drinkProgressTitle');
-    if (titleEl) titleEl.textContent = currentDrink.label;
+    if (titleEl) {
+      const recipeKey = DRINK_KEY_TO_RECIPE[drinkKey];
+      const tierCfg   = recipeKey ? getCurrentTierConfig(recipeKey) : null;
+      const tierBadge = tierCfg?.tier === 'mastercraft' ? ' 👑' : tierCfg?.tier === 'signature' ? ' ✦' : '';
+      titleEl.textContent = currentDrink.label + tierBadge;
+    }
   }
 
   function updateProgress(pct) {
@@ -128,12 +236,26 @@ const DrinkModule = (function () {
   function updateLabel(pct) {
     const el = document.getElementById('drinkProgressLabel');
     if (!el) return;
-    if (pct === 0) el.textContent = 'Start your session to begin filling your drink';
-    else if (pct < 25) el.textContent = `Just getting started — ${Math.round(pct)}% there`;
-    else if (pct < 50) el.textContent = `Keep going — ${Math.round(pct)}% done ☕`;
-    else if (pct < 75) el.textContent = `More than halfway — ${Math.round(pct)}% done, stay focused!`;
-    else if (pct < 100) el.textContent = `Almost there — ${Math.round(pct)}% done, finish strong!`;
-    else el.textContent = `🎉 Your drink is ready — session complete!`;
+
+    // Try recipe step label first
+    const recipeKey = DRINK_KEY_TO_RECIPE[currentDrinkId] || null;
+    const tierCfg   = recipeKey ? getCurrentTierConfig(recipeKey) : null;
+    if (tierCfg) {
+      const stepCfg = getStepConfig(tierCfg, pct);
+      if (stepCfg?.label) {
+        const prefix = tierCfg.tier === 'mastercraft' ? '👑 ' : tierCfg.tier === 'signature' ? '✦ ' : '☕ ';
+        el.textContent = prefix + stepCfg.label;
+        return;
+      }
+    }
+
+    // Generic fallback
+    if (pct === 0)        el.textContent = 'Start your session to begin filling your drink';
+    else if (pct < 25)    el.textContent = `Just getting started — ${Math.round(pct)}% there`;
+    else if (pct < 50)    el.textContent = `Keep going — ${Math.round(pct)}% done ☕`;
+    else if (pct < 75)    el.textContent = `More than halfway — ${Math.round(pct)}% done, stay focused!`;
+    else if (pct < 100)   el.textContent = `Almost there — ${Math.round(pct)}% done, finish strong!`;
+    else                  el.textContent = `🎉 Your drink is ready — session complete!`;
   }
 
   // ---- SVG cup renderer ----
@@ -142,38 +264,69 @@ const DrinkModule = (function () {
     if (!scene || !currentDrink) return;
     const d = currentDrink;
 
+    // ---- Recipe integration ----
+    const recipeKey = DRINK_KEY_TO_RECIPE[currentDrinkId] || null;
+    const tierCfg   = recipeKey ? getCurrentTierConfig(recipeKey) : null;
+    const stepCfg   = tierCfg  ? getStepConfig(tierCfg, pct)     : null;
+    const step100   = tierCfg?.steps?.[100] || null;
+
+    // Dynamic liquid color from current step; fall back to gradient
+    const stepFill   = stepCfg?.fill;
+    const liquidFill = (stepFill && stepFill !== 'transparent') ? stepFill : 'url(#liquidGrad)';
+
+    // Foam color: use recipe's 100% foamFill when set, otherwise drink default
+    const foamFill100 = step100?.foamFill;
+    const foamColor   = (foamFill100 && foamFill100 !== 'transparent')
+      ? foamFill100
+      : (d.hasFoam ? d.foamColor : null);
+
+    // Garnish SVG at 100% (latte art, gold flakes, etc.)
+    const garnishSvg = (pct >= 100 && step100?.garnishSvg) ? step100.garnishSvg : '';
+
+    // Background glow from recipe tier
+    const bgGlow = tierCfg?.bgGlow || 'transparent';
+    scene.style.filter = (bgGlow && bgGlow !== 'transparent')
+      ? `drop-shadow(0 0 20px ${bgGlow})`
+      : '';
+
     // Cup geometry
-    const W = 140, H = 180;
     const cupX = 20, cupW = 100;
     const cupTopY = 30, cupBottomY = 155;
     const cupH = cupBottomY - cupTopY;
 
-    // Liquid fill level (fills from bottom)
     const fillH = (pct / 100) * (cupH - 20);
     const fillY = cupBottomY - fillH;
 
-    // Clip path for liquid inside cup
-    const boba = d.bobas ? generateBobas(cupX, fillY, cupW, fillH, d.bobaColor) : '';
-    const ice = d.hasIce ? generateIce(cupX, fillY, cupW, d.cupTint) : '';
-    const foam = d.hasFoam && pct > 5 ? `
-      <ellipse cx="${cupX + cupW/2}" cy="${fillY + 2}" rx="${cupW*0.42}" ry="8"
-        fill="${d.foamColor}" opacity="0.9"/>
-      <ellipse cx="${cupX + cupW/2 - 12}" cy="${fillY}" rx="10" ry="6"
-        fill="${d.foamColor}" opacity="0.7"/>
-      <ellipse cx="${cupX + cupW/2 + 14}" cy="${fillY + 1}" rx="9" ry="5"
-        fill="${d.foamColor}" opacity="0.75"/>` : '';
+    const boba = d.bobas   ? generateBobas(cupX, fillY, cupW, fillH, d.bobaColor) : '';
+    const ice  = d.hasIce  ? generateIce(cupX, fillY, cupW, d.cupTint) : '';
 
-    // Finish sparkles
+    const foam = foamColor && pct > 5 ? `
+      <ellipse cx="${cupX + cupW/2}" cy="${fillY + 2}" rx="${cupW*0.42}" ry="8"
+        fill="${foamColor}" opacity="0.9"/>
+      <ellipse cx="${cupX + cupW/2 - 12}" cy="${fillY}" rx="10" ry="6"
+        fill="${foamColor}" opacity="0.7"/>
+      <ellipse cx="${cupX + cupW/2 + 14}" cy="${fillY + 1}" rx="9" ry="5"
+        fill="${foamColor}" opacity="0.75"/>` : '';
+
     const sparkles = pct >= 100 ? generateSparkles() : '';
 
-    // Wave animation offset
     const wave = pct > 0 && pct < 100 ? `
       <animateTransform attributeName="transform" type="translate"
         values="0,0;4,0;0,0" dur="2s" repeatCount="indefinite"/>` : '';
 
+    // Tier badge (top-right of cup)
+    const tierBadge = tierCfg && tierCfg.tier !== 'house' ? `
+      <text x="135" y="16" text-anchor="end"
+        font-family="Source Sans Pro, sans-serif" font-size="7.5" font-weight="700"
+        fill="${tierCfg.tier === 'mastercraft' ? '#fbbf24' : 'rgba(212,165,116,0.9)'}">
+        ${tierCfg.tier === 'mastercraft' ? '👑 MASTER' : '✦ SIG'}
+      </text>` : '';
+
     scene.innerHTML = `
-      <svg viewBox="0 0 140 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:160px;margin:0 auto;display:block;">
+      <svg viewBox="0 0 140 180" xmlns="http://www.w3.org/2000/svg"
+        style="width:100%;max-width:160px;margin:0 auto;display:block;">
         <defs>
+          ${tierCfg?.defs || ''}
           <clipPath id="cupClip">
             <polygon points="${cupX},${cupTopY} ${cupX+cupW},${cupTopY} ${cupX+cupW-8},${cupBottomY} ${cupX+8},${cupBottomY}"/>
           </clipPath>
@@ -186,20 +339,28 @@ const DrinkModule = (function () {
             <stop offset="50%" stop-color="${d.cupTint}22"/>
             <stop offset="100%" stop-color="${d.cupTint}44"/>
           </linearGradient>
+          <style>
+            @keyframes sparkle {
+              0%,100% { opacity:0.2; transform:scale(0.8); }
+              50%      { opacity:1;   transform:scale(1.2); }
+            }
+          </style>
         </defs>
+
+        ${tierBadge}
 
         <!-- Cup shadow -->
         <ellipse cx="70" cy="${cupBottomY + 8}" rx="44" ry="6" fill="rgba(0,0,0,0.12)"/>
 
-        <!-- Cup body (glass look) -->
+        <!-- Cup body -->
         <polygon points="${cupX},${cupTopY} ${cupX+cupW},${cupTopY} ${cupX+cupW-8},${cupBottomY} ${cupX+8},${cupBottomY}"
           fill="rgba(245,241,235,0.15)" stroke="${d.cupTint}" stroke-width="2.5" stroke-linejoin="round"/>
 
-        <!-- Liquid fill -->
+        <!-- Liquid fill (clipped) -->
         ${pct > 0 ? `
         <g clip-path="url(#cupClip)">
           <rect x="${cupX}" y="${fillY}" width="${cupW}" height="${fillH + 10}"
-            fill="url(#liquidGrad)" opacity="0.88">
+            fill="${liquidFill}" opacity="0.88">
             ${wave}
           </rect>
           ${boba}
@@ -207,7 +368,7 @@ const DrinkModule = (function () {
           ${foam}
         </g>` : ''}
 
-        <!-- Cup glass sheen -->
+        <!-- Cup glass sheen overlay -->
         <polygon points="${cupX},${cupTopY} ${cupX+cupW},${cupTopY} ${cupX+cupW-8},${cupBottomY} ${cupX+8},${cupBottomY}"
           fill="url(#cupGrad)" stroke="none"/>
 
@@ -215,21 +376,24 @@ const DrinkModule = (function () {
         <line x1="${cupX}" y1="${cupTopY}" x2="${cupX+cupW}" y2="${cupTopY}"
           stroke="${d.cupTint}" stroke-width="3" stroke-linecap="round"/>
 
-        <!-- Straw (for milk tea / smoothie / lemonade) -->
+        <!-- Straw (iced / boba drinks) -->
         ${d.bobas || d.hasIce ? `
         <rect x="88" y="${cupTopY - 22}" width="5" height="${Math.min(fillH + 22, cupH + 22)}"
           rx="2.5" fill="#c4a882" opacity="0.85"/>
         <rect x="89" y="${cupTopY - 22}" width="2" height="${Math.min(fillH + 22, cupH + 22)}"
           rx="1" fill="rgba(255,255,255,0.3)"/>` : ''}
 
-        <!-- Lid (for cup-style drinks) -->
+        <!-- Lid (hot drinks) -->
         ${!d.bobas && !d.hasIce ? `
         <rect x="${cupX - 2}" y="${cupTopY - 8}" width="${cupW + 4}" height="8"
           rx="4" fill="${d.cupTint}" opacity="0.6"/>` : ''}
 
+        <!-- Garnish (latte art, gold flakes, petals — from recipe) -->
+        ${garnishSvg}
+
         ${sparkles}
 
-        <!-- Progress % label inside cup -->
+        <!-- Progress % label -->
         ${pct > 15 ? `
         <text x="70" y="${Math.max(fillY + 18, cupBottomY - 10)}"
           text-anchor="middle" font-family="Playfair Display, serif"
@@ -286,38 +450,102 @@ const DrinkModule = (function () {
   }
 
   // ---- Swap drink picker ----
+  const PICKER_RARITY_STYLE = {
+    base:      { chalk: '#c4b49a', label: 'Base'      },
+    common:    { chalk: '#d4c5a9', label: 'Common'    },
+    uncommon:  { chalk: '#7ec8c8', label: 'Uncommon'  },
+    rare:      { chalk: '#c39bd3', label: 'Rare'      },
+    epic:      { chalk: '#f0a500', label: 'Epic'      },
+    legendary: { chalk: '#ffd700', label: 'Legendary' },
+  };
+
   function showDrinkPicker() {
     const existing = document.getElementById('drinkPickerModal');
     if (existing) { existing.remove(); return; }
+
+    // Base drinks always available; shop drinks only if owned
+    const allDrinks = typeof CategoriesModule !== 'undefined' ? CategoriesModule.ALL_DRINKS : [];
+    const ownedIds  = typeof ShopModule !== 'undefined' ? ShopModule.getOwned().drinks : [];
+    const available = allDrinks.filter(d => d.rarity === 'base' || ownedIds.includes(d.id));
+
+    // Group by rarity, skip empty groups
+    const rarityOrder = ['base', 'common', 'uncommon', 'rare', 'epic', 'legendary'];
+    const grouped = {};
+    rarityOrder.forEach(r => {
+      const items = available.filter(d => d.rarity === r);
+      if (items.length) grouped[r] = items;
+    });
+
+    // Resolve current drink display entry
+    const curEntry = allDrinks.find(d => d.id === currentDrinkId)
+      || { emoji: '☕', label: 'Coffee', rarity: 'base' };
+    const curRS = PICKER_RARITY_STYLE[curEntry.rarity] || PICKER_RARITY_STYLE.base;
 
     const modal = document.createElement('div');
     modal.id = 'drinkPickerModal';
     modal.style.cssText = `position:fixed;inset:0;background:rgba(74,52,41,0.5);backdrop-filter:blur(4px);z-index:15000;display:flex;align-items:center;justify-content:center;padding:20px;`;
 
     const box = document.createElement('div');
-    box.style.cssText = `background:rgba(245,241,235,0.98);border-radius:18px;padding:1.8rem;max-width:380px;width:100%;box-shadow:0 16px 40px rgba(139,111,71,0.3);border:2px solid rgba(139,111,71,0.2);`;
+    box.style.cssText = `background:rgba(245,241,235,0.98);border-radius:18px;padding:1.8rem;max-width:420px;width:100%;box-shadow:0 16px 40px rgba(139,111,71,0.3);border:2px solid rgba(139,111,71,0.2);max-height:80vh;overflow-y:auto;`;
     box.innerHTML = `
-      <h3 style="font-family:'Playfair Display',serif;color:#4a3429;text-align:center;margin-bottom:1rem;">Choose Your Drink</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        ${DRINK_KEYS.map(k => `
-          <button class="drink-pick-btn" data-key="${k}" style="padding:10px;border-radius:12px;border:1.5px solid rgba(139,111,71,0.25);background:rgba(245,241,235,0.7);color:#4a3429;font-family:'Playfair Display',serif;font-size:0.9rem;cursor:pointer;transition:all 0.2s ease;text-align:left;">
-            ${k}
-          </button>`).join('')}
+      <h3 style="font-family:'Playfair Display',serif;color:#4a3429;margin-bottom:1rem;">☕ Choose Your Drink</h3>
+      <div style="font-family:'Source Sans Pro',sans-serif;font-size:0.75rem;color:rgba(107,81,57,0.55);margin-bottom:0.4rem;">Current drink</div>
+      <div class="cat-drink-selected" id="pickerDrinkSelected" style="cursor:default;margin-bottom:1.2rem;pointer-events:none;">
+        <span class="cat-drink-sel-emoji">${curEntry.emoji}</span>
+        <span class="cat-drink-sel-name">${curEntry.label}</span>
+        <span class="cat-drink-sel-rarity" style="color:${curRS.chalk}">${curRS.label}</span>
       </div>
+      <div id="pickerDrinkSections"></div>
       <button id="drinkPickCancel" style="display:block;width:100%;margin-top:12px;padding:8px;border:none;background:none;color:rgba(107,81,57,0.6);font-family:'Playfair Display',serif;cursor:pointer;">Cancel</button>
     `;
 
     modal.appendChild(box);
     document.body.appendChild(modal);
 
-    box.querySelectorAll('.drink-pick-btn').forEach(btn => {
-      btn.addEventListener('mouseover', () => { btn.style.background = 'rgba(237,228,211,1)'; btn.style.borderColor = '#8b6f47'; });
-      btn.addEventListener('mouseout',  () => { btn.style.background = 'rgba(245,241,235,0.7)'; btn.style.borderColor = 'rgba(139,111,71,0.25)'; });
-      btn.addEventListener('click', () => {
-        setDrink(btn.dataset.key);
-        renderCup(currentPct);
-        modal.remove();
+    const sectionsEl   = box.querySelector('#pickerDrinkSections');
+    const selectedDisp = box.querySelector('#pickerDrinkSelected');
+
+    Object.entries(grouped).forEach(([rarity, drinks]) => {
+      const rs      = PICKER_RARITY_STYLE[rarity] || PICKER_RARITY_STYLE.base;
+      const section = document.createElement('div');
+      section.className = 'cat-drink-section';
+      section.innerHTML = `
+        <div class="cat-drink-section-header" style="color:${rs.chalk}">${rs.label}</div>
+        <div class="cat-drink-section-grid"></div>
+      `;
+      const grid = section.querySelector('.cat-drink-section-grid');
+
+      drinks.forEach(d => {
+        const btn = document.createElement('button');
+        btn.className = 'cat-drink-catalogue-btn' + (d.id === currentDrinkId ? ' active' : '');
+        btn.dataset.id     = d.id;
+        btn.dataset.emoji  = d.emoji;
+        btn.dataset.label  = d.label;
+        btn.dataset.rarity = d.rarity;
+        btn.title = d.label;
+        btn.innerHTML = `
+          <span class="cat-dc-emoji">${d.emoji}</span>
+          <span class="cat-dc-name">${d.label}</span>
+        `;
+        btn.addEventListener('click', () => {
+          // Update "current drink" preview at top
+          const rs2 = PICKER_RARITY_STYLE[d.rarity] || PICKER_RARITY_STYLE.base;
+          selectedDisp.querySelector('.cat-drink-sel-emoji').textContent   = d.emoji;
+          selectedDisp.querySelector('.cat-drink-sel-name').textContent    = d.label;
+          selectedDisp.querySelector('.cat-drink-sel-rarity').textContent  = rs2.label;
+          selectedDisp.querySelector('.cat-drink-sel-rarity').style.color  = rs2.chalk;
+          // Highlight active button
+          box.querySelectorAll('.cat-drink-catalogue-btn')
+             .forEach(b => b.classList.toggle('active', b.dataset.id === d.id));
+          // Apply and close
+          setDrink(d.id);
+          renderCup(currentPct);
+          setTimeout(() => modal.remove(), 150);
+        });
+        grid.appendChild(btn);
       });
+
+      sectionsEl.appendChild(section);
     });
 
     box.querySelector('#drinkPickCancel').addEventListener('click', () => modal.remove());
@@ -563,7 +791,13 @@ const DrinkModule = (function () {
 
   // Called by TimerModule when session starts with a goal
   function onSessionStart(goalCategoryName) {
-    const drinkKey = pickDrinkForGoal(goalCategoryName);
+    // If user has an active shop drink set, use that for the recipe
+    let drinkKey = null;
+    if (typeof ShopModule !== 'undefined') {
+      const owned = ShopModule.getOwned();
+      if (owned.activeDrink) drinkKey = owned.activeDrink;
+    }
+    if (!drinkKey) drinkKey = pickDrinkForGoal(goalCategoryName);
     setDrink(drinkKey);
   }
 

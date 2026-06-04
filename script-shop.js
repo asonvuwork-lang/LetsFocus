@@ -28,6 +28,14 @@ const ShopModule = (function () {
     { id: 'golden_hour',    name: 'Golden Hour Latte',     rarity: 'legendary', cost: 210, emoji: '✨', desc: 'Bottled sunset.' },
     { id: 'aurora_brew',    name: 'Aurora Brew',           rarity: 'legendary', cost: 220, emoji: '🌈', desc: 'Northern lights, liquid.' },
     { id: 'the_void',       name: 'The Void',              rarity: 'legendary', cost: 230, emoji: '🕳️', desc: 'Stare into it. It pours back.' },
+    // New drinks (from enhanced recipe engine)
+    { id: 'latte',          name: 'Latte',                 rarity: 'uncommon',  cost: 55,  emoji: '🥛', desc: 'Silky milk, velvety espresso.' },
+    { id: 'cappuccino',     name: 'Cappuccino',            rarity: 'uncommon',  cost: 58,  emoji: '☁️', desc: 'Equal thirds of perfection.' },
+    { id: 'macchiato',      name: 'Macchiato',             rarity: 'uncommon',  cost: 52,  emoji: '🫙', desc: 'Espresso stained with foam.' },
+    { id: 'mocha',          name: 'Mocha',                 rarity: 'rare',      cost: 78,  emoji: '🍫', desc: 'Coffee meets chocolate.' },
+    { id: 'irish_coffee',   name: 'Irish Coffee',          rarity: 'rare',      cost: 80,  emoji: '🍀', desc: 'Warmth with a little kick.' },
+    { id: 'vienna_coffee',  name: 'Vienna Coffee',         rarity: 'rare',      cost: 82,  emoji: '🎩', desc: 'Crowned with whipped cream.' },
+    { id: 'affogato',       name: 'Affogato',              rarity: 'epic',      cost: 115, emoji: '🍨', desc: 'Espresso drowns the gelato.' },
   ];
 
   const EQUIPMENT = [
