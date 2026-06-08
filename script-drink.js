@@ -63,108 +63,108 @@ const DrinkModule = (function () {
   // ---- Shop drink ID → closest base visual key (for cup look) ----
   const SHOP_ID_TO_VISUAL = {
     espresso: '☕ Coffee', americano: '☕ Coffee', flat_white: '☕ Coffee',
-    hot_choc: '☕ Coffee', matcha_latte: '🍵 Matcha', egg_coffee: '☕ Coffee',
-    boba: '🧋 Milk Tea', caramel_mac: '☕ Coffee', ca_phe_sua_da: '☕ Coffee',
-    lavender_latte: '🍵 Matcha', dalgona: '☕ Coffee', iced_matcha: '🍵 Matcha',
+    hot_choc: '☕ Coffee', matcha_latte: '🍵 Matcha', egg_coffee: '_egg_coffee',
+    boba: '🧋 Milk Tea', caramel_mac: '_caramel_mac', ca_phe_sua_da: '_ca_phe_sua_da',
+    lavender_latte: '🍵 Matcha', dalgona: '_dalgona', iced_matcha: '_iced_matcha',
     rose_gold: '🥤 Smoothie', galaxy_brew: '☕ Coffee', midnight_esp: '☕ Coffee',
     cherry_blossom: '🥤 Smoothie', barista_secret: '🍋 Lemonade',
     golden_hour: '☕ Coffee', aurora_brew: '🧋 Milk Tea', the_void: '☕ Coffee',
-    // New drinks
-    latte:          '☕ Coffee',
-    cappuccino:     '☕ Coffee',
-    mocha:          '☕ Coffee',
-    macchiato:      '☕ Coffee',
-    irish_coffee:   '☕ Coffee',
-    vienna_coffee:  '☕ Coffee',
-    affogato:       '🍊 Orange Juice', // iced/layered look
+    latte: '☕ Coffee', cappuccino: '☕ Coffee', mocha: '☕ Coffee',
+    macchiato: '☕ Coffee', irish_coffee: '_irish_coffee',
+    vienna_coffee: '☕ Coffee', affogato: '🍊 Orange Juice',
   };
 
   // ---- Drink definitions ----
   const DRINKS = {
     '☕ Coffee': {
-      label: '☕ Coffee',
-      liquidColor: '#3d1f0a',
-      liquidColor2: '#6b3a1f',
-      foamColor: '#e8d5b0',
-      cupTint: '#8b6030',
-      bobas: false,
-      hasFoam: true,
-      hasIce: false,
+      label: '☕ Coffee', type: 'coffee',
+      liquidColor: '#3d1f0a', liquidColor2: '#6b3a1f',
+      foamColor: '#e8d5b0', cupTint: '#8b6030',
+      bobas: false, hasFoam: true, hasIce: false,
     },
     '🍵 Matcha': {
-      label: '🍵 Matcha',
-      liquidColor: '#4a7c4e',
-      liquidColor2: '#6aaa6e',
-      foamColor: '#a8d5a2',
-      cupTint: '#5a8a5a',
-      bobas: false,
-      hasFoam: true,
-      hasIce: false,
+      label: '🍵 Matcha', type: 'matcha',
+      liquidColor: '#4a7c4e', liquidColor2: '#6aaa6e',
+      foamColor: '#a8d5a2', cupTint: '#5a8a5a',
+      bobas: false, hasFoam: true, hasIce: false,
     },
     '🧋 Milk Tea': {
-      label: '🧋 Milk Tea',
-      liquidColor: '#c4a882',
-      liquidColor2: '#d4bc9a',
-      foamColor: '#f0e6d0',
-      cupTint: '#b89060',
-      bobas: true,
-      bobaColor: '#2a1a0a',
-      hasFoam: false,
-      hasIce: false,
+      label: '🧋 Milk Tea', type: 'milktea',
+      liquidColor: '#c4a882', liquidColor2: '#d4bc9a',
+      foamColor: '#f0e6d0', cupTint: '#b89060',
+      bobas: true, bobaColor: '#2a1a0a',
+      hasFoam: true, hasIce: false,          // cream layer on top
     },
     '🍊 Orange Juice': {
-      label: '🍊 Orange Juice',
-      liquidColor: '#e8820a',
-      liquidColor2: '#f0a030',
-      foamColor: '#ffd580',
-      cupTint: '#d4740a',
-      bobas: false,
-      hasFoam: false,
-      hasIce: true,
+      label: '🍊 Orange Juice', type: 'oj',
+      liquidColor: '#e8820a', liquidColor2: '#f0a030',
+      foamColor: '#ffd580', cupTint: '#d4740a',
+      bobas: false, hasFoam: false, hasIce: true,
     },
     '🫖 Chamomile Tea': {
-      label: '🫖 Chamomile',
-      liquidColor: '#c8a840',
-      liquidColor2: '#dfc060',
-      foamColor: '#f5e8a0',
-      cupTint: '#b09030',
-      bobas: false,
-      hasFoam: false,
-      hasIce: false,
+      label: '🫖 Chamomile', type: 'chamomile',
+      liquidColor: '#c8a840', liquidColor2: '#dfc060',
+      foamColor: '#f5e8a0', cupTint: '#b09030',
+      bobas: false, hasFoam: false, hasIce: false,
     },
     '🥤 Smoothie': {
-      label: '🥤 Smoothie',
-      liquidColor: '#b050a0',
-      liquidColor2: '#d070c0',
-      foamColor: '#e0a0d8',
-      cupTint: '#904090',
-      bobas: false,
-      hasFoam: true,
-      hasIce: true,
+      label: '🥤 Smoothie', type: 'smoothie',
+      liquidColor: '#b050a0', liquidColor2: '#d070c0',
+      foamColor: '#e0a0d8', cupTint: '#904090',
+      bobas: false, hasFoam: true, hasIce: true,
     },
     '🍋 Lemonade': {
-      label: '🍋 Lemonade',
-      liquidColor: '#d4d820',
-      liquidColor2: '#e8f040',
-      foamColor: '#f8f8a0',
-      cupTint: '#b0b818',
-      bobas: false,
-      hasFoam: false,
-      hasIce: true,
+      label: '🍋 Lemonade', type: 'lemonade',
+      liquidColor: '#d4d820', liquidColor2: '#e8f040',
+      foamColor: '#f8f8a0', cupTint: '#b0b818',
+      bobas: false, hasFoam: false, hasIce: true,
     },
     '🎲 Random': {
-      label: '🎲 Random',
-      liquidColor: '#8b6f47',
-      liquidColor2: '#a67c5a',
-      foamColor: '#d4a574',
-      cupTint: '#8b6f47',
-      bobas: false,
-      hasFoam: true,
-      hasIce: false,
+      label: '🎲 Random', type: 'coffee',
+      liquidColor: '#8b6f47', liquidColor2: '#a67c5a',
+      foamColor: '#d4a574', cupTint: '#8b6f47',
+      bobas: false, hasFoam: true, hasIce: false,
+    },
+    // ---- Shop drink visual entries ----
+    _ca_phe_sua_da: {
+      label: 'Cà Phê Sữa Đá', type: 'ca_phe_sua_da',
+      liquidColor: '#140904', liquidColor2: '#fce8b3',
+      foamColor: '#fce8b3', cupTint: '#8b6030',
+      bobas: false, hasFoam: false, hasIce: true,
+    },
+    _dalgona: {
+      label: 'Dalgona', type: 'dalgona',
+      liquidColor: '#f8f4ee', liquidColor2: '#c87d2a',
+      foamColor: '#d4922a', cupTint: '#8b6030',
+      bobas: false, hasFoam: false, hasIce: true,
+    },
+    _egg_coffee: {
+      label: 'Egg Coffee', type: 'egg_coffee',
+      liquidColor: '#1c0a04', liquidColor2: '#f5d070',
+      foamColor: '#f5d070', cupTint: '#8b6030',
+      bobas: false, hasFoam: false, hasIce: false,
+    },
+    _iced_matcha: {
+      label: 'Iced Matcha', type: 'iced_matcha',
+      liquidColor: '#3a7040', liquidColor2: '#f5f0e8',
+      foamColor: '#a8d5a2', cupTint: '#5a8a5a',
+      bobas: false, hasFoam: false, hasIce: true,
+    },
+    _caramel_mac: {
+      label: 'Caramel Macchiato', type: 'caramel_mac',
+      liquidColor: '#2a1208', liquidColor2: '#f5ede0',
+      foamColor: '#f0e6d0', cupTint: '#b89060',
+      bobas: false, hasFoam: true, hasIce: false,
+    },
+    _irish_coffee: {
+      label: 'Irish Coffee', type: 'irish_coffee',
+      liquidColor: '#1e0d08', liquidColor2: '#f8f2e8',
+      foamColor: '#f8f2e8', cupTint: '#8b6030',
+      bobas: false, hasFoam: false, hasIce: false,
     },
   };
 
-  const DRINK_KEYS = Object.keys(DRINKS).filter(k => k !== '🎲 Random');
+  const DRINK_KEYS = Object.keys(DRINKS).filter(k => k !== '🎲 Random' && !k.startsWith('_'));
 
   let currentDrink  = null;
   let currentDrinkId = null;   // tracks the actual key for recipe lookup
@@ -258,187 +258,610 @@ const DrinkModule = (function () {
     else                  el.textContent = `🎉 Your drink is ready — session complete!`;
   }
 
+  // ---- Animation-offset helper ----
+  // Returns a CSS animation-delay that makes animations appear to have been
+  // running since before the render, so they look continuous across re-renders.
+  function ao(dur) {
+    return `-${((Date.now() / 1000) % dur).toFixed(2)}s`;
+  }
+
+  // ---- Sinusoidal wave path ----
+  // Extends 16 px beyond the cup edges so the translate animation never shows a gap.
+  function wavePath(fillY, amp, flipPhase) {
+    const x0 = 4, x1 = 136, mid = 70, bot = 165;
+    const a = flipPhase ? -amp : amp;
+    return `M${x0},${fillY} Q${(x0+mid)/2},${fillY-a} ${mid},${fillY} Q${(mid+x1)/2},${fillY+a} ${x1},${fillY} L${x1},${bot} L${x0},${bot} Z`;
+  }
+
+  // ---- Per-drink animation config ----
+  const DRINK_ANIM = {
+    coffee:    { waveAmp: 3, waveSpeed: 4.0, steam: true  },
+    matcha:    { waveAmp: 2, waveSpeed: 5.5, steam: true  },
+    milktea:   { waveAmp: 4, waveSpeed: 3.0, steam: false },
+    oj:        { waveAmp: 5, waveSpeed: 2.5, steam: false },
+    chamomile: { waveAmp: 2, waveSpeed: 6.0, steam: true  },
+    smoothie:  { waveAmp: 1, waveSpeed: 8.0, steam: false },
+    lemonade:  { waveAmp: 5, waveSpeed: 2.0, steam: false },
+  };
+
+  // ---- CSS keyframes embedded per SVG ----
+  // ---- Inject drink animation keyframes into document head (once only) ----
+  // Defined globally so they persist across SVG re-renders instead of
+  // being discarded and restarted every second when scene.innerHTML is replaced.
+  let _stylesInjected = false;
+  function injectDrinkStyles(wAmp, wSpd) {
+    // Remove stale injected sheet if wave params changed (drink swap)
+    const prev = document.getElementById('lfDrinkStyles');
+    if (prev) {
+      // Only re-inject if params actually changed
+      if (prev.dataset.amp === String(wAmp) && prev.dataset.spd === String(wSpd)) return;
+      prev.remove();
+    }
+    const tx = wAmp * 2.5;
+    const style = document.createElement('style');
+    style.id = 'lfDrinkStyles';
+    style.dataset.amp = wAmp;
+    style.dataset.spd = wSpd;
+    style.textContent = `
+      @keyframes lfW1 { 0%,100%{transform:translateX(-${tx}px)} 50%{transform:translateX(${tx}px)} }
+      @keyframes lfW2 { 0%,100%{transform:translateX(${tx}px)} 50%{transform:translateX(-${tx}px)} }
+      @keyframes lfBoba { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+      @keyframes lfSteam { 0%{opacity:0;transform:translateY(0) scaleX(1)} 40%{opacity:0.75} 100%{opacity:0;transform:translateY(-26px) scaleX(2)} }
+      @keyframes lfBub { 0%{opacity:0.85;transform:translateY(0)} 85%{opacity:0.4} 100%{opacity:0;transform:translateY(-55px)} }
+      @keyframes lfSwirl { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+      @keyframes lfIce1 { 0%,100%{transform:rotate(-8deg) translateY(0)} 50%{transform:rotate(-8deg) translateY(-2.5px)} }
+      @keyframes lfIce2 { 0%,100%{transform:rotate(5deg) translateY(0)} 50%{transform:rotate(5deg) translateY(-3px)} }
+      @keyframes lfIce3 { 0%,100%{transform:rotate(-5deg) translateY(0)} 50%{transform:rotate(-5deg) translateY(-1.5px)} }
+      @keyframes lfIceDrop { from{transform:translateY(-22px);opacity:0} to{transform:translateY(0);opacity:1} }
+      @keyframes lfPour { 0%,100%{opacity:0.55;transform:translateX(-1px)} 50%{opacity:0.82;transform:translateX(1px)} }
+      @keyframes sparkle { 0%,100%{opacity:0.2;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.2)} }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // drinkStyles is now only used for the SVG <defs> section (no keyframes needed there)
+  function drinkStyles() { return ''; }
+
+  // ---- Straw ----
+  function buildStraw(fillH, CTY, CBY) {
+    const sh = Math.min(fillH + 26, CBY - CTY + 26);
+    return `
+      <rect x="88" y="${CTY - 22}" width="5" height="${sh}" rx="2.5" fill="#c4a882" opacity="0.85"/>
+      <rect x="89" y="${CTY - 22}" width="2" height="${sh}" rx="1" fill="rgba(255,255,255,0.3)"/>`;
+  }
+
+  // ---- Lid (hot drinks) ----
+  function buildLid(CX, CW, CTY, tint) {
+    return `<rect x="${CX-2}" y="${CTY-8}" width="${CW+4}" height="8" rx="4" fill="${tint}" opacity="0.6"/>`;
+  }
+
+  // ---- Foam — unique style per drink type ----
+  function buildFoam(type, fillY, CX, CW, foamColor) {
+    const cx = CX + CW / 2;
+    if (type === 'coffee') return `
+      <ellipse cx="${cx}" cy="${fillY+2}" rx="${CW*0.44}" ry="7.5" fill="${foamColor}" opacity="0.88"/>
+      <ellipse cx="${cx-14}" cy="${fillY}" rx="10" ry="6" fill="${foamColor}" opacity="0.70"/>
+      <ellipse cx="${cx+16}" cy="${fillY+1}" rx="9" ry="5.5" fill="${foamColor}" opacity="0.72"/>
+      <ellipse cx="${cx}" cy="${fillY+2}" rx="${CW*0.28}" ry="4" fill="rgba(255,255,255,0.12)"/>`;
+    if (type === 'matcha') {
+      const dots = Array.from({length: 14}, (_, i) =>
+        `<circle cx="${CX + 5 + i * 7}" cy="${fillY + (i % 3) * 1.5}" r="${2.2 - (i%3)*0.3}" fill="${foamColor}" opacity="${0.85 - (i%3)*0.1}"/>`
+      ).join('');
+      return `<ellipse cx="${cx}" cy="${fillY+3}" rx="${CW*0.42}" ry="7" fill="${foamColor}" opacity="0.62"/>${dots}`;
+    }
+    if (type === 'milktea') return `
+      <ellipse cx="${cx}" cy="${fillY+2}" rx="${CW*0.43}" ry="8" fill="${foamColor}" opacity="0.85"/>
+      <ellipse cx="${cx-14}" cy="${fillY}" rx="12" ry="6.5" fill="${foamColor}" opacity="0.62"/>
+      <ellipse cx="${cx+16}" cy="${fillY+1}" rx="10" ry="5.5" fill="${foamColor}" opacity="0.68"/>`;
+    if (type === 'smoothie') return `
+      <ellipse cx="${cx}" cy="${fillY+1}" rx="${CW*0.46}" ry="10" fill="${foamColor}" opacity="0.92"/>
+      <ellipse cx="${cx}" cy="${fillY-1}" rx="${CW*0.36}" ry="6.5" fill="${foamColor}" opacity="0.72"/>
+      <ellipse cx="${cx-20}" cy="${fillY-2}" rx="13" ry="5.5" fill="${foamColor}" opacity="0.65"/>
+      <ellipse cx="${cx+22}" cy="${fillY-2}" rx="12" ry="5" fill="${foamColor}" opacity="0.68"/>
+      <ellipse cx="${cx}" cy="${fillY-3}" rx="${CW*0.22}" ry="4" fill="rgba(255,255,255,0.18)"/>`;
+    // chamomile / fallback
+    return `
+      <ellipse cx="${cx}" cy="${fillY+2}" rx="${CW*0.38}" ry="6" fill="${foamColor}" opacity="0.80"/>
+      <ellipse cx="${cx-12}" cy="${fillY}" rx="8" ry="4.5" fill="${foamColor}" opacity="0.60"/>`;
+  }
+
+  // ---- Steam wisps (hot drinks, above cup rim) ----
+  function buildSteam(type, CTY) {
+    const sc = {
+      coffee:    'rgba(220,195,165,0.52)',
+      matcha:    'rgba(155,210,155,0.50)',
+      chamomile: 'rgba(230,205,115,0.50)',
+    }[type] || 'rgba(200,200,200,0.45)';
+    const y = CTY;
+    return `
+      <path d="M52,${y-3} C49,${y-13} 55,${y-20} 51,${y-29}"
+        stroke="${sc}" stroke-width="2.5" fill="none" stroke-linecap="round"
+        style="animation:lfSteam 2.5s ease-out infinite ${ao(2.5)}"/>
+      <path d="M70,${y-6} C67,${y-16} 74,${y-23} 69,${y-33}"
+        stroke="${sc}" stroke-width="2.5" fill="none" stroke-linecap="round"
+        style="animation:lfSteam 2.8s ease-out infinite ${ao(2.8)}"/>
+      <path d="M88,${y-3} C91,${y-12} 85,${y-20} 89,${y-30}"
+        stroke="${sc}" stroke-width="2.5" fill="none" stroke-linecap="round"
+        style="animation:lfSteam 2.2s ease-out infinite ${ao(2.2)}"/>`;
+  }
+
+  // ---- Bobas with bounce animation ----
+  function generateBobas(CX, fillY, CW, fillH, color) {
+    if (fillH < 10) return '';
+    const positions = [
+      [CX+15, 8], [CX+30, 12], [CX+50,  6], [CX+65, 10], [CX+80,  8],
+      [CX+20, 20],[CX+45, 18], [CX+70, 22], [CX+35, 28], [CX+60, 25],
+    ];
+    return positions.map(([bx, offset], i) => {
+      const by = Math.min(fillY + fillH - offset, fillY + fillH - 5);
+      if (by <= fillY) return '';
+      const dur = 1.8 + (i % 3) * 0.4;
+      return `<g style="animation:lfBoba ${dur}s ease-in-out infinite ${ao(dur)}">
+        <circle cx="${bx}" cy="${by}" r="5" fill="${color}" opacity="0.9"/>
+        <circle cx="${bx-1}" cy="${by-1}" r="1.5" fill="rgba(255,255,255,0.2)"/>
+      </g>`;
+    }).join('');
+  }
+
+  // ---- Pour stream (visible while drink is actively filling) ----
+  function buildPourStream(liquidColor, fillY, CTY) {
+    const streamH = Math.max(0, fillY - CTY - 6);
+    if (streamH < 10) return '';
+    return `
+      <g style="animation:lfPour 1.4s ease-in-out infinite ${ao(1.4)}">
+        <path d="M72,${CTY+4} C71,${CTY+streamH*0.35} 73,${CTY+streamH*0.65} 72,${fillY-2}"
+          stroke="${liquidColor}" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.68"/>
+        <ellipse cx="72" cy="${fillY}" rx="6" ry="1.5" fill="${liquidColor}" opacity="0.42"/>
+      </g>`;
+  }
+
+  // ---- Ice cubes — drop animation on first appearance (pct 20-36), float after ----
+  function generateIceWithDrop(CX, fillY, pct) {
+    const isDropPhase = pct >= 20 && pct < 37;
+    const a1 = isDropPhase ? `lfIceDrop 0.45s ease-out forwards` : `lfIce1 3.0s ease-in-out infinite ${ao(3.0)}`;
+    const a2 = isDropPhase ? `lfIceDrop 0.45s ease-out 0.12s forwards` : `lfIce2 3.8s ease-in-out infinite ${ao(3.8)}`;
+    const a3 = isDropPhase ? `lfIceDrop 0.45s ease-out 0.22s forwards` : `lfIce3 3.2s ease-in-out infinite ${ao(3.2)}`;
+    if (pct < 20) return '';
+    return `
+      <g style="animation:${a1}">
+        <rect x="${CX+12}" y="${fillY+5}" width="18" height="12" rx="3"
+          fill="rgba(210,240,255,0.72)" stroke="rgba(180,220,255,0.55)" stroke-width="1"/>
+        <line x1="${CX+15}" y1="${fillY+8}" x2="${CX+20}" y2="${fillY+15}" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
+      </g>
+      <g style="animation:${a2}">
+        <rect x="${CX+40}" y="${fillY+8}" width="16" height="10" rx="3"
+          fill="rgba(210,240,255,0.68)" stroke="rgba(180,220,255,0.5)" stroke-width="1"/>
+        <line x1="${CX+43}" y1="${fillY+11}" x2="${CX+47}" y2="${fillY+16}" stroke="rgba(255,255,255,0.30)" stroke-width="1"/>
+      </g>
+      <g style="animation:${a3}">
+        <rect x="${CX+65}" y="${fillY+4}" width="20" height="13" rx="3"
+          fill="rgba(210,240,255,0.72)" stroke="rgba(180,220,255,0.55)" stroke-width="1"/>
+        <line x1="${CX+68}" y1="${fillY+7}" x2="${CX+74}" y2="${fillY+15}" stroke="rgba(255,255,255,0.32)" stroke-width="1"/>
+      </g>`;
+  // ---- Ice cubes with float animation ----
+  function generateIce(CX, fillY) {
+    return `
+      <g style="animation:lfIce1 3.0s ease-in-out infinite ${ao(3.0)}">
+        <rect x="${CX+12}" y="${fillY+5}" width="18" height="12" rx="3"
+          fill="rgba(210,240,255,0.72)" stroke="rgba(180,220,255,0.55)" stroke-width="1"/>
+        <line x1="${CX+15}" y1="${fillY+8}" x2="${CX+20}" y2="${fillY+15}" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
+      </g>
+      <g style="animation:lfIce2 3.8s ease-in-out infinite ${ao(3.8)}">
+        <rect x="${CX+40}" y="${fillY+8}" width="16" height="10" rx="3"
+          fill="rgba(210,240,255,0.68)" stroke="rgba(180,220,255,0.5)" stroke-width="1"/>
+        <line x1="${CX+43}" y1="${fillY+11}" x2="${CX+47}" y2="${fillY+16}" stroke="rgba(255,255,255,0.30)" stroke-width="1"/>
+      </g>
+      <g style="animation:lfIce3 3.2s ease-in-out infinite ${ao(3.2)}">
+        <rect x="${CX+65}" y="${fillY+4}" width="20" height="13" rx="3"
+          fill="rgba(210,240,255,0.72)" stroke="rgba(180,220,255,0.55)" stroke-width="1"/>
+        <line x1="${CX+68}" y1="${fillY+7}" x2="${CX+74}" y2="${fillY+15}" stroke="rgba(255,255,255,0.32)" stroke-width="1"/>
+      </g>`;
+  }
+
+  // ---- Liquid layers (rendered inside cup clipPath) ----
+  function buildLiquid(d, type, fillY, fillH, CX, CW, CBY, liquidFill, foamColor, pct, wAmp, wSpd) {
+    const wOff1 = ao(wSpd), wOff2 = ao(wSpd * 1.3);
+    const wP1 = wavePath(fillY, wAmp, false);
+    const wP2 = wavePath(fillY, wAmp, true);
+    const BUBBLE_SIZES = [2, 2.5, 2, 1.8, 2.5, 1.5, 2.2];
+
+    // --- Layered drinks: rendered with distinct bands instead of a wave fill ---
+    // These drinks don't use the standard wave system
+    if (type === 'ca_phe_sua_da') {
+      // Three bands: condensed milk (bottom 30%) → ice (middle 25%) → dark coffee (top 45%)
+      const milkH   = fillH * 0.30, milkY  = CBY - fillH * 0.30;
+      const iceH    = fillH * 0.25, iceY   = CBY - fillH * 0.55;
+      const coffeeH = fillH * 0.45, coffeeY = fillY;
+      const showIce    = pct > 30;
+      const showCoffee = pct > 55;
+      return `
+        <rect x="${CX}" y="${milkY}" width="${CW}" height="${milkH+5}" fill="#fce8b3" opacity="0.95"/>
+        ${showIce ? `
+          <rect x="${CX}" y="${iceY}" width="${CW}" height="${iceH+5}" fill="#e8f4fb" opacity="0.88"/>
+          ${generateIceWithDrop(CX, iceY + 4, pct)}` : ''}
+        ${showCoffee ? `
+          <rect x="${CX}" y="${coffeeY}" width="${CW}" height="${coffeeH+5}" fill="#140904" opacity="0.92"/>
+          <path d="${wavePath(coffeeY, 3, false)}" fill="#1f0d06" opacity="0.6"
+            style="animation:lfW1 4s ease-in-out infinite ${wOff1}"/>
+          <ellipse cx="${CX+CW/2}" cy="${coffeeY+4}" rx="${CW*0.35}" ry="4" fill="rgba(100,50,10,0.25)"/>` : ''}
+        ${buildFoam(type, fillY, CX, CW, '#fce8b3')}`;
+    }
+
+    if (type === 'dalgona') {
+      // Cold milk base (bottom 65%) + thick caramel foam on top (top 35%)
+      const milkH  = fillH * 0.65, milkY = CBY - milkH;
+      const foamH  = fillH * 0.35, foamTopY = fillY;
+      return `
+        <rect x="${CX}" y="${milkY}" width="${CW}" height="${milkH+5}" fill="#f8f4ee" opacity="0.92"/>
+        <path d="${wavePath(milkY, 2, false)}" fill="#f0e8dc" opacity="0.6"
+          style="animation:lfW1 5s ease-in-out infinite ${wOff1}"/>
+        ${pct > 25 ? generateIceWithDrop(CX, milkY + 8, pct) : ''}
+        ${pct > 55 ? `
+          <rect x="${CX}" y="${foamTopY}" width="${CW}" height="${foamH+5}" fill="#c87d2a" opacity="0.9"/>
+          <path d="${wavePath(foamTopY, 2, true)}" fill="#b06820" opacity="0.7"
+            style="animation:lfW2 6s ease-in-out infinite ${wOff2}"/>
+          <ellipse cx="${CX+CW/2}" cy="${foamTopY+3}" rx="${CW*0.42}" ry="8" fill="#d4922a" opacity="0.8"/>
+          <ellipse cx="${CX+CW/2}" cy="${foamTopY+1}" rx="${CW*0.30}" ry="5" fill="rgba(255,220,160,0.25)"/>` : ''}`;
+    }
+
+    if (type === 'egg_coffee') {
+      // Dark espresso base (bottom 65%) + thick yellow custard top (35%)
+      const espH   = fillH * 0.65, espY = CBY - espH;
+      const custardY = fillY;
+      return `
+        <rect x="${CX}" y="${espY}" width="${CW}" height="${espH+5}" fill="#1c0a04" opacity="0.95"/>
+        <path d="${wavePath(espY, 3, false)}" fill="#2a1008" opacity="0.65"
+          style="animation:lfW1 4s ease-in-out infinite ${wOff1}"/>
+        <ellipse cx="${CX+CW/2}" cy="${espY+4}" rx="${CW*0.36}" ry="4" fill="rgba(140,60,10,0.28)"/>
+        ${pct > 58 ? `
+          <rect x="${CX}" y="${custardY}" width="${CW}" height="${fillH*0.35+5}" fill="#f5d070" opacity="0.92"/>
+          <path d="${wavePath(custardY, 2, true)}" fill="#e8c040" opacity="0.65"
+            style="animation:lfW2 5s ease-in-out infinite ${wOff2}"/>
+          <ellipse cx="${CX+CW/2}" cy="${custardY+3}" rx="${CW*0.40}" ry="7" fill="#fbe898" opacity="0.72"/>` : ''}`;
+    }
+
+    if (type === 'iced_matcha') {
+      // White oat milk base (bottom 55%) + matcha cloud diffusing down from top
+      const milkH = fillH * 0.55, milkY = CBY - milkH;
+      const matchaY = fillY;
+      const diffuse = Math.min(1, Math.max(0, (pct - 50) / 45)); // 0 at 50%, 1 at 95%
+      return `
+        <rect x="${CX}" y="${milkY}" width="${CW}" height="${milkH+5}" fill="#f5f0e8" opacity="0.92"/>
+        <path d="${wavePath(milkY, 2, false)}" fill="#ede8dc" opacity="0.6"
+          style="animation:lfW1 5s ease-in-out infinite ${wOff1}"/>
+        ${pct > 25 ? generateIceWithDrop(CX, milkY + 6, pct) : ''}
+        ${pct > 48 ? `
+          <rect x="${CX}" y="${matchaY}" width="${CW}" height="${fillH*0.45+5}" fill="#3a7040" opacity="${0.7 + diffuse*0.2}"/>
+          <path d="${wavePath(matchaY, 2, true)}" fill="#2e6030" opacity="0.6"
+            style="animation:lfW2 4.5s ease-in-out infinite ${wOff2}"/>
+          <ellipse cx="${CX+CW/2}" cy="${matchaY + fillH*0.45*0.85}" rx="${CW*0.38}" ry="${4+diffuse*6}"
+            fill="rgba(180,220,180,0.28)" opacity="${0.4+diffuse*0.4}"/>` : ''}`;
+    }
+
+    if (type === 'caramel_mac') {
+      // White milk (bottom 60%) blending up to dark espresso crown
+      const milkH = fillH * 0.60, milkY = CBY - milkH;
+      const crownY = fillY;
+      return `
+        <rect x="${CX}" y="${milkY}" width="${CW}" height="${milkH+5}" fill="#f5ede0" opacity="0.9"/>
+        <path d="${wavePath(milkY, 2, false)}" fill="#ede0cc" opacity="0.55"
+          style="animation:lfW1 5s ease-in-out infinite ${wOff1}"/>
+        ${pct > 55 ? `
+          <rect x="${CX}" y="${crownY}" width="${CW}" height="${fillH*0.40+5}" fill="#2a1208" opacity="0.88"/>
+          <path d="${wavePath(crownY, 3, true)}" fill="#1c0c06" opacity="0.65"
+            style="animation:lfW2 4s ease-in-out infinite ${wOff2}"/>` : ''}
+        ${pct > 85 ? `
+          <path d="M${CX+20},${fillY+2} L${CX+40},${fillY+2} M${CX+30},${fillY-2} L${CX+30},${fillY+6}"
+            stroke="#c88020" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+          <path d="M${CX+55},${fillY+2} L${CX+80},${fillY+2} M${CX+68},${fillY-2} L${CX+68},${fillY+6}"
+            stroke="#c88020" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>` : ''}`;
+    }
+
+    if (type === 'irish_coffee') {
+      // Dark whiskey coffee base (bottom 75%) + thick cream float (top 25%)
+      const coffeeH = fillH * 0.75, coffeeY = CBY - coffeeH;
+      const creamY  = fillY;
+      return `
+        <rect x="${CX}" y="${coffeeY}" width="${CW}" height="${coffeeH+5}" fill="#1e0d08" opacity="0.94"/>
+        <path d="${wavePath(coffeeY, 3, false)}" fill="#150a05" opacity="0.65"
+          style="animation:lfW1 4s ease-in-out infinite ${wOff1}"/>
+        ${pct > 70 ? `
+          <rect x="${CX}" y="${creamY}" width="${CW}" height="${fillH*0.25+5}" fill="#f8f2e8" opacity="0.90"/>
+          <path d="${wavePath(creamY, 2, true)}" fill="#f0e8d8" opacity="0.7"
+            style="animation:lfW2 6s ease-in-out infinite ${wOff2}"/>
+          <ellipse cx="${CX+CW/2}" cy="${creamY+2}" rx="${CW*0.44}" ry="7" fill="#fff8f0" opacity="0.75"/>` : ''}`;
+    }
+
+    // --- Standard wave-fill system for all other drink types ---
+    const base  = `<rect x="${CX-1}" y="${fillY+3}" width="${CW+2}" height="${CBY - fillY + 5}"
+      fill="${d.liquidColor}" opacity="0.52"/>`;
+    const waves = `
+      <path d="${wP2}" fill="${d.liquidColor2}" opacity="0.58"
+        style="animation:lfW2 ${wSpd*1.3}s ease-in-out infinite ${wOff2}"/>
+      <path d="${wP1}" fill="${liquidFill}" opacity="0.88"
+        style="animation:lfW1 ${wSpd}s ease-in-out infinite ${wOff1}"/>`;
+
+    // Pour stream during active fill
+    const pour = (pct > 4 && pct < 92) ? buildPourStream(d.liquidColor, fillY, 30) : '';
+
+    let inner = '';
+
+    if (type === 'coffee' && pct > 10)
+      inner = `<ellipse cx="70" cy="${fillY+4}" rx="${CW*0.38}" ry="4.5" fill="rgba(140,65,12,0.30)" opacity="0.88"/>`;
+
+    if (type === 'matcha' && fillH > 20) {
+      const swY = fillY + fillH * 0.40;
+      inner = `<g style="animation:lfSwirl 9s linear infinite ${ao(9)};transform-origin:70px ${swY}px">
+        <ellipse cx="70" cy="${swY}" rx="${CW*0.22}" ry="${Math.max(4,fillH*0.12)}"
+          fill="none" stroke="${d.liquidColor2}" stroke-width="2" opacity="0.38" stroke-dasharray="5 4"/>
+        <ellipse cx="70" cy="${swY}" rx="${CW*0.12}" ry="${Math.max(2.5,fillH*0.06)}"
+          fill="none" stroke="${d.foamColor}" stroke-width="1.5" opacity="0.30" stroke-dasharray="3 4"/>
+      </g>`;
+    }
+
+    if (type === 'milktea' && fillH > 0) {
+      inner = `<rect x="${CX}" y="${fillY+fillH*0.20}" width="${CW}" height="${fillH*0.22}"
+        fill="rgba(232,218,198,0.30)" opacity="0.85"/>`;
+      inner += generateBobas(CX, fillY, CW, fillH, d.bobaColor);
+    }
+
+    if (type === 'oj') {
+      inner += generateIceWithDrop(CX, fillY, pct);
+      if (fillH > 15)
+        [[CX+20,0.50],[CX+50,0.35],[CX+75,0.60],[CX+35,0.70],[CX+85,0.45]].forEach(([px,py]) => {
+          inner += `<circle cx="${px}" cy="${fillY+fillH*py}" r="2.5" fill="rgba(255,155,22,0.42)" opacity="0.75"/>`;
+        });
+      if (fillH > 10)
+        [{x:CX+18,d:1.8},{x:CX+35,d:2.3},{x:CX+52,d:1.5},{x:CX+68,d:2.1},{x:CX+82,d:1.9},{x:CX+45,d:2.4},{x:CX+60,d:1.7}]
+          .forEach(({x,d:dur},i) => {
+            inner += `<circle cx="${x}" cy="${fillY+fillH*0.85}" r="${BUBBLE_SIZES[i]}"
+              fill="rgba(255,228,108,0.62)" style="animation:lfBub ${dur}s ease-in infinite ${ao(dur)}"/>`;
+          });
+    }
+
+    if (type === 'chamomile' && pct > 15)
+      [[CX+25,3,-15,'rgba(255,232,102,0.78)'],[CX+56,2,12,'rgba(255,242,144,0.72)'],[CX+81,4,-6,'rgba(255,226,90,0.75)']].forEach(([px,py,rot,fc]) => {
+        inner += `
+          <ellipse cx="${px}" cy="${fillY+py}" rx="4.5" ry="2" fill="${fc}" transform="rotate(${rot} ${px} ${fillY+py})"/>
+          <ellipse cx="${px}" cy="${fillY+py}" rx="2" ry="4.5" fill="${fc}" opacity="0.75" transform="rotate(${rot+90} ${px} ${fillY+py})"/>
+          <circle cx="${px}" cy="${fillY+py}" r="1.8" fill="rgba(255,200,50,0.82)"/>`;
+      });
+
+    if (type === 'smoothie') {
+      inner += generateIce(CX, fillY);
+      if (fillH > 15)
+        [[CX+18,0.40,4,'rgba(220,50,100,0.55)'],[CX+56,0.55,3,'rgba(200,50,200,0.50)'],
+         [CX+82,0.30,3.5,'rgba(80,200,50,0.50)'],[CX+36,0.70,2.5,'rgba(255,150,50,0.50)']].forEach(([fx,py,fr,fc]) => {
+          inner += `<circle cx="${fx}" cy="${fillY+fillH*py}" r="${fr}" fill="${fc}"/>`;
+        });
+    }
+
+    if (type === 'lemonade') {
+      inner += generateIceWithDrop(CX, fillY, pct);
+      if (fillH > 20) {
+        const lsX = CX+72, lsY = fillY+fillH*0.50;
+        inner += `
+          <circle cx="${lsX}" cy="${lsY}" r="11" fill="rgba(255,255,100,0.28)" stroke="rgba(200,200,0,0.38)" stroke-width="1"/>
+          <line x1="${lsX-11}" y1="${lsY}" x2="${lsX+11}" y2="${lsY}" stroke="rgba(180,180,0,0.28)" stroke-width="0.75"/>
+          <line x1="${lsX}" y1="${lsY-11}" x2="${lsX}" y2="${lsY+11}" stroke="rgba(180,180,0,0.28)" stroke-width="0.75"/>
+          <line x1="${lsX-8}" y1="${lsY-8}" x2="${lsX+8}" y2="${lsY+8}" stroke="rgba(180,180,0,0.18)" stroke-width="0.75"/>
+          <line x1="${lsX+8}" y1="${lsY-8}" x2="${lsX-8}" y2="${lsY+8}" stroke="rgba(180,180,0,0.18)" stroke-width="0.75"/>`;
+      }
+      if (fillH > 10)
+        [{x:CX+18,d:1.8},{x:CX+35,d:2.3},{x:CX+52,d:1.5},{x:CX+68,d:2.1},{x:CX+82,d:1.9},{x:CX+44,d:2.4},{x:CX+60,d:1.7}]
+          .forEach(({x,d:dur},i) => {
+            inner += `<circle cx="${x}" cy="${fillY+fillH*0.85}" r="${BUBBLE_SIZES[i]}"
+              fill="rgba(255,255,188,0.72)" style="animation:lfBub ${dur}s ease-in infinite ${ao(dur)}"/>`;
+          });
+    }
+
+    const foamSVG = foamColor && pct > 5 ? buildFoam(type, fillY, CX, CW, foamColor) : '';
+    return base + waves + pour + inner + foamSVG;
+  }
+    const wOff1 = ao(wSpd), wOff2 = ao(wSpd * 1.3);
+    const wP1 = wavePath(fillY, wAmp, false);
+    const wP2 = wavePath(fillY, wAmp, true);
+
+    // Solid base ensures no gap below the wave
+    const base = `<rect x="${CX-1}" y="${fillY+3}" width="${CW+2}" height="${CBY - fillY + 5}"
+      fill="${d.liquidColor}" opacity="0.52"/>`;
+
+    // Two wave layers at opposing phases
+    const waves = `
+      <path d="${wP2}" fill="${d.liquidColor2}" opacity="0.58"
+        style="animation:lfW2 ${wSpd*1.3}s ease-in-out infinite ${wOff2}"/>
+      <path d="${wP1}" fill="${liquidFill}" opacity="0.88"
+        style="animation:lfW1 ${wSpd}s ease-in-out infinite ${wOff1}"/>`;
+
+    let inner = '';
+    const BUBBLE_SIZES = [2, 2.5, 2, 1.8, 2.5, 1.5, 2.2];
+
+    // --- Coffee: espresso crema ring near surface ---
+    if (type === 'coffee' && pct > 10) {
+      inner = `<ellipse cx="70" cy="${fillY+4}" rx="${CW*0.38}" ry="4.5"
+        fill="rgba(140,65,12,0.30)" opacity="0.88"/>`;
+    }
+
+    // --- Matcha: slow ceremonial swirl ---
+    if (type === 'matcha' && fillH > 20) {
+      const swY = fillY + fillH * 0.40;
+      inner = `
+        <g style="animation:lfSwirl 9s linear infinite ${ao(9)};transform-origin:70px ${swY}px">
+          <ellipse cx="70" cy="${swY}" rx="${CW*0.22}" ry="${Math.max(4, fillH*0.12)}"
+            fill="none" stroke="${d.liquidColor2}" stroke-width="2" opacity="0.38" stroke-dasharray="5 4"/>
+          <ellipse cx="70" cy="${swY}" rx="${CW*0.12}" ry="${Math.max(2.5, fillH*0.06)}"
+            fill="none" stroke="${d.foamColor}" stroke-width="1.5" opacity="0.30" stroke-dasharray="3 4"/>
+        </g>`;
+    }
+
+    // --- Milk Tea: tea/milk layering + bouncing bobas ---
+    if (type === 'milktea' && fillH > 0) {
+      inner = `<rect x="${CX}" y="${fillY + fillH*0.20}" width="${CW}" height="${fillH*0.22}"
+        fill="rgba(232,218,198,0.30)" opacity="0.85"/>`;
+      inner += generateBobas(CX, fillY, CW, fillH, d.bobaColor);
+    }
+
+    // --- Orange Juice: ice + pulp + rising bubbles ---
+    if (type === 'oj') {
+      inner += generateIce(CX, fillY);
+      if (fillH > 15)
+        [[CX+20,0.50],[CX+50,0.35],[CX+75,0.60],[CX+35,0.70],[CX+85,0.45]].forEach(([px,py]) => {
+          inner += `<circle cx="${px}" cy="${fillY+fillH*py}" r="2.5" fill="rgba(255,155,22,0.42)" opacity="0.75"/>`;
+        });
+      if (fillH > 10)
+        [{x:CX+18,d:1.8},{x:CX+35,d:2.3},{x:CX+52,d:1.5},{x:CX+68,d:2.1},{x:CX+82,d:1.9},{x:CX+45,d:2.4},{x:CX+60,d:1.7}]
+          .forEach(({x,d:dur},i) => {
+            inner += `<circle cx="${x}" cy="${fillY+fillH*0.85}" r="${BUBBLE_SIZES[i]}"
+              fill="rgba(255,228,108,0.62)" style="animation:lfBub ${dur}s ease-in infinite ${ao(dur)}"/>`;
+          });
+    }
+
+    // --- Chamomile: flower petals drifting on surface ---
+    if (type === 'chamomile' && pct > 15) {
+      [[CX+25, 3, -15, 'rgba(255,232,102,0.78)'],
+       [CX+56, 2,  12, 'rgba(255,242,144,0.72)'],
+       [CX+81, 4,  -6, 'rgba(255,226,90,0.75)']].forEach(([px, py, rot, fc]) => {
+        inner += `
+          <ellipse cx="${px}" cy="${fillY+py}" rx="4.5" ry="2" fill="${fc}"
+            transform="rotate(${rot} ${px} ${fillY+py})"/>
+          <ellipse cx="${px}" cy="${fillY+py}" rx="2" ry="4.5" fill="${fc}" opacity="0.75"
+            transform="rotate(${rot+90} ${px} ${fillY+py})"/>
+          <circle cx="${px}" cy="${fillY+py}" r="1.8" fill="rgba(255,200,50,0.82)"/>`;
+      });
+    }
+
+    // --- Smoothie: fruit bits + floating ice ---
+    if (type === 'smoothie') {
+      inner += generateIce(CX, fillY);
+      if (fillH > 15)
+        [[CX+18,0.40,4,'rgba(220,50,100,0.55)'],[CX+56,0.55,3,'rgba(200,50,200,0.50)'],
+         [CX+82,0.30,3.5,'rgba(80,200,50,0.50)'],[CX+36,0.70,2.5,'rgba(255,150,50,0.50)']].forEach(([fx,py,fr,fc]) => {
+          inner += `<circle cx="${fx}" cy="${fillY+fillH*py}" r="${fr}" fill="${fc}"/>`;
+        });
+    }
+
+    // --- Lemonade: ice + lemon slice cross-section + rising bubbles ---
+    if (type === 'lemonade') {
+      inner += generateIce(CX, fillY);
+      if (fillH > 20) {
+        const lsX = CX + 72, lsY = fillY + fillH * 0.50;
+        inner += `
+          <circle cx="${lsX}" cy="${lsY}" r="11" fill="rgba(255,255,100,0.28)" stroke="rgba(200,200,0,0.38)" stroke-width="1"/>
+          <line x1="${lsX-11}" y1="${lsY}" x2="${lsX+11}" y2="${lsY}" stroke="rgba(180,180,0,0.28)" stroke-width="0.75"/>
+          <line x1="${lsX}" y1="${lsY-11}" x2="${lsX}" y2="${lsY+11}" stroke="rgba(180,180,0,0.28)" stroke-width="0.75"/>
+          <line x1="${lsX-8}" y1="${lsY-8}" x2="${lsX+8}" y2="${lsY+8}" stroke="rgba(180,180,0,0.18)" stroke-width="0.75"/>
+          <line x1="${lsX+8}" y1="${lsY-8}" x2="${lsX-8}" y2="${lsY+8}" stroke="rgba(180,180,0,0.18)" stroke-width="0.75"/>`;
+      }
+      if (fillH > 10)
+        [{x:CX+18,d:1.8},{x:CX+35,d:2.3},{x:CX+52,d:1.5},{x:CX+68,d:2.1},{x:CX+82,d:1.9},{x:CX+44,d:2.4},{x:CX+60,d:1.7}]
+          .forEach(({x,d:dur},i) => {
+            inner += `<circle cx="${x}" cy="${fillY+fillH*0.85}" r="${BUBBLE_SIZES[i]}"
+              fill="rgba(255,255,188,0.72)" style="animation:lfBub ${dur}s ease-in infinite ${ao(dur)}"/>`;
+          });
+    }
+
+    const foamSVG = foamColor && pct > 5 ? buildFoam(type, fillY, CX, CW, foamColor) : '';
+    return base + waves + inner + foamSVG;
+  }
+
   // ---- SVG cup renderer ----
   function renderCup(pct) {
     const scene = document.getElementById('drinkScene');
     if (!scene || !currentDrink) return;
     const d = currentDrink;
 
-    // ---- Recipe integration ----
-    const recipeKey = DRINK_KEY_TO_RECIPE[currentDrinkId] || null;
-    const tierCfg   = recipeKey ? getCurrentTierConfig(recipeKey) : null;
-    const stepCfg   = tierCfg  ? getStepConfig(tierCfg, pct)     : null;
-    const step100   = tierCfg?.steps?.[100] || null;
-
-    // Dynamic liquid color from current step; fall back to gradient
+    // Recipe integration
+    const recipeKey  = DRINK_KEY_TO_RECIPE[currentDrinkId] || null;
+    const tierCfg    = recipeKey ? getCurrentTierConfig(recipeKey) : null;
+    const stepCfg    = tierCfg  ? getStepConfig(tierCfg, pct)     : null;
+    const step100    = tierCfg?.steps?.[100] || null;
     const stepFill   = stepCfg?.fill;
     const liquidFill = (stepFill && stepFill !== 'transparent') ? stepFill : 'url(#liquidGrad)';
-
-    // Foam color: use recipe's 100% foamFill when set, otherwise drink default
     const foamFill100 = step100?.foamFill;
-    const foamColor   = (foamFill100 && foamFill100 !== 'transparent')
-      ? foamFill100
-      : (d.hasFoam ? d.foamColor : null);
-
-    // Garnish SVG at 100% (latte art, gold flakes, etc.)
+    const foamColor  = (foamFill100 && foamFill100 !== 'transparent')
+      ? foamFill100 : (d.hasFoam ? d.foamColor : null);
     const garnishSvg = (pct >= 100 && step100?.garnishSvg) ? step100.garnishSvg : '';
-
-    // Background glow from recipe tier
-    const bgGlow = tierCfg?.bgGlow || 'transparent';
-    scene.style.filter = (bgGlow && bgGlow !== 'transparent')
-      ? `drop-shadow(0 0 20px ${bgGlow})`
-      : '';
+    const bgGlow     = tierCfg?.bgGlow || 'transparent';
+    scene.style.filter = (bgGlow && bgGlow !== 'transparent') ? `drop-shadow(0 0 20px ${bgGlow})` : '';
 
     // Cup geometry
-    const cupX = 20, cupW = 100;
-    const cupTopY = 30, cupBottomY = 155;
-    const cupH = cupBottomY - cupTopY;
+    const CX = 20, CW = 100, CTY = 30, CBY = 155;
+    const fillH = Math.max(0, (pct / 100) * (CBY - CTY - 20));
+    const fillY = CBY - fillH;
 
-    const fillH = (pct / 100) * (cupH - 20);
-    const fillY = cupBottomY - fillH;
+    const type = d.type || 'coffee';
+    const ac   = DRINK_ANIM[type] || DRINK_ANIM.coffee;
 
-    const boba = d.bobas   ? generateBobas(cupX, fillY, cupW, fillH, d.bobaColor) : '';
-    const ice  = d.hasIce  ? generateIce(cupX, fillY, cupW, d.cupTint) : '';
-
-    const foam = foamColor && pct > 5 ? `
-      <ellipse cx="${cupX + cupW/2}" cy="${fillY + 2}" rx="${cupW*0.42}" ry="8"
-        fill="${foamColor}" opacity="0.9"/>
-      <ellipse cx="${cupX + cupW/2 - 12}" cy="${fillY}" rx="10" ry="6"
-        fill="${foamColor}" opacity="0.7"/>
-      <ellipse cx="${cupX + cupW/2 + 14}" cy="${fillY + 1}" rx="9" ry="5"
-        fill="${foamColor}" opacity="0.75"/>` : '';
-
-    const sparkles = pct >= 100 ? generateSparkles() : '';
-
-    const wave = pct > 0 && pct < 100 ? `
-      <animateTransform attributeName="transform" type="translate"
-        values="0,0;4,0;0,0" dur="2s" repeatCount="indefinite"/>` : '';
-
-    // Tier badge (top-right of cup)
     const tierBadge = tierCfg && tierCfg.tier !== 'house' ? `
-      <text x="135" y="16" text-anchor="end"
-        font-family="Source Sans Pro, sans-serif" font-size="7.5" font-weight="700"
+      <text x="135" y="16" text-anchor="end" font-family="Source Sans Pro,sans-serif"
+        font-size="7.5" font-weight="700"
         fill="${tierCfg.tier === 'mastercraft' ? '#fbbf24' : 'rgba(212,165,116,0.9)'}">
         ${tierCfg.tier === 'mastercraft' ? '👑 MASTER' : '✦ SIG'}
       </text>` : '';
 
+    const liquidSVG = pct > 0
+      ? buildLiquid(d, type, fillY, fillH, CX, CW, CBY, liquidFill, foamColor, pct, ac.waveAmp, ac.waveSpeed)
+      : '';
+    const steamSVG = ac.steam && pct > 0 && pct < 100 ? buildSteam(type, CTY) : '';
+
+    // Inject keyframes into <head> once — they survive SVG innerHTML replacement
+    injectDrinkStyles(ac.waveAmp, ac.waveSpeed);
+
     scene.innerHTML = `
-      <svg viewBox="0 0 140 180" xmlns="http://www.w3.org/2000/svg"
-        style="width:100%;max-width:160px;margin:0 auto;display:block;">
-        <defs>
-          ${tierCfg?.defs || ''}
-          <clipPath id="cupClip">
-            <polygon points="${cupX},${cupTopY} ${cupX+cupW},${cupTopY} ${cupX+cupW-8},${cupBottomY} ${cupX+8},${cupBottomY}"/>
-          </clipPath>
-          <linearGradient id="liquidGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="${d.liquidColor}"/>
-            <stop offset="100%" stop-color="${d.liquidColor2}"/>
-          </linearGradient>
-          <linearGradient id="cupGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="${d.cupTint}44"/>
-            <stop offset="50%" stop-color="${d.cupTint}22"/>
-            <stop offset="100%" stop-color="${d.cupTint}44"/>
-          </linearGradient>
-          <style>
-            @keyframes sparkle {
-              0%,100% { opacity:0.2; transform:scale(0.8); }
-              50%      { opacity:1;   transform:scale(1.2); }
-            }
-          </style>
-        </defs>
+    <svg viewBox="0 0 140 180" xmlns="http://www.w3.org/2000/svg"
+      style="width:100%;max-width:160px;margin:0 auto;display:block;overflow:visible;">
+      <defs>
+        ${tierCfg?.defs || ''}
+        <clipPath id="cupClip">
+          <polygon points="${CX},${CTY} ${CX+CW},${CTY} ${CX+CW-8},${CBY} ${CX+8},${CBY}"/>
+        </clipPath>
+        <linearGradient id="liquidGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="${d.liquidColor}"/>
+          <stop offset="100%" stop-color="${d.liquidColor2}"/>
+        </linearGradient>
+        <linearGradient id="cupGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="${d.cupTint}44"/>
+          <stop offset="50%" stop-color="${d.cupTint}22"/>
+          <stop offset="100%" stop-color="${d.cupTint}44"/>
+        </linearGradient>
+      </defs>
 
-        ${tierBadge}
+      ${tierBadge}
+      <ellipse cx="70" cy="${CBY+8}" rx="44" ry="6" fill="rgba(0,0,0,0.12)"/>
+      <polygon points="${CX},${CTY} ${CX+CW},${CTY} ${CX+CW-8},${CBY} ${CX+8},${CBY}"
+        fill="rgba(245,241,235,0.15)" stroke="${d.cupTint}" stroke-width="2.5" stroke-linejoin="round"/>
 
-        <!-- Cup shadow -->
-        <ellipse cx="70" cy="${cupBottomY + 8}" rx="44" ry="6" fill="rgba(0,0,0,0.12)"/>
+      ${pct > 0 ? `<g clip-path="url(#cupClip)">${liquidSVG}</g>` : ''}
 
-        <!-- Cup body -->
-        <polygon points="${cupX},${cupTopY} ${cupX+cupW},${cupTopY} ${cupX+cupW-8},${cupBottomY} ${cupX+8},${cupBottomY}"
-          fill="rgba(245,241,235,0.15)" stroke="${d.cupTint}" stroke-width="2.5" stroke-linejoin="round"/>
+      <polygon points="${CX},${CTY} ${CX+CW},${CTY} ${CX+CW-8},${CBY} ${CX+8},${CBY}"
+        fill="url(#cupGrad)" stroke="none"/>
+      <line x1="${CX}" y1="${CTY}" x2="${CX+CW}" y2="${CTY}"
+        stroke="${d.cupTint}" stroke-width="3" stroke-linecap="round"/>
 
-        <!-- Liquid fill (clipped) -->
-        ${pct > 0 ? `
-        <g clip-path="url(#cupClip)">
-          <rect x="${cupX}" y="${fillY}" width="${cupW}" height="${fillH + 10}"
-            fill="${liquidFill}" opacity="0.88">
-            ${wave}
-          </rect>
-          ${boba}
-          ${ice}
-          ${foam}
-        </g>` : ''}
+      ${(d.bobas || d.hasIce) ? buildStraw(fillH, CTY, CBY) : ''}
+      ${(!d.bobas && !d.hasIce) ? buildLid(CX, CW, CTY, d.cupTint) : ''}
 
-        <!-- Cup glass sheen overlay -->
-        <polygon points="${cupX},${cupTopY} ${cupX+cupW},${cupTopY} ${cupX+cupW-8},${cupBottomY} ${cupX+8},${cupBottomY}"
-          fill="url(#cupGrad)" stroke="none"/>
+      ${steamSVG}
+      ${garnishSvg}
+      ${pct >= 100 ? generateSparkles() : ''}
 
-        <!-- Cup rim -->
-        <line x1="${cupX}" y1="${cupTopY}" x2="${cupX+cupW}" y2="${cupTopY}"
-          stroke="${d.cupTint}" stroke-width="3" stroke-linecap="round"/>
-
-        <!-- Straw (iced / boba drinks) -->
-        ${d.bobas || d.hasIce ? `
-        <rect x="88" y="${cupTopY - 22}" width="5" height="${Math.min(fillH + 22, cupH + 22)}"
-          rx="2.5" fill="#c4a882" opacity="0.85"/>
-        <rect x="89" y="${cupTopY - 22}" width="2" height="${Math.min(fillH + 22, cupH + 22)}"
-          rx="1" fill="rgba(255,255,255,0.3)"/>` : ''}
-
-        <!-- Lid (hot drinks) -->
-        ${!d.bobas && !d.hasIce ? `
-        <rect x="${cupX - 2}" y="${cupTopY - 8}" width="${cupW + 4}" height="8"
-          rx="4" fill="${d.cupTint}" opacity="0.6"/>` : ''}
-
-        <!-- Garnish (latte art, gold flakes, petals — from recipe) -->
-        ${garnishSvg}
-
-        ${sparkles}
-
-        <!-- Progress % label -->
-        ${pct > 15 ? `
-        <text x="70" y="${Math.max(fillY + 18, cupBottomY - 10)}"
-          text-anchor="middle" font-family="Playfair Display, serif"
-          font-size="13" font-weight="600" fill="rgba(255,255,255,0.85)">
-          ${Math.round(pct)}%
-        </text>` : ''}
-      </svg>`;
-  }
-
-  function generateBobas(cupX, fillY, cupW, fillH, color) {
-    if (fillH < 10) return '';
-    const bobas = [];
-    const positions = [
-      [cupX+15, 8], [cupX+30, 12], [cupX+50, 6], [cupX+65, 10], [cupX+80, 8],
-      [cupX+20, 20], [cupX+45, 18], [cupX+70, 22], [cupX+35, 28], [cupX+60, 25],
-    ];
-    positions.forEach(([bx, offset]) => {
-      const by = Math.min(fillY + fillH - offset, fillY + fillH - 5);
-      if (by > fillY) {
-        bobas.push(`<circle cx="${bx}" cy="${by}" r="5" fill="${color}" opacity="0.9"/>
-          <circle cx="${bx-1}" cy="${by-1}" r="1.5" fill="rgba(255,255,255,0.2)"/>`);
-      }
-    });
-    return bobas.join('');
-  }
-
-  function generateIce(cupX, fillY, cupW, tint) {
-    return `
-      <rect x="${cupX+12}" y="${fillY+5}" width="18" height="12" rx="3"
-        fill="rgba(220,240,255,0.7)" stroke="rgba(180,220,255,0.5)" stroke-width="1" transform="rotate(-8,${cupX+21},${fillY+11})"/>
-      <rect x="${cupX+40}" y="${fillY+8}" width="16" height="10" rx="3"
-        fill="rgba(220,240,255,0.65)" stroke="rgba(180,220,255,0.5)" stroke-width="1" transform="rotate(5,${cupX+48},${fillY+13})"/>
-      <rect x="${cupX+65}" y="${fillY+4}" width="20" height="13" rx="3"
-        fill="rgba(220,240,255,0.72)" stroke="rgba(180,220,255,0.5)" stroke-width="1" transform="rotate(-5,${cupX+75},${fillY+10})"/>`;
+      ${pct > 15 ? `
+      <text x="70" y="${Math.max(fillY + 18, CBY - 10)}"
+        text-anchor="middle" font-family="Playfair Display,serif"
+        font-size="13" font-weight="600" fill="rgba(255,255,255,0.85)">
+        ${Math.round(pct)}%
+      </text>` : ''}
+    </svg>`;
   }
 
   function generateSparkles() {
-    return `
-      <g class="drink-sparkles">
-        <text x="18" y="22" font-size="14" opacity="0.9">✨</text>
-        <text x="108" y="18" font-size="12" opacity="0.85">⭐</text>
-        <text x="60" y="12" font-size="10" opacity="0.8">✦</text>
-        <text x="28" y="42" font-size="11" opacity="0.7">✧</text>
-        <text x="100" y="38" font-size="13" opacity="0.75">✨</text>
-      </g>`;
+    return `<g>
+      <text x="18" y="22" font-size="14" style="animation:sparkle 1.5s ease-in-out infinite ${ao(1.5)}">✨</text>
+      <text x="108" y="18" font-size="12" style="animation:sparkle 1.8s ease-in-out infinite ${ao(1.8)}">⭐</text>
+      <text x="60" y="12" font-size="10" style="animation:sparkle 1.3s ease-in-out infinite ${ao(1.3)}">✦</text>
+      <text x="28" y="42" font-size="11" style="animation:sparkle 2.0s ease-in-out infinite ${ao(2.0)}">✧</text>
+      <text x="100" y="38" font-size="13" style="animation:sparkle 1.6s ease-in-out infinite ${ao(1.6)}">✨</text>
+    </g>`;
   }
 
   function finishDrinkAnimation() {
@@ -466,7 +889,9 @@ const DrinkModule = (function () {
     // Base drinks always available; shop drinks only if owned
     const allDrinks = typeof CategoriesModule !== 'undefined' ? CategoriesModule.ALL_DRINKS : [];
     const ownedIds  = typeof ShopModule !== 'undefined' ? ShopModule.getOwned().drinks : [];
-    const available = allDrinks.filter(d => d.rarity === 'base' || ownedIds.includes(d.id));
+    const available = allDrinks.length
+      ? allDrinks.filter(d => d.rarity === 'base' || ownedIds.includes(d.id))
+      : DRINK_KEYS.map(k => ({ id: k, emoji: k.split(' ')[0], label: k.split(' ').slice(1).join(' '), rarity: 'base' }));
 
     // Group by rarity, skip empty groups
     const rarityOrder = ['base', 'common', 'uncommon', 'rare', 'epic', 'legendary'];
@@ -476,7 +901,6 @@ const DrinkModule = (function () {
       if (items.length) grouped[r] = items;
     });
 
-    // Resolve current drink display entry
     const curEntry = allDrinks.find(d => d.id === currentDrinkId)
       || { emoji: '☕', label: 'Coffee', rarity: 'base' };
     const curRS = PICKER_RARITY_STYLE[curEntry.rarity] || PICKER_RARITY_STYLE.base;
@@ -519,25 +943,19 @@ const DrinkModule = (function () {
         const btn = document.createElement('button');
         btn.className = 'cat-drink-catalogue-btn' + (d.id === currentDrinkId ? ' active' : '');
         btn.dataset.id     = d.id;
-        btn.dataset.emoji  = d.emoji;
-        btn.dataset.label  = d.label;
-        btn.dataset.rarity = d.rarity;
         btn.title = d.label;
         btn.innerHTML = `
           <span class="cat-dc-emoji">${d.emoji}</span>
           <span class="cat-dc-name">${d.label}</span>
         `;
         btn.addEventListener('click', () => {
-          // Update "current drink" preview at top
           const rs2 = PICKER_RARITY_STYLE[d.rarity] || PICKER_RARITY_STYLE.base;
           selectedDisp.querySelector('.cat-drink-sel-emoji').textContent   = d.emoji;
           selectedDisp.querySelector('.cat-drink-sel-name').textContent    = d.label;
           selectedDisp.querySelector('.cat-drink-sel-rarity').textContent  = rs2.label;
           selectedDisp.querySelector('.cat-drink-sel-rarity').style.color  = rs2.chalk;
-          // Highlight active button
           box.querySelectorAll('.cat-drink-catalogue-btn')
              .forEach(b => b.classList.toggle('active', b.dataset.id === d.id));
-          // Apply and close
           setDrink(d.id);
           renderCup(currentPct);
           setTimeout(() => modal.remove(), 150);
@@ -806,5 +1224,18 @@ const DrinkModule = (function () {
     updateProgress(pct);
   }
 
-  return { init, onSessionStart, onProgressUpdate, renderBillBoard };
+  // Returns current drink data for the shelf module
+  function getCurrentDrinkInfo() {
+    if (!currentDrink) return null;
+    const recipeKey = DRINK_KEY_TO_RECIPE[currentDrinkId] || null;
+    const tierCfg   = recipeKey ? getCurrentTierConfig(recipeKey) : null;
+    return {
+      drinkKey:     currentDrinkId,
+      drinkType:    currentDrink.type || 'coffee',
+      liquidColor:  currentDrink.liquidColor,
+      tier:         tierCfg?.tier || 'house',
+    };
+  }
+
+  return { init, onSessionStart, onProgressUpdate, renderBillBoard, getCurrentDrinkInfo };
 })();

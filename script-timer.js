@@ -7,6 +7,7 @@ const TimerModule = (function() {
   let totalSeconds = 0, remainingSeconds = 0;
   let timerRunning = false, timerInterval = null;
   let elapsedSeconds = 0;
+  let sessionStatsRecorded = false;
   let configHours = 0, configMinutes = 25, configSeconds = 0;
   let selectedGoal = null;
   let popOutWindow = null;
@@ -102,7 +103,7 @@ const TimerModule = (function() {
       item.addEventListener('click', () => {
         document.querySelectorAll('.goal-picker-item').forEach(el => el.classList.remove('selected'));
         item.classList.add('selected');
-        selectedGoal = { index: i, text: goal.text, category: goal.category || null, subgoals: (goal.subgoals || []).map(s => ({ text: s.text || s, done: s.done || false })) };
+        selectedGoal = { index: i, text: goal.text, category: goal.category || null, subgoals: (goal.subgoals || []).map(s => ({ text: s.text || s, done: s.completed || false })) };
         if (nextBtn) nextBtn.disabled = false;
         const preview = document.getElementById('selectedGoalPreview');
         if (preview) preview.textContent = '🎯 ' + goal.text;
@@ -145,8 +146,15 @@ const TimerModule = (function() {
     broadcastState({ action: 'complete' });
     const btn = document.getElementById('startPauseBtn');
     if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
+    // Record stats if not already done (handles mid-session goal completion path)
+    if (!sessionStatsRecorded) {
+      sessionStatsRecorded = true;
+      if (typeof StatsModule !== 'undefined') StatsModule.recordSession(elapsedSeconds, selectedGoal?.text || '');
+      if (typeof XPModule !== 'undefined') XPModule.onSessionComplete(elapsedSeconds, false, selectedGoal?.text || '');
+      if (typeof DrinkShelfModule !== 'undefined') DrinkShelfModule.addCup(elapsedSeconds);
+    }
     if (selectedGoal?.index != null) GoalsModule.completeGoalByIndex(selectedGoal.index, selectedGoal.subgoals?.map(s => s.done) || []);
-    playSoftChime(); triggerCelebration(); showGoalCompleteModal();
+    playSoftChime(); showGoalCompleteModal();
   }
 
   function showGoalCompleteModal() {
@@ -163,11 +171,16 @@ const TimerModule = (function() {
     document.getElementById('goalCompleteOk').addEventListener('click', () => { document.body.removeChild(modal); hideTimerPage(); });
   }
 
-  function showTimerEndModal() {
+  function showTimerEndModal(skipXPAndStats = false) {
     playSoftChime();
-    // Record stats + XP
-    if (typeof StatsModule !== 'undefined') StatsModule.recordSession(elapsedSeconds, selectedGoal?.text || '');
-    if (typeof XPModule !== 'undefined') XPModule.onSessionComplete(elapsedSeconds, false, selectedGoal?.text || '');
+    // Record stats + XP once — guarded so Pomodoro path (which calls us with skipXPAndStats=true)
+    // and mid-session completions never double-count.
+    if (!skipXPAndStats && !sessionStatsRecorded) {
+      sessionStatsRecorded = true;
+      if (typeof StatsModule !== 'undefined') StatsModule.recordSession(elapsedSeconds, selectedGoal?.text || '');
+      if (typeof XPModule !== 'undefined') XPModule.onSessionComplete(elapsedSeconds, false, selectedGoal?.text || '');
+      if (typeof DrinkShelfModule !== 'undefined') DrinkShelfModule.addCup(elapsedSeconds);
+    }
     const quote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
     const modal = document.createElement('div');
     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(40,22,10,0.72);z-index:10000;display:flex;align-items:center;justify-content:center;';
@@ -849,7 +862,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
     timerHours = saved.hours ?? 0; timerMinutes = saved.minutes ?? 0; timerSeconds = saved.seconds ?? 0;
     totalSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
     remainingSeconds = totalSeconds;
-    elapsedSeconds = 0; lastQuoteMilestone = -1;
+    elapsedSeconds = 0; lastQuoteMilestone = -1; sessionStatsRecorded = false;
     const textEl = document.getElementById('progressQuoteText'), milestoneEl = document.getElementById('progressQuoteMilestone');
     if (textEl) textEl.textContent = '"The secret of getting ahead is getting started."';
     if (milestoneEl) milestoneEl.textContent = '— Mark Twain';
@@ -938,11 +951,16 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
       } else {
         pomoIsWork = true;
         if (pomoCurrentCycle >= POMO_CYCLES) {
-          // All cycles done — full pomodoro bonus
-          if (typeof XPModule !== 'undefined') XPModule.onSessionComplete(elapsedSeconds, true, selectedGoal?.text || '');
+          // All cycles done — record stats + XP once here with the pomodoro bonus flag
+          if (!sessionStatsRecorded) {
+            sessionStatsRecorded = true;
+            if (typeof StatsModule !== 'undefined') StatsModule.recordSession(elapsedSeconds, selectedGoal?.text || '');
+            if (typeof XPModule !== 'undefined') XPModule.onSessionComplete(elapsedSeconds, true, selectedGoal?.text || '');
+            if (typeof DrinkShelfModule !== 'undefined') DrinkShelfModule.addCup(elapsedSeconds);
+          }
           pomoCurrentCycle = 1;
           updatePomoIndicator();
-          showTimerEndModal();
+          showTimerEndModal(true);
         } else {
           pomoCurrentCycle++;
           remainingSeconds = POMO_WORK; totalSeconds = POMO_WORK;

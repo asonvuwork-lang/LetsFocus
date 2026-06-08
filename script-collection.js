@@ -185,10 +185,10 @@ const CollectionModule = (function () {
     if (!panel) return;
 
     const tiers = DRINK_TIERS[drink.id] || {};
-    const eq1 = tiers.equipment?.[0], eq2 = tiers.equipment?.[1];
-    const hasEq1 = !eq1 || ownedEquip.includes(eq1);
-    const hasEq2 = !eq2 || ownedEquip.includes(eq2);
-    const currentTier = hasEq1 && hasEq2 ? 3 : hasEq1 ? 2 : 1;
+    const equipment = tiers.equipment || [];
+    const allEquipOwned  = equipment.length === 0 || equipment.every(id => ownedEquip.includes(id));
+    const firstEquipOwned = equipment.length === 0 || (equipment[0] && ownedEquip.includes(equipment[0]));
+    const currentTier = allEquipOwned ? 3 : firstEquipOwned ? 2 : 1;
     const isActive = activeDrinkId === drink.id;
 
     const eqTag = (id) => {
@@ -197,6 +197,8 @@ const CollectionModule = (function () {
       const own = ownedEquip.includes(id);
       return `<span class="col-eq-tag${own ? ' owned' : ' locked'}">${own ? eq.emoji : '🔒'} ${own ? eq.name : 'Locked'}</span>`;
     };
+    // All tags for Tier 3 (shows every required equipment item)
+    const allEqTags = equipment.length ? equipment.map(eqTag).join('') : '';
 
     panel.classList.remove('hidden');
     panel.innerHTML = `
@@ -216,7 +218,7 @@ const CollectionModule = (function () {
                   <div class="col-tier-label">${['House','Signature','Mastercraft'][n-1]}</div>
                   <div class="col-tier-name">${tiers['tier'+n] || '—'}</div>
                   <div class="col-tier-reqs">
-                    ${n===2 ? eqTag(eq1) : n===3 ? eqTag(eq1)+eqTag(eq2) : '<span class="col-tier-free">No equipment needed</span>'}
+                    ${n===2 ? eqTag(equipment[0]) : n===3 ? allEqTags : '<span class="col-tier-free">No equipment needed</span>'}
                   </div>
                 </div>
               </div>

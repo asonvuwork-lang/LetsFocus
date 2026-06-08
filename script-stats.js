@@ -133,7 +133,10 @@ const StatsModule = (function () {
     // Wire stats tab activation
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        if (btn.dataset.tab === 'stats') setTimeout(renderStats, 50);
+        if (btn.dataset.tab === 'stats') {
+          setTimeout(renderStats, 50);
+          if (typeof DrinkShelfModule !== 'undefined') setTimeout(DrinkShelfModule.renderStatsShelf, 60);
+        }
       });
     });
     // Reset button

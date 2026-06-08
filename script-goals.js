@@ -146,8 +146,9 @@ const GoalsModule = (function() {
         goal.completed = this.checked;
         if (goal.subgoals && goal.subgoals.length) goal.subgoals.forEach(sg => sg.completed = this.checked);
         if (!wasCompleted && goal.completed) {
-          // Check if overdue
-          const isLate = goal.deadline && new Date(goal.deadline + 'T00:00:00') < new Date();
+          // Check if overdue — compare against midnight today so same-day completions are never late
+          const _today = new Date(); _today.setHours(0, 0, 0, 0);
+          const isLate = goal.deadline && new Date(goal.deadline + 'T00:00:00') < _today;
           const overdueStreak = typeof XPModule !== 'undefined' ? XPModule.getOverdueStreak() : 0;
           if (typeof XPModule !== 'undefined') XPModule.onGoalComplete(goal, isLate, overdueStreak);
           if (typeof StatsModule !== 'undefined') StatsModule.recordGoalComplete();

@@ -525,6 +525,7 @@ document.addEventListener('letsfocus:ready', function() {
   // ---- Shop + Collection ----
   if (typeof ShopModule !== 'undefined') { ShopModule.init(); ShopModule.updateBeanDisplay(); }
   if (typeof CollectionModule !== 'undefined') CollectionModule.init();
+  if (typeof DrinkShelfModule !== 'undefined') DrinkShelfModule.init();
 
   // ---- List / Board toggle ----
   const _lBtn  = document.getElementById('viewListBtn');
