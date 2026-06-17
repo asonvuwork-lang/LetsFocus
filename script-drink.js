@@ -60,18 +60,42 @@ const DrinkModule = (function () {
     affogato:           'affogato',
   };
 
-  // ---- Shop drink ID → closest base visual key (for cup look) ----
+  // ---- Shop drink ID → unique visual key (each drink gets its own look) ----
   const SHOP_ID_TO_VISUAL = {
-    espresso: '☕ Coffee', americano: '☕ Coffee', flat_white: '☕ Coffee',
-    hot_choc: '☕ Coffee', matcha_latte: '🍵 Matcha', egg_coffee: '_egg_coffee',
-    boba: '🧋 Milk Tea', caramel_mac: '_caramel_mac', ca_phe_sua_da: '_ca_phe_sua_da',
-    lavender_latte: '🍵 Matcha', dalgona: '_dalgona', iced_matcha: '_iced_matcha',
-    rose_gold: '🥤 Smoothie', galaxy_brew: '☕ Coffee', midnight_esp: '☕ Coffee',
-    cherry_blossom: '🥤 Smoothie', barista_secret: '🍋 Lemonade',
-    golden_hour: '☕ Coffee', aurora_brew: '🧋 Milk Tea', the_void: '☕ Coffee',
-    latte: '☕ Coffee', cappuccino: '☕ Coffee', mocha: '☕ Coffee',
-    macchiato: '☕ Coffee', irish_coffee: '_irish_coffee',
-    vienna_coffee: '☕ Coffee', affogato: '🍊 Orange Juice',
+    // Common coffee variants
+    espresso:       '_espresso',
+    americano:      '_americano',
+    flat_white:     '_flat_white',
+    hot_choc:       '_hot_choc',
+    // Matcha / milk-based
+    matcha_latte:   '🍵 Matcha',
+    lavender_latte: '_lavender_latte',
+    iced_matcha:    '_iced_matcha',
+    // Boba / milk tea
+    boba:           '🧋 Milk Tea',
+    // Layered shop specials
+    egg_coffee:     '_egg_coffee',
+    caramel_mac:    '_caramel_mac',
+    ca_phe_sua_da:  '_ca_phe_sua_da',
+    dalgona:        '_dalgona',
+    irish_coffee:   '_irish_coffee',
+    // Uncommon coffee
+    latte:          '_latte',
+    cappuccino:     '_cappuccino',
+    mocha:          '_mocha',
+    macchiato:      '_macchiato',
+    vienna_coffee:  '_vienna_coffee',
+    affogato:       '_affogato',
+    // Epic
+    rose_gold:      '_rose_gold',
+    cherry_blossom: '_cherry_blossom',
+    galaxy_brew:    '_galaxy_brew',
+    midnight_esp:   '_midnight_esp',
+    // Legendary
+    barista_secret: '_barista_secret',
+    golden_hour:    '_golden_hour',
+    aurora_brew:    '_aurora_brew',
+    the_void:       '_the_void',
   };
 
   // ---- Drink definitions ----
@@ -80,87 +104,204 @@ const DrinkModule = (function () {
       label: '☕ Coffee', type: 'coffee',
       liquidColor: '#3d1f0a', liquidColor2: '#6b3a1f',
       foamColor: '#e8d5b0', cupTint: '#8b6030',
-      bobas: false, hasFoam: true, hasIce: false,
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'base',
     },
     '🍵 Matcha': {
       label: '🍵 Matcha', type: 'matcha',
       liquidColor: '#4a7c4e', liquidColor2: '#6aaa6e',
       foamColor: '#a8d5a2', cupTint: '#5a8a5a',
-      bobas: false, hasFoam: true, hasIce: false,
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'base',
     },
     '🧋 Milk Tea': {
       label: '🧋 Milk Tea', type: 'milktea',
       liquidColor: '#c4a882', liquidColor2: '#d4bc9a',
       foamColor: '#f0e6d0', cupTint: '#b89060',
       bobas: true, bobaColor: '#2a1a0a',
-      hasFoam: true, hasIce: false,          // cream layer on top
+      hasFoam: true, hasIce: false, rarity: 'base',
     },
     '🍊 Orange Juice': {
       label: '🍊 Orange Juice', type: 'oj',
       liquidColor: '#e8820a', liquidColor2: '#f0a030',
       foamColor: '#ffd580', cupTint: '#d4740a',
-      bobas: false, hasFoam: false, hasIce: true,
+      bobas: false, hasFoam: false, hasIce: true, rarity: 'base',
     },
     '🫖 Chamomile Tea': {
       label: '🫖 Chamomile', type: 'chamomile',
       liquidColor: '#c8a840', liquidColor2: '#dfc060',
       foamColor: '#f5e8a0', cupTint: '#b09030',
-      bobas: false, hasFoam: false, hasIce: false,
+      bobas: false, hasFoam: false, hasIce: false, rarity: 'base',
     },
     '🥤 Smoothie': {
       label: '🥤 Smoothie', type: 'smoothie',
       liquidColor: '#b050a0', liquidColor2: '#d070c0',
       foamColor: '#e0a0d8', cupTint: '#904090',
-      bobas: false, hasFoam: true, hasIce: true,
+      bobas: false, hasFoam: true, hasIce: true, rarity: 'base',
     },
     '🍋 Lemonade': {
       label: '🍋 Lemonade', type: 'lemonade',
       liquidColor: '#d4d820', liquidColor2: '#e8f040',
       foamColor: '#f8f8a0', cupTint: '#b0b818',
-      bobas: false, hasFoam: false, hasIce: true,
+      bobas: false, hasFoam: false, hasIce: true, rarity: 'base',
     },
     '🎲 Random': {
       label: '🎲 Random', type: 'coffee',
       liquidColor: '#8b6f47', liquidColor2: '#a67c5a',
       foamColor: '#d4a574', cupTint: '#8b6f47',
-      bobas: false, hasFoam: true, hasIce: false,
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'base',
     },
     // ---- Shop drink visual entries ----
     _ca_phe_sua_da: {
       label: 'Cà Phê Sữa Đá', type: 'ca_phe_sua_da',
       liquidColor: '#140904', liquidColor2: '#fce8b3',
       foamColor: '#fce8b3', cupTint: '#8b6030',
-      bobas: false, hasFoam: false, hasIce: true,
+      bobas: false, hasFoam: false, hasIce: true, rarity: 'rare',
     },
     _dalgona: {
       label: 'Dalgona', type: 'dalgona',
       liquidColor: '#f8f4ee', liquidColor2: '#c87d2a',
       foamColor: '#d4922a', cupTint: '#8b6030',
-      bobas: false, hasFoam: false, hasIce: true,
+      bobas: false, hasFoam: false, hasIce: true, rarity: 'rare',
     },
     _egg_coffee: {
       label: 'Egg Coffee', type: 'egg_coffee',
       liquidColor: '#1c0a04', liquidColor2: '#f5d070',
       foamColor: '#f5d070', cupTint: '#8b6030',
-      bobas: false, hasFoam: false, hasIce: false,
+      bobas: false, hasFoam: false, hasIce: false, rarity: 'uncommon',
     },
     _iced_matcha: {
       label: 'Iced Matcha', type: 'iced_matcha',
       liquidColor: '#3a7040', liquidColor2: '#f5f0e8',
       foamColor: '#a8d5a2', cupTint: '#5a8a5a',
-      bobas: false, hasFoam: false, hasIce: true,
+      bobas: false, hasFoam: false, hasIce: true, rarity: 'rare',
     },
     _caramel_mac: {
       label: 'Caramel Macchiato', type: 'caramel_mac',
       liquidColor: '#2a1208', liquidColor2: '#f5ede0',
       foamColor: '#f0e6d0', cupTint: '#b89060',
-      bobas: false, hasFoam: true, hasIce: false,
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'uncommon',
     },
     _irish_coffee: {
       label: 'Irish Coffee', type: 'irish_coffee',
       liquidColor: '#1e0d08', liquidColor2: '#f8f2e8',
       foamColor: '#f8f2e8', cupTint: '#8b6030',
-      bobas: false, hasFoam: false, hasIce: false,
+      bobas: false, hasFoam: false, hasIce: false, rarity: 'rare',
+    },
+    // ---- Common coffee variants (unique liquid colours) ----
+    _espresso: {
+      label: 'Espresso', type: 'coffee',
+      liquidColor: '#0f0604', liquidColor2: '#2a0e06',
+      foamColor: 'rgba(190,140,80,0.72)', cupTint: '#6a3010',
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'common',
+    },
+    _americano: {
+      label: 'Americano', type: 'coffee',
+      liquidColor: '#1e1008', liquidColor2: '#381808',
+      foamColor: 'rgba(160,120,70,0.50)', cupTint: '#704020',
+      bobas: false, hasFoam: false, hasIce: false, rarity: 'common',
+    },
+    _flat_white: {
+      label: 'Flat White', type: 'coffee',
+      liquidColor: '#a07050', liquidColor2: '#c09070',
+      foamColor: 'rgba(255,255,255,0.88)', cupTint: '#8a6040',
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'common',
+    },
+    _hot_choc: {
+      label: 'Hot Chocolate', type: 'coffee',
+      liquidColor: '#2e1508', liquidColor2: '#5a2c10',
+      foamColor: 'rgba(255,255,255,0.92)', cupTint: '#5a2010',
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'common',
+    },
+    _latte: {
+      label: 'Latte', type: 'coffee',
+      liquidColor: '#7a5030', liquidColor2: '#c09070',
+      foamColor: 'rgba(255,255,255,0.92)', cupTint: '#8a6040',
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'uncommon',
+    },
+    _cappuccino: {
+      label: 'Cappuccino', type: 'coffee',
+      liquidColor: '#5a2c10', liquidColor2: '#8a5030',
+      foamColor: 'rgba(255,255,255,0.94)', cupTint: '#7a4020',
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'uncommon',
+    },
+    _mocha: {
+      label: 'Mocha', type: 'coffee',
+      liquidColor: '#1a0808', liquidColor2: '#3a1010',
+      foamColor: 'rgba(255,255,255,0.88)', cupTint: '#601818',
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'uncommon',
+    },
+    _macchiato: {
+      label: 'Macchiato', type: 'coffee',
+      liquidColor: '#100806', liquidColor2: '#2a1208',
+      foamColor: 'rgba(245,235,220,0.82)', cupTint: '#602010',
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'uncommon',
+    },
+    _vienna_coffee: {
+      label: 'Vienna Coffee', type: 'coffee',
+      liquidColor: '#1c0e08', liquidColor2: '#2e1808',
+      foamColor: 'rgba(250,248,245,0.94)', cupTint: '#7a5030',
+      bobas: false, hasFoam: false, hasIce: false, rarity: 'rare',
+    },
+    _affogato: {
+      label: 'Affogato', type: 'coffee',
+      liquidColor: '#0e0604', liquidColor2: '#f8f0d8',
+      foamColor: 'rgba(248,240,216,0.88)', cupTint: '#7a5020',
+      bobas: false, hasFoam: false, hasIce: false, rarity: 'epic',
+    },
+    _lavender_latte: {
+      label: 'Lavender Latte', type: 'milktea',
+      liquidColor: '#4a3070', liquidColor2: '#8060a0',
+      foamColor: 'rgba(180,160,220,0.78)', cupTint: '#7050a0',
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'rare',
+    },
+    // ---- Epic drinks (unique vibrant visuals) ----
+    _rose_gold: {
+      label: 'Rose Gold Latte', type: 'smoothie',
+      liquidColor: '#c06080', liquidColor2: '#f090b0',
+      foamColor: 'rgba(255,180,200,0.82)', cupTint: '#c06080',
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'epic',
+    },
+    _cherry_blossom: {
+      label: 'Cherry Blossom', type: 'smoothie',
+      liquidColor: '#d06090', liquidColor2: '#f0c0d0',
+      foamColor: 'rgba(255,200,220,0.88)', cupTint: '#d070a0',
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'epic',
+    },
+    _galaxy_brew: {
+      label: 'Galaxy Cold Brew', type: 'coffee',
+      liquidColor: '#1a0840', liquidColor2: '#3020a0',
+      foamColor: 'rgba(160,120,240,0.72)', cupTint: '#2010a0',
+      bobas: false, hasFoam: false, hasIce: true, rarity: 'epic',
+    },
+    _midnight_esp: {
+      label: 'Midnight Espresso', type: 'coffee',
+      liquidColor: '#060310', liquidColor2: '#0c0628',
+      foamColor: 'rgba(40,30,80,0.72)', cupTint: '#0a0820',
+      bobas: false, hasFoam: true, hasIce: false, rarity: 'epic',
+    },
+    // ---- Legendary drinks (vibrant / cosmic effects) ----
+    _the_void: {
+      label: 'The Void', type: 'coffee',
+      liquidColor: '#000000', liquidColor2: '#05030a',
+      foamColor: 'rgba(30,20,60,0.70)', cupTint: '#080614',
+      bobas: false, hasFoam: false, hasIce: false, rarity: 'legendary',
+    },
+    _aurora_brew: {
+      label: 'Aurora Brew', type: 'milktea',
+      liquidColor: '#0c1840', liquidColor2: '#3060a0',
+      foamColor: 'rgba(100,220,255,0.72)', cupTint: '#1030a0',
+      bobas: false, hasFoam: true, hasIce: true, rarity: 'legendary',
+    },
+    _golden_hour: {
+      label: 'Golden Hour', type: 'coffee',
+      liquidColor: '#6a3a00', liquidColor2: '#d4a020',
+      foamColor: 'rgba(240,200,80,0.78)', cupTint: '#c08010',
+      bobas: false, hasFoam: false, hasIce: false, rarity: 'legendary',
+    },
+    _barista_secret: {
+      label: "Barista's Secret", type: 'lemonade',
+      liquidColor: '#003838', liquidColor2: '#00a090',
+      foamColor: 'rgba(0,220,200,0.72)', cupTint: '#008878',
+      bobas: false, hasFoam: true, hasIce: true, rarity: 'legendary',
     },
   };
 
@@ -170,6 +311,7 @@ const DrinkModule = (function () {
   let currentDrinkId = null;   // tracks the actual key for recipe lookup
   let currentPct    = 0;
   let isFinished    = false;
+  let _currentCategoryName = null;  // passed from onSessionStart, used for category pill
 
   // ---- Recipe tier resolution ----
   function getCurrentTierConfig(recipeKey) {
@@ -212,14 +354,40 @@ const DrinkModule = (function () {
     isFinished = false;
     renderCup(0);
     updateLabel(0);
-    // Update title — prefer the recipe name if available
+
+    // Resolve tier for this drink
+    const recipeKey = DRINK_KEY_TO_RECIPE[drinkKey];
+    const tierCfg   = recipeKey ? getCurrentTierConfig(recipeKey) : null;
+    const tierBadge = tierCfg?.tier === 'mastercraft' ? ' 👑' : tierCfg?.tier === 'signature' ? ' ✦' : '';
+
+    // Update drink title with rarity styling
     const titleEl = document.getElementById('drinkProgressTitle');
     if (titleEl) {
-      const recipeKey = DRINK_KEY_TO_RECIPE[drinkKey];
-      const tierCfg   = recipeKey ? getCurrentTierConfig(recipeKey) : null;
-      const tierBadge = tierCfg?.tier === 'mastercraft' ? ' 👑' : tierCfg?.tier === 'signature' ? ' ✦' : '';
       titleEl.textContent = currentDrink.label + tierBadge;
+      titleEl.className = 'drink-progress-title';
+      const rarity = currentDrink.rarity || 'base';
+      if (rarity === 'legendary') titleEl.classList.add('drink-name-legendary');
+      else if (rarity === 'epic')  titleEl.classList.add('drink-name-epic');
+      else if (rarity === 'rare')  titleEl.classList.add('drink-name-rare');
     }
+
+    // Category pill — shows which goal category drove this drink choice
+    const pillEl = document.getElementById('drinkCategoryPill');
+    if (pillEl) {
+      if (_currentCategoryName) {
+        const catColor = getCatColor(_currentCategoryName);
+        pillEl.textContent = _currentCategoryName;
+        pillEl.style.background  = catColor + '28';
+        pillEl.style.borderColor = catColor + '60';
+        pillEl.style.color       = catColor;
+        pillEl.style.display     = '';
+      } else {
+        pillEl.style.display = 'none';
+      }
+    }
+
+    // Render recipe bill beside the cup
+    renderRecipeBill(drinkKey, currentDrink, tierCfg);
   }
 
   function updateProgress(pct) {
@@ -322,7 +490,8 @@ const DrinkModule = (function () {
       @keyframes lfIceDrop { from{transform:translateY(-22px);opacity:0} to{transform:translateY(0);opacity:1} }
       @keyframes lfPour { 0%,100%{opacity:0.55;transform:translateX(-1px)} 50%{opacity:0.82;transform:translateX(1px)} }
       @keyframes sparkle { 0%,100%{opacity:0.2;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.2)} }
-      @keyframes lfDrop { 0%{transform:translateY(0);opacity:0} 12%{opacity:0.55} 78%{transform:translateY(7px);opacity:0.52} 100%{transform:translateY(9px);opacity:0} }
+      @keyframes lfDropL { 0%{transform:translate(0,0);opacity:0} 10%{opacity:0.55} 78%{transform:translate(0.45px,7px);opacity:0.52} 100%{transform:translate(0.58px,9px);opacity:0} }
+      @keyframes lfDropR { 0%{transform:translate(0,0);opacity:0} 10%{opacity:0.55} 78%{transform:translate(-0.45px,7px);opacity:0.52} 100%{transform:translate(-0.58px,9px);opacity:0} }
       @keyframes lfRipple { 0%{transform:scale(0.3);opacity:0.9} 100%{transform:scale(4.2);opacity:0} }
       @keyframes lfDrinkChange { 0%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(0.91)} }
     `;
@@ -342,28 +511,349 @@ const DrinkModule = (function () {
       <rect x="89" y="${y0}" width="2" height="${sh}" rx="1" fill="rgba(255,255,255,${(opacity * 0.35).toFixed(2)})"/>`;
   }
 
-  // ---- Condensation drops (cold drinks — appears after pct 28, grows with fill) ----
+  // ---- Condensation drops — hug the sloped cup wall exterior ----
+  // Cup wall slope: 8px inward per 125px height (dx/dy = 0.064)
   function buildCondensation(CX, CW, CTY, CBY, pct) {
     if (pct < 28) return '';
-    const n = Math.ceil(Math.min(1, (pct - 28) / 48) * 4);
-    const L = [
-      {x:14, y:62,  rx:1.1, ry:2.4, dur:3.2, del:0  },
-      {x:16, y:90,  rx:1.3, ry:3.0, dur:4.1, del:0.8 },
-      {x:13, y:118, rx:1.0, ry:2.2, dur:3.7, del:1.5 },
-      {x:15, y:144, rx:1.5, ry:3.4, dur:2.9, del:0.3 },
-    ];
-    const R = [
-      {x:126, y:50,  rx:1.2, ry:2.7, dur:3.5, del:0.5 },
-      {x:124, y:80,  rx:1.0, ry:2.0, dur:4.3, del:1.2 },
-      {x:127, y:108, rx:1.4, ry:3.1, dur:3.1, del:0.2 },
-      {x:125, y:134, rx:1.1, ry:2.5, dur:3.8, del:1.8 },
-    ];
-    return [...L.slice(0, n), ...R.slice(0, n)]
+    const n   = Math.ceil(Math.min(1, (pct - 28) / 48) * 4);
+    const slp = 8 / (CBY - CTY); // wall inward slope per y-unit
+    // Drop y positions — x is computed from wall position at that y, offset 2px outside
+    const LD = [
+      {y:62,  rx:1.0, ry:2.4, dur:3.2, del:0   },
+      {y:90,  rx:1.2, ry:3.0, dur:4.1, del:0.8  },
+      {y:118, rx:0.9, ry:2.2, dur:3.7, del:1.5  },
+      {y:144, rx:1.4, ry:3.2, dur:2.9, del:0.3  },
+    ].map(d => ({ ...d, x: +(CX + (d.y - CTY) * slp - 1.8).toFixed(1), anim:'lfDropL' }));
+    const RD = [
+      {y:50,  rx:1.1, ry:2.6, dur:3.5, del:0.5  },
+      {y:80,  rx:0.9, ry:2.0, dur:4.3, del:1.2  },
+      {y:108, rx:1.3, ry:3.0, dur:3.1, del:0.2  },
+      {y:134, rx:1.0, ry:2.4, dur:3.8, del:1.8  },
+    ].map(d => ({ ...d, x: +((CX+CW) - (d.y - CTY) * slp + 1.8).toFixed(1), anim:'lfDropR' }));
+    return [...LD.slice(0, n), ...RD.slice(0, n)]
       .filter(d => d.y >= CTY)
       .map(d => `<ellipse cx="${d.x}" cy="${d.y}" rx="${d.rx}" ry="${d.ry}"
-        fill="rgba(200,228,248,0.52)"
-        style="animation:lfDrop ${d.dur}s ease-in-out infinite ${d.del}s"/>`)
+        fill="rgba(200,228,248,0.54)"
+        style="animation:${d.anim} ${d.dur}s ease-in-out infinite ${d.del}s"/>`)
       .join('');
+  }
+
+  // ---- Equipment silhouette (behind cup, faint) ----
+  const EQUIP_SVG = {
+    coffee:    `<g fill="none" stroke="rgba(139,111,71,0.65)" stroke-width="1.1">
+      <rect x="48" y="38" width="44" height="82" rx="4"/>
+      <rect x="55" y="46" width="30" height="18" rx="2"/>
+      <circle cx="70" cy="88" r="9"/>
+      <rect x="61" y="96" width="18" height="5" rx="2.5"/>
+      <path d="M61,101 L59,114 L81,114 L79,101"/>
+      <line x1="34" y1="62" x2="48" y2="62"/><line x1="34" y1="66" x2="42" y2="70"/>
+    </g>`,
+    matcha:    `<g fill="none" stroke="rgba(139,111,71,0.65)" stroke-width="0.9">
+      <line x1="70" y1="38" x2="70" y2="88"/>
+      ${[0,18,36,54,72,90,108,126,144,162].map(a=>`<path d="M70,88 Q${70+Math.sin(a*Math.PI/180)*28},${108+Math.cos(a*Math.PI/180)*14} ${70+Math.sin(a*Math.PI/180)*22},${112+Math.cos(a*Math.PI/180)*10}"/>`).join('')}
+      <ellipse cx="70" cy="36" rx="6" ry="3"/>
+    </g>`,
+    milktea:   `<g fill="none" stroke="rgba(139,111,71,0.65)" stroke-width="1.1">
+      <rect x="55" y="42" width="30" height="68" rx="15"/>
+      <rect x="55" y="36" width="30" height="10" rx="5"/>
+      <line x1="65" y1="36" x2="62" y2="26"/><line x1="75" y1="36" x2="78" y2="26"/>
+      <line x1="60" y1="80" x2="80" y2="80"/>
+    </g>`,
+    oj:        `<g fill="none" stroke="rgba(139,111,71,0.65)" stroke-width="1.1">
+      <path d="M50,90 Q50,50 70,46 Q90,50 90,90"/>
+      <ellipse cx="70" cy="66" rx="12" ry="18"/>
+      <line x1="70" y1="48" x2="70" y2="84"/>
+      <line x1="58" y1="66" x2="82" y2="66"/>
+      <rect x="52" y="90" width="36" height="10" rx="4"/>
+    </g>`,
+    chamomile: `<g fill="none" stroke="rgba(139,111,71,0.65)" stroke-width="1.1">
+      <ellipse cx="65" cy="78" rx="22" ry="28"/>
+      <path d="M87,68 Q102,62 100,78 Q98,92 87,90"/>
+      <path d="M43,56 Q38,48 43,56"/>
+      <rect x="55" y="42" width="20" height="8" rx="4"/>
+      <circle cx="65" cy="46" r="3"/>
+    </g>`,
+    smoothie:  `<g fill="none" stroke="rgba(139,111,71,0.65)" stroke-width="1.1">
+      <path d="M52,42 L58,110 L82,110 L88,42 Z"/>
+      <line x1="52" y1="42" x2="88" y2="42"/>
+      <rect x="52" y="36" width="36" height="8" rx="3"/>
+      <rect x="56" y="110" width="28" height="14" rx="3"/>
+      <line x1="56" y1="117" x2="84" y2="117"/>
+      <circle cx="63" cy="119" r="2"/><circle cx="70" cy="119" r="2"/><circle cx="77" cy="119" r="2"/>
+    </g>`,
+    lemonade:  `<g fill="none" stroke="rgba(139,111,71,0.65)" stroke-width="1.1">
+      <path d="M52,76 Q52,52 70,48 Q88,52 88,76"/>
+      <ellipse cx="70" cy="68" rx="14" ry="22"/>
+      <line x1="70" y1="46" x2="70" y2="90"/>
+      <rect x="50" y="76" width="40" height="8" rx="3"/>
+      <rect x="54" y="84" width="32" height="16" rx="4"/>
+    </g>`,
+  };
+  const EQUIP_ALIASES = {
+    ca_phe_sua_da:'coffee', dalgona:'milktea', egg_coffee:'coffee',
+    iced_matcha:'matcha', caramel_mac:'coffee', irish_coffee:'coffee',
+    espresso:'coffee', americano:'coffee', flat_white:'coffee', latte:'coffee',
+    cappuccino:'coffee', macchiato:'coffee', mocha:'coffee', affogato:'coffee',
+    matcha_latte:'matcha', boba:'milktea', lavender_latte:'milktea',
+    hot_choc:'coffee', vienna_coffee:'coffee',
+    rose_gold:'smoothie', galaxy_brew:'smoothie', midnight_esp:'coffee',
+    cherry_blossom:'chamomile', barista_secret:'coffee',
+    golden_hour:'lemonade', aurora_brew:'smoothie', the_void:'coffee',
+  };
+
+  function buildEquipmentBg(type, fillY, CTY) {
+    return ''; // Equipment silhouettes removed for cleaner cup view
+  }
+
+  // ---- Ingredient card (styled cream card, left panel) ----
+  const DRINK_INGREDIENTS = {
+    // Base drinks
+    coffee:           ['espresso', 'hot water'],
+    matcha:           ['matcha powder', 'oat milk'],
+    milktea:          ['black tea', 'tapioca pearls', 'milk'],
+    oj:               ['fresh orange juice', 'ice'],
+    chamomile:        ['chamomile flowers', 'honey'],
+    smoothie:         ['mixed fruit', 'yogurt', 'ice'],
+    lemonade:         ['lemon juice', 'sugar syrup', 'ice'],
+    // Common coffee shop
+    _espresso:        ['fine-ground coffee', '9-bar pressure'],
+    _americano:       ['double espresso', 'hot water'],
+    _flat_white:      ['double ristretto', 'steamed milk'],
+    _hot_choc:        ['dark chocolate', 'whole milk', 'cream'],
+    // Uncommon
+    _latte:           ['espresso', 'steamed milk', 'microfoam'],
+    _cappuccino:      ['espresso', 'steamed milk', 'thick foam'],
+    _mocha:           ['espresso', 'chocolate sauce', 'milk'],
+    _macchiato:       ['espresso', 'foam dollop'],
+    _egg_coffee:      ['espresso', 'egg yolk', 'condensed milk'],
+    _caramel_mac:     ['espresso', 'vanilla milk', 'caramel drizzle'],
+    // Rare
+    _iced_matcha:     ['matcha powder', 'oat milk', 'ice'],
+    _lavender_latte:  ['espresso', 'lavender syrup', 'steamed milk'],
+    _ca_phe_sua_da:   ['dark roast drip', 'condensed milk', 'ice'],
+    _dalgona:         ['whipped coffee', 'cold milk', 'ice'],
+    _irish_coffee:    ['Irish whiskey', 'hot coffee', 'cream'],
+    _vienna_coffee:   ['strong espresso', 'whipped cream', 'cocoa'],
+    // Epic
+    _affogato:        ['vanilla gelato', 'hot espresso shot'],
+    _rose_gold:       ['rose water', 'lychee', 'oat milk', 'gold dust'],
+    _cherry_blossom:  ['cherry blossom tea', 'sakura syrup', 'milk'],
+    _galaxy_brew:     ['cold brew', 'butterfly pea', 'tonic'],
+    _midnight_esp:    ['dark roast', 'activated charcoal', 'cream'],
+    // Legendary
+    _the_void:        ['absolute darkness', 'distilled time'],
+    _aurora_brew:     ['blue spirulina', 'teal concentrate', 'nitrogen'],
+    _golden_hour:     ['blonde espresso', 'liquid gold', 'honey'],
+    _barista_secret:  ['secret cold brew', 'mint oil', 'teal syrup'],
+    // Aliases for type-based lookups
+    ca_phe_sua_da:    ['dark roast drip', 'condensed milk', 'ice'],
+    dalgona:          ['whipped coffee', 'cold milk', 'ice'],
+    egg_coffee:       ['espresso', 'egg yolk', 'condensed milk'],
+    iced_matcha:      ['matcha powder', 'oat milk', 'ice'],
+    caramel_mac:      ['espresso', 'vanilla milk', 'caramel drizzle'],
+    irish_coffee:     ['Irish whiskey', 'hot coffee', 'cream'],
+  };
+
+  // ---- Recipe Bill — rendered as an HTML element beside the cup ----
+  function renderRecipeBill(drinkKey, d, tierCfg) {
+    const container = document.getElementById('drinkRecipeBill');
+    if (!container) return;
+
+    const type      = d?.type || 'coffee';
+    // Resolve the best ingredient key: prefer the specific visual key, then the shop key, then the type
+    const visualKey = (drinkKey && SHOP_ID_TO_VISUAL[drinkKey]) || drinkKey || type;
+    const items     = DRINK_INGREDIENTS[visualKey]
+                   || DRINK_INGREDIENTS[drinkKey]
+                   || DRINK_INGREDIENTS[type]
+                   || [];
+
+    if (!items.length) { container.style.display = 'none'; return; }
+    container.style.display = '';
+
+    const hasTier     = tierCfg && tierCfg.tier !== 'house';
+    const isMaster    = tierCfg?.tier === 'mastercraft';
+    const tierHtml    = hasTier
+      ? `<div class="bill-tier${isMaster ? ' bill-tier-master' : ''}">${isMaster ? '👑 mastercraft' : '✦ signature'}</div>`
+      : '';
+    const drinkName   = d?.label || drinkKey || 'Your Drink';
+    const rarity      = d?.rarity || 'base';
+
+    container.innerHTML = `
+      <div class="bill-drink-name bill-rarity-${rarity}">— ${drinkName} —</div>
+      <div class="bill-rule">·  ·  ·  ·  ·  ·  ·</div>
+      <div class="bill-section-label">ingredients</div>
+      <ul class="bill-items">${items.map(i => `<li>${i}</li>`).join('')}</ul>
+      ${tierHtml}
+    `;
+
+    // Trigger CSS fade-in each time the drink changes
+    container.classList.remove('bill-visible');
+    void container.offsetWidth;   // reflow
+    container.classList.add('bill-visible');
+  }
+
+  // ---- 3D Cup Walls (drawn over the liquid to create depth) ----
+  const CUP_WALL_COLORS = {
+    coffee:    { lt: 'rgba(185,135,80,0.95)',  dk: 'rgba(58,24,6,0.92)'   },
+    matcha:    { lt: 'rgba(145,205,130,0.90)', dk: 'rgba(38,88,38,0.92)'  },
+    milktea:   { lt: 'rgba(215,188,152,0.92)', dk: 'rgba(128,88,48,0.92)' },
+    oj:        { lt: 'rgba(255,255,255,0.32)', dk: 'rgba(0,0,0,0.12)'     },
+    chamomile: { lt: 'rgba(225,202,98,0.90)',  dk: 'rgba(98,78,18,0.92)'  },
+    smoothie:  { lt: 'rgba(222,130,212,0.90)', dk: 'rgba(88,28,118,0.92)' },
+    lemonade:  { lt: 'rgba(255,255,255,0.32)', dk: 'rgba(0,0,0,0.12)'     },
+    ca_phe_sua_da: { lt: 'rgba(180,130,75,0.92)', dk: 'rgba(55,22,5,0.92)' },
+    dalgona:       { lt: 'rgba(200,160,80,0.90)',  dk: 'rgba(70,40,5,0.92)' },
+    egg_coffee:    { lt: 'rgba(188,135,75,0.90)',  dk: 'rgba(55,20,5,0.92)' },
+    iced_matcha:   { lt: 'rgba(145,205,130,0.90)', dk: 'rgba(38,88,38,0.92)' },
+    caramel_mac:   { lt: 'rgba(215,175,105,0.90)', dk: 'rgba(80,38,8,0.92)'  },
+    irish_coffee:  { lt: 'rgba(175,128,72,0.90)',  dk: 'rgba(50,18,5,0.92)'  },
+  };
+
+  function buildCupWalls(d, type, CX, CW, CTY, CBY) {
+    const isCold = !!(d.hasIce || d.bobas);
+    const WT = 8, WB = 5;   // wall thickness top / bottom
+    const wc = CUP_WALL_COLORS[type] || CUP_WALL_COLORS.coffee;
+    const lt = isCold ? 'rgba(255,255,255,0.30)' : wc.lt;
+    const dk = isCold ? 'rgba(0,0,0,0.14)'       : wc.dk;
+
+    // Left wall: outer-left edge → inset-left edge
+    const lWall  = `${CX},${CTY} ${CX+WT},${CTY} ${CX+8+WB},${CBY} ${CX+8},${CBY}`;
+    // Right wall: inset-right edge → outer-right edge
+    const rWall  = `${CX+CW-WT},${CTY} ${CX+CW},${CTY} ${CX+CW-8},${CBY} ${CX+CW-8-WB},${CBY}`;
+    // Bottom bar
+    const botBar = `${CX+8},${CBY-4} ${CX+CW-8},${CBY-4} ${CX+CW-8},${CBY} ${CX+8},${CBY}`;
+
+    // For glass cups, add a specular sheen on left wall
+    const glassSheen = isCold ? `
+      <polygon points="${CX+1},${CTY+4} ${CX+4},${CTY+4} ${CX+7},${CBY-6} ${CX+2},${CBY-6}"
+        fill="rgba(255,255,255,0.18)"/>` : '';
+
+    return `
+      <polygon points="${lWall}" fill="${lt}"/>
+      <polygon points="${rWall}" fill="${dk}"/>
+      <polygon points="${botBar}" fill="${dk}"/>
+      ${glassSheen}`;
+  }
+
+  // ---- 3D Rim ellipse at cup opening ----
+  function buildRim3D(d, CX, CW, CTY) {
+    const cx   = CX + CW / 2;
+    const rx   = CW / 2 + 5;
+    const ry   = 7;
+    const isCold = !!(d.hasIce || d.bobas);
+    const rimFill   = isCold ? 'rgba(220,240,255,0.28)' : d.cupTint;
+    const rimOp     = isCold ? '1' : '0.88';
+
+    return `
+      <!-- Rim outer -->
+      <ellipse cx="${cx}" cy="${CTY}" rx="${rx}" ry="${ry}"
+        fill="${rimFill}" opacity="${rimOp}"/>
+      <!-- Rim inner shadow (shows depth of opening) -->
+      <ellipse cx="${cx}" cy="${CTY+1}" rx="${rx-12}" ry="${ry-2.5}"
+        fill="rgba(0,0,0,0.22)"/>
+      <!-- Rim specular highlight -->
+      <ellipse cx="${cx-8}" cy="${CTY-1.5}" rx="${rx*0.55}" ry="${ry*0.38}"
+        fill="rgba(255,255,255,0.32)"/>`;
+  }
+
+  // ---- Drink-specific cup decoration (outside the liquid area) ----
+  function buildCupDecoration(type, d, CX, CW, CTY, CBY) {
+    const lx  = CX + 4;                       // left decoration x (inside left wall)
+    const midY = (CTY + CBY) / 2 + 10;
+    const op  = 0.22;
+
+    switch (type) {
+      case 'coffee':
+      case 'ca_phe_sua_da':
+      case 'egg_coffee':
+      case 'irish_coffee':
+        // Coffee bean on left wall
+        return `<g opacity="${op}">
+          <ellipse cx="${lx+6}" cy="${midY}" rx="4.5" ry="6.5" fill="${d.cupTint}"
+            transform="rotate(-20,${lx+6},${midY})"/>
+          <path d="M${lx+2},${midY-1} Q${lx+6},${midY+2} ${lx+10},${midY-1}"
+            stroke="rgba(0,0,0,0.4)" stroke-width="0.9" fill="none"/>
+        </g>`;
+      case 'matcha':
+      case 'iced_matcha':
+        // Bamboo leaf
+        return `<g opacity="${op}">
+          <path d="M${lx+6},${midY+8} C${lx+2},${midY-6} ${lx+12},${midY-14} ${lx+10},${midY+4}
+            S${lx+4},${midY+14} ${lx+6},${midY+8}" fill="${d.cupTint}"/>
+          <line x1="${lx+6}" y1="${midY+8}" x2="${lx+9}" y2="${midY-5}"
+            stroke="rgba(255,255,255,0.35)" stroke-width="0.8"/>
+        </g>`;
+      case 'milktea':
+      case 'dalgona':
+        // Polka dots
+        return [[lx+6,midY-16],[lx+5,midY],[lx+7,midY+15]]
+          .map(([x,y]) => `<circle cx="${x}" cy="${y}" r="2.8" fill="${d.cupTint}" opacity="${op}"/>`)
+          .join('');
+      case 'chamomile':
+        // Small flower
+        return `<g opacity="${op}" transform="translate(${lx+6},${midY})">
+          ${[0,60,120,180,240,300].map(a => {
+            const r = a * Math.PI / 180;
+            return `<ellipse cx="${(Math.cos(r)*5.5).toFixed(1)}" cy="${(Math.sin(r)*5.5).toFixed(1)}"
+              rx="2.2" ry="3.8" fill="${d.cupTint}"
+              transform="rotate(${a},${(Math.cos(r)*5.5).toFixed(1)},${(Math.sin(r)*5.5).toFixed(1)})"/>`;
+          }).join('')}
+          <circle cx="0" cy="0" r="2" fill="rgba(255,220,80,0.8)"/>
+        </g>`;
+      case 'smoothie':
+        // Fruit slice silhouette
+        return `<g opacity="${op}">
+          <circle cx="${lx+6}" cy="${midY}" r="8" fill="${d.cupTint}"/>
+          ${[0,60,120,180,240,300].map(a => {
+            const r = a * Math.PI / 180;
+            return `<line x1="${lx+6}" y1="${midY}"
+              x2="${(lx+6+Math.cos(r)*8).toFixed(1)}" y2="${(midY+Math.sin(r)*8).toFixed(1)}"
+              stroke="rgba(255,255,255,0.45)" stroke-width="0.9"/>`;
+          }).join('')}
+          <circle cx="${lx+6}" cy="${midY}" r="2.5" fill="rgba(255,255,255,0.25)"/>
+        </g>`;
+      case 'lemonade':
+      case 'oj':
+        // Citrus wheel
+        return `<g opacity="${op}">
+          <circle cx="${lx+6}" cy="${midY}" r="8" fill="${d.cupTint}"/>
+          ${[0,45,90,135].map(a => {
+            const r = a * Math.PI / 180;
+            return `<line
+              x1="${(lx+6-Math.cos(r)*8).toFixed(1)}" y1="${(midY-Math.sin(r)*8).toFixed(1)}"
+              x2="${(lx+6+Math.cos(r)*8).toFixed(1)}" y2="${(midY+Math.sin(r)*8).toFixed(1)}"
+              stroke="rgba(255,255,255,0.38)" stroke-width="0.9"/>`;
+          }).join('')}
+        </g>`;
+      default:
+        return '';
+    }
+  }
+
+  // ---- Wall drizzle (boba / caramel drinks at 100%) ----
+  function buildWallDrizzle(type, CX, CW, CTY, CBY, pct) {
+    if (pct < 100) return '';
+    const drizzleMap = {
+      milktea:    '#3a1702',
+      caramel_mac: '#b45309',
+      dalgona:    '#8a4a10',
+    };
+    const clr = drizzleMap[type];
+    if (!clr) return '';
+
+    // Left-wall streaks
+    const lStreaks = [
+      `M ${CX+8},${CTY+8} C ${CX+6},${CTY+38} ${CX+10},${CTY+68} ${CX+8},${CTY+100}`,
+      `M ${CX+13},${CTY+4} C ${CX+11},${CTY+28} ${CX+15},${CTY+56} ${CX+11},${CTY+82}`,
+    ].map(path => `<path d="${path}" stroke="${clr}" stroke-width="1.8" fill="none" opacity="0.60" stroke-linecap="round"/>`).join('');
+
+    // Right-wall streaks
+    const rStreaks = [
+      `M ${CX+CW-8},${CTY+6} C ${CX+CW-6},${CTY+34} ${CX+CW-10},${CTY+62} ${CX+CW-8},${CTY+94}`,
+      `M ${CX+CW-13},${CTY+3} C ${CX+CW-11},${CTY+30} ${CX+CW-15},${CTY+58} ${CX+CW-12},${CTY+85}`,
+    ].map(path => `<path d="${path}" stroke="${clr}" stroke-width="1.5" fill="none" opacity="0.45" stroke-linecap="round"/>`).join('');
+
+    return `<g clip-path="url(#lf_cupClip)">${lStreaks}${rStreaks}</g>`;
   }
 
   // ---- Milestone surface ripple (plays once at 25 / 50 / 75%) ----
@@ -433,16 +923,19 @@ const DrinkModule = (function () {
         style="animation:lfSteam 2.2s ease-out infinite ${ao(2.2)}"/>`;
   }
 
-  // ---- Bobas with bounce animation ----
+  // ---- Bobas — anchored at the bottom of the liquid fill ----
   function generateBobas(CX, fillY, CW, fillH, color) {
     if (fillH < 10) return '';
+    // Offset from the BOTTOM of the cup (CBY direction) — bobas sink and rest there
+    // Larger offset = closer to surface; small = hugging the bottom
     const positions = [
-      [CX+15, 8], [CX+30, 12], [CX+50,  6], [CX+65, 10], [CX+80,  8],
-      [CX+20, 20],[CX+45, 18], [CX+70, 22], [CX+35, 28], [CX+60, 25],
+      [CX+15, 4], [CX+30, 6], [CX+50, 3], [CX+65, 5], [CX+80, 4],
+      [CX+22, 14],[CX+45, 12],[CX+68, 15],[CX+38, 20],[CX+58, 18],
     ];
-    return positions.map(([bx, offset], i) => {
-      const by = Math.min(fillY + fillH - offset, fillY + fillH - 5);
-      if (by <= fillY) return '';
+    const bottomY = fillY + fillH;   // y-coordinate of cup bottom at current fill
+    return positions.map(([bx, offsetFromBottom], i) => {
+      const by = bottomY - offsetFromBottom;   // anchor from the bottom up
+      if (by <= fillY + 4) return '';           // don't let bobas escape above liquid surface
       const dur = 1.8 + (i % 3) * 0.4;
       return `<g style="animation:lfBoba ${dur}s ease-in-out infinite ${ao(dur)}">
         <circle cx="${bx}" cy="${by}" r="5" fill="${color}" opacity="0.9"/>
@@ -734,9 +1227,13 @@ const DrinkModule = (function () {
     }
 
     if (type === 'milktea' && fillH > 0) {
+      // Milky cream layer
       inner = `<rect x="${CX}" y="${fillY+fillH*0.20}" width="${CW}" height="${fillH*0.22}"
         fill="rgba(232,218,198,0.30)" opacity="0.85"/>`;
-      inner += generateBobas(CX, fillY, CW, fillH, d.bobaColor);
+      // Only render bobas if the drink actually has them (e.g. boba milktea, NOT lavender latte)
+      if (d.bobas !== false && d.bobaColor) {
+        inner += generateBobas(CX, fillY, CW, fillH, d.bobaColor);
+      }
     }
 
     if (type === 'oj') {
@@ -855,7 +1352,7 @@ const DrinkModule = (function () {
       : 0;
 
     const tierBadge = tierCfg && tierCfg.tier !== 'house' ? `
-      <text x="135" y="16" text-anchor="end" font-family="Source Sans Pro,sans-serif"
+      <text x="145" y="16" text-anchor="end" font-family="Source Sans Pro,sans-serif"
         font-size="7.5" font-weight="700"
         fill="${tierCfg.tier === 'mastercraft' ? '#fbbf24' : 'rgba(212,165,116,0.9)'}">
         ${tierCfg.tier === 'mastercraft' ? '👑 MASTER' : '✦ SIG'}
@@ -870,11 +1367,10 @@ const DrinkModule = (function () {
     injectDrinkStyles(ac.waveAmp, ac.waveSpeed);
 
     scene.innerHTML = `
-    <svg viewBox="0 0 140 180" xmlns="http://www.w3.org/2000/svg"
-      overflow="hidden"
-      style="width:100%;max-width:160px;margin:0 auto;display:block;">
+    <svg viewBox="0 0 150 175" xmlns="http://www.w3.org/2000/svg"
+      overflow="visible"
+      style="width:100%;max-width:200px;margin:0 auto;display:block;">
       <defs>
-        <!-- Cup clip defined FIRST so recipe defs cannot override it -->
         <clipPath id="lf_cupClip">
           <polygon points="${CX},${CTY} ${CX+CW},${CTY} ${CX+CW-8},${CBY} ${CX+8},${CBY}"/>
         </clipPath>
@@ -891,32 +1387,59 @@ const DrinkModule = (function () {
           <stop offset="100%" stop-color="${d.cupTint}44"/>
         </linearGradient>
         ${tierCfg?.defs || ''}
+        <clipPath id="lf_equipClip">
+          <polygon points="${CX},${CTY} ${CX+CW},${CTY} ${+(CX+CW-8*(fillY-CTY)/(CBY-CTY)).toFixed(1)},${fillY} ${+(CX+8*(fillY-CTY)/(CBY-CTY)).toFixed(1)},${fillY}"/>
+        </clipPath>
       </defs>
 
       ${tierBadge}
-      <ellipse cx="70" cy="${CBY+8}" rx="44" ry="6" fill="rgba(0,0,0,0.12)"/>
+
+      <!-- Drop shadow -->
+      <ellipse cx="${CX + CW/2}" cy="${CBY+8}" rx="44" ry="6" fill="rgba(0,0,0,0.12)"/>
+
+      <!-- Cup body background (visible interior when empty) -->
       <polygon points="${CX},${CTY} ${CX+CW},${CTY} ${CX+CW-8},${CBY} ${CX+8},${CBY}"
-        fill="rgba(245,241,235,0.15)" stroke="${d.cupTint}" stroke-width="2.5" stroke-linejoin="round"/>
+        fill="rgba(245,241,235,0.10)" stroke="none"/>
 
       ${showStraw && pct > STRAW_PCT ? buildStraw(CTY, CBY, strawYOff, strawOp) : ''}
 
+      <!-- Liquid fill (masked to cup interior) -->
       ${pct > 0 ? `<g mask="url(#lf_cupMask)">${liquidSVG}</g>` : ''}
 
+      <!-- Subtle interior glass sheen over liquid -->
       <polygon points="${CX},${CTY} ${CX+CW},${CTY} ${CX+CW-8},${CBY} ${CX+8},${CBY}"
         fill="url(#lf_cupGrad)" stroke="none"/>
-      <line x1="${CX}" y1="${CTY}" x2="${CX+CW}" y2="${CTY}"
-        stroke="${d.cupTint}" stroke-width="3" stroke-linecap="round"/>
+
+      <!-- 3D cup walls (drawn over liquid edges for depth) -->
+      ${buildCupWalls(d, type, CX, CW, CTY, CBY)}
+
+      <!-- Cup surface decoration (left wall art) -->
+      ${buildCupDecoration(type, d, CX, CW, CTY, CBY)}
+
+      <!-- 3D rim ellipse -->
+      ${buildRim3D(d, CX, CW, CTY)}
+
+      <!-- Meniscus ring at liquid surface -->
+      ${pct > 5 ? `<path d="M${CX+2},${fillY} Q${CX+CW/2},${fillY-3} ${CX+CW-2},${fillY}"
+        fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-linecap="round"/>` : ''}
 
       ${(!d.bobas && !d.hasIce) ? buildLid(CX, CW, CTY, d.cupTint) : ''}
 
       ${steamSVG}
+
+      <!-- Garnish at 100% -->
       ${garnishSvg ? `<g clip-path="url(#lf_cupClip)">${garnishSvg}</g>` : ''}
+
+      <!-- Wall drizzle (boba, caramel etc.) -->
+      ${buildWallDrizzle(type, CX, CW, CTY, CBY, pct)}
+
       ${pct >= 100 ? generateSparkles() : ''}
       ${showRipple && pct > 0 ? `<g mask="url(#lf_cupMask)">${buildRipple(CX, CW, fillY)}</g>` : ''}
       ${isCold && pct > 0 ? buildCondensation(CX, CW, CTY, CBY, pct) : ''}
 
+      <!-- Progress % text -->
       ${pct > 15 ? `
-      <text x="70" y="${Math.max(fillY + 18, CBY - 10)}"
+      <text x="${CX + CW/2}" y="${Math.max(fillY + 18, CBY - 10)}"
         text-anchor="middle" font-family="Playfair Display,serif"
         font-size="13" font-weight="600" fill="rgba(255,255,255,0.85)">
         ${Math.round(pct)}%
@@ -1285,6 +1808,7 @@ const DrinkModule = (function () {
 
   // Called by TimerModule when session starts with a goal
   function onSessionStart(goalCategoryName) {
+    _currentCategoryName = goalCategoryName || null;  // store for category pill in setDrink
     // If user has an active shop drink set, use that for the recipe
     let drinkKey = null;
     if (typeof ShopModule !== 'undefined') {

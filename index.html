@@ -629,10 +629,17 @@
         <!-- Drink Progress Cup -->
         <div class="goal-area-box drink-progress-box" id="drinkProgressBox">
           <div class="drink-progress-header">
-            <span class="drink-progress-title" id="drinkProgressTitle">☕ Your Drink</span>
+            <div class="drink-title-group">
+              <span class="drink-progress-title" id="drinkProgressTitle">☕ Your Drink</span>
+              <span class="drink-category-pill" id="drinkCategoryPill" style="display:none"></span>
+            </div>
             <button class="drink-swap-btn" id="drinkSwapBtn" title="Change drink">⟳</button>
           </div>
-          <div class="drink-scene" id="drinkScene"></div>
+          <!-- Side-by-side: recipe bill + cup -->
+          <div class="drink-content-row">
+            <div class="drink-recipe-bill" id="drinkRecipeBill" style="display:none"></div>
+            <div class="drink-scene" id="drinkScene"></div>
+          </div>
           <div class="drink-progress-label" id="drinkProgressLabel">Start your session to begin filling your drink</div>
           <!-- Recent cups shelf strip -->
           <div class="timer-shelf-strip" id="timerShelfStrip"></div>

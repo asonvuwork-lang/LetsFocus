@@ -2106,7 +2106,23 @@ header { position: relative; }
 }
 .drink-progress-header {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 10px; gap: 8px;
+}
+.drink-title-group {
+  display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
+  flex-wrap: wrap;
+}
+.drink-category-pill {
+  display: inline-block;
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.65rem; font-weight: 600;
+  padding: 2px 8px; border-radius: 20px;
+  border: 1px solid;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  opacity: 0.95;
+  white-space: nowrap;
+  transition: opacity 0.3s ease;
 }
 .drink-progress-title {
   font-family: 'Playfair Display', serif;
@@ -2120,16 +2136,174 @@ header { position: relative; }
 .drink-swap-btn:hover { background: rgba(139,111,71,0.2); transform: rotate(90deg); }
 .drink-scene {
   display: flex; justify-content: center; align-items: flex-end;
-  min-height: 120px; padding: 8px 0;
+  min-height: 120px; padding: 6px 0;
   transition: filter 0.5s ease;
 }
-.drink-scene svg { filter: drop-shadow(0 4px 12px rgba(139,111,71,0.2)); }
+.drink-scene svg {
+  filter: drop-shadow(0 6px 16px rgba(139,111,71,0.28)) drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+}
 .drink-progress-label {
   text-align: center; font-size: 0.78rem;
   color: rgba(107,81,57,0.65); font-style: italic;
   font-family: 'Source Sans Pro', sans-serif;
   margin-top: 6px; line-height: 1.4;
 }
+/* ===== DRINK CONTENT ROW (side-by-side bill + cup) ===== */
+.drink-content-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 2px;
+}
+
+/* ===== RECIPE BILL (note/receipt paper style) ===== */
+.drink-recipe-bill {
+  flex: 0 0 128px;
+  min-height: 155px;
+  background:
+    repeating-linear-gradient(
+      transparent,
+      transparent 19px,
+      rgba(139,111,71,0.12) 19px,
+      rgba(139,111,71,0.12) 20px
+    ),
+    linear-gradient(135deg, #f9f4e9 0%, #f4ede0 60%, #f0e6d4 100%);
+  border: 1px solid rgba(139,111,71,0.28);
+  border-radius: 3px 6px 6px 3px;
+  padding: 12px 10px 10px 12px;
+  box-shadow:
+    2px 3px 8px rgba(0,0,0,0.16),
+    -1px 0 0 rgba(139,111,71,0.15),
+    inset 0 0 18px rgba(180,140,80,0.06);
+  position: relative;
+  transform: rotate(-1deg);
+  transform-origin: top center;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  opacity: 0;
+}
+/* Left torn-paper edge accent */
+.drink-recipe-bill::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(139,111,71,0.35) 0px,
+    rgba(139,111,71,0.35) 6px,
+    transparent 6px,
+    transparent 10px
+  );
+  border-radius: 3px 0 0 3px;
+}
+/* Coffee stain ring */
+.drink-recipe-bill::after {
+  content: '';
+  position: absolute;
+  bottom: 14px; right: 10px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(139,111,71,0.18);
+  box-shadow: inset 0 0 6px rgba(139,111,71,0.10);
+}
+.drink-recipe-bill.bill-visible {
+  animation: billFadeIn 0.45s ease-out forwards;
+}
+@keyframes billFadeIn {
+  from { opacity: 0; transform: rotate(-1deg) translateY(6px); }
+  to   { opacity: 1; transform: rotate(-1deg) translateY(0);   }
+}
+.bill-drink-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.70rem;
+  color: #6b5139;
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 5px;
+  line-height: 1.3;
+  word-break: break-word;
+}
+.bill-rule {
+  text-align: center;
+  font-size: 0.62rem;
+  color: rgba(139,111,71,0.45);
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+  font-family: 'Courier New', monospace;
+}
+.bill-section-label {
+  font-family: 'Courier New', monospace;
+  font-size: 0.60rem;
+  color: rgba(107,81,57,0.60);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 4px;
+}
+.bill-items {
+  list-style: none;
+  padding: 0; margin: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.68rem;
+  color: #5a3e28;
+  line-height: 1.7;
+}
+.bill-items li::before { content: '· '; color: rgba(139,111,71,0.6); }
+.bill-tier {
+  margin-top: 8px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: rgba(212,165,116,0.20);
+  font-family: 'Courier New', monospace;
+  font-size: 0.60rem;
+  color: rgba(120,85,50,0.80);
+  text-align: center;
+  border: 1px solid rgba(212,165,116,0.28);
+}
+.bill-tier-master {
+  background: rgba(251,191,36,0.18);
+  color: rgba(155,100,0,0.90);
+  border-color: rgba(251,191,36,0.35);
+}
+
+/* drink-scene now sits beside the bill */
+.drink-content-row .drink-scene {
+  flex: 1;
+  min-height: 155px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 0;
+}
+
+/* ===== DRINK NAME RARITY EFFECTS ===== */
+.drink-name-rare {
+  color: #a855f7 !important;
+}
+.drink-name-epic {
+  background: linear-gradient(135deg, #a855f7, #ec4899, #a855f7);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: drinkNameEpicShimmer 3s linear infinite;
+}
+@keyframes drinkNameEpicShimmer {
+  to { background-position: 200% center; }
+}
+.drink-name-legendary {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b, #fde68a, #f59e0b, #fbbf24);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: drinkNameGold 2.5s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(251,191,36,0.55));
+}
+@keyframes drinkNameGold {
+  to { background-position: 200% center; }
+}
+
 @keyframes drinkFill {
   from { transform: scaleY(0); transform-origin: bottom; }
   to   { transform: scaleY(1); transform-origin: bottom; }
@@ -2810,22 +2984,27 @@ aside.right {
 
 /* ===== WORKING ON CARD — INLINE IN TIMER LEFT COL ===== */
 .focus-goal-card-inline {
-  background: rgba(245,241,235,0.12);
-  border: 1px solid rgba(212,165,116,0.2);
-  border-radius: 12px; padding: 14px 16px;
+  background: rgba(245,241,235,0.14);
+  border: 1.5px solid rgba(212,165,116,0.30);
+  border-left: 4px solid rgba(212,165,116,0.55);
+  border-radius: 12px; padding: 16px 18px 14px 16px;
   margin-top: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 .focus-goal-card-inline .focus-goal-header {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 .focus-goal-card-inline .focus-goal-label {
-  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px;
-  color: rgba(212,165,116,0.6); font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 2.5px;
+  color: rgba(212,165,116,0.80); font-family: 'Source Sans Pro', sans-serif;
+  font-weight: 600;
 }
 .focus-goal-card-inline .focus-goal-title {
-  font-family: 'Playfair Display', serif; font-size: 1rem;
-  color: #f5e8d0; font-style: italic; line-height: 1.4;
+  font-family: 'Playfair Display', serif; font-size: 1.18rem;
+  color: #f5e8d0; font-style: italic; line-height: 1.45;
+  font-weight: 600; letter-spacing: 0.2px;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.20);
 }
 
 /* ===== MISC FIXES ===== */
@@ -3149,44 +3328,49 @@ aside.right {
 
 /* ===== WORKING ON — DISTINCT BLOCK ===== */
 .focus-goal-card-inline {
-  background: linear-gradient(135deg, rgba(212,165,116,0.14), rgba(139,111,71,0.08)) !important;
-  border: 2px solid rgba(212,165,116,0.35) !important;
+  background: linear-gradient(135deg, rgba(212,165,116,0.18), rgba(139,111,71,0.10)) !important;
+  border: 1.5px solid rgba(212,165,116,0.38) !important;
+  border-left: 4px solid rgba(212,165,116,0.65) !important;
   border-radius: 16px !important;
-  padding: 16px 20px !important;
+  padding: 18px 22px 16px 18px !important;
   margin-top: 20px !important;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 3px 16px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.06) !important;
 }
 .focus-goal-card-inline::before {
   content: '';
   position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, #d4a574, #8b6f47, #d4a574);
+  background: linear-gradient(90deg, #d4a574, #f0c898, #d4a574);
   border-radius: 16px 16px 0 0;
 }
 .focus-goal-card-inline .focus-goal-label {
-  font-size: 0.65rem !important;
+  font-size: 0.70rem !important;
   text-transform: uppercase !important;
-  letter-spacing: 2.5px !important;
-  color: rgba(212,165,116,0.55) !important;
+  letter-spacing: 3px !important;
+  color: rgba(212,165,116,0.82) !important;
   font-family: 'Source Sans Pro', sans-serif !important;
-  margin-bottom: 8px !important;
+  font-weight: 700 !important;
+  margin-bottom: 10px !important;
   display: block !important;
 }
 .focus-goal-card-inline .focus-goal-header {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  margin-bottom: 10px !important;
+  margin-bottom: 12px !important;
+  gap: 12px !important;
 }
 .focus-goal-card-inline .focus-goal-done-btn {
   background: linear-gradient(135deg, #22c55e, #16a34a) !important;
   color: #fff !important; border: none !important;
-  padding: 6px 14px !important; border-radius: 20px !important;
+  padding: 7px 16px !important; border-radius: 20px !important;
   font-family: 'Playfair Display', serif !important;
-  font-size: 0.8rem !important; font-weight: 600 !important;
+  font-size: 0.82rem !important; font-weight: 700 !important;
   cursor: pointer !important;
   box-shadow: 0 3px 10px rgba(34,197,94,0.3) !important;
   transition: all 0.2s ease !important;
+  white-space: nowrap;
 }
 .focus-goal-card-inline .focus-goal-done-btn:hover {
   transform: translateY(-1px) !important;
@@ -3194,10 +3378,13 @@ aside.right {
 }
 .focus-goal-card-inline .focus-goal-title {
   font-family: 'Playfair Display', serif !important;
-  font-size: 1.05rem !important;
+  font-size: 1.25rem !important;
   color: #f5e8d0 !important;
   font-style: italic !important;
   line-height: 1.5 !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.22) !important;
+  letter-spacing: 0.2px !important;
 }
 
 /* ===== SET DATE BUTTON restyle ===== */
