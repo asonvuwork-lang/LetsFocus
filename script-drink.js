@@ -243,27 +243,27 @@ const DrinkModule = (function () {
     },
     _affogato: {
       label: 'Affogato', type: 'coffee',
-      liquidColor: '#0e0604', liquidColor2: '#f8f0d8',
-      foamColor: 'rgba(248,240,216,0.88)', cupTint: '#7a5020',
+      liquidColor: '#3b1e0e', liquidColor2: '#fffdf5',
+      foamColor: 'rgba(255,252,235,0.88)', cupTint: '#7a5020',
       bobas: false, hasFoam: false, hasIce: false, rarity: 'epic',
     },
     _lavender_latte: {
       label: 'Lavender Latte', type: 'milktea',
-      liquidColor: '#4a3070', liquidColor2: '#8060a0',
-      foamColor: 'rgba(180,160,220,0.78)', cupTint: '#7050a0',
+      liquidColor: '#3c2850', liquidColor2: '#9070b8',
+      foamColor: 'rgba(200,170,240,0.80)', cupTint: '#7050a0',
       bobas: false, hasFoam: true, hasIce: false, rarity: 'rare',
     },
     // ---- Epic drinks (unique vibrant visuals) ----
     _rose_gold: {
       label: 'Rose Gold Latte', type: 'smoothie',
-      liquidColor: '#c06080', liquidColor2: '#f090b0',
-      foamColor: 'rgba(255,180,200,0.82)', cupTint: '#c06080',
+      liquidColor: '#883050', liquidColor2: '#d08870',
+      foamColor: 'rgba(255,210,165,0.82)', cupTint: '#c07848',
       bobas: false, hasFoam: true, hasIce: false, rarity: 'epic',
     },
     _cherry_blossom: {
       label: 'Cherry Blossom', type: 'smoothie',
-      liquidColor: '#d06090', liquidColor2: '#f0c0d0',
-      foamColor: 'rgba(255,200,220,0.88)', cupTint: '#d070a0',
+      liquidColor: '#7a3858', liquidColor2: '#f0d8e8',
+      foamColor: 'rgba(252,235,248,0.88)', cupTint: '#c090b0',
       bobas: false, hasFoam: true, hasIce: false, rarity: 'epic',
     },
     _galaxy_brew: {
@@ -274,33 +274,33 @@ const DrinkModule = (function () {
     },
     _midnight_esp: {
       label: 'Midnight Espresso', type: 'coffee',
-      liquidColor: '#060310', liquidColor2: '#0c0628',
-      foamColor: 'rgba(40,30,80,0.72)', cupTint: '#0a0820',
+      liquidColor: '#040208', liquidColor2: '#282038',
+      foamColor: 'rgba(80,60,120,0.72)', cupTint: '#180e30',
       bobas: false, hasFoam: true, hasIce: false, rarity: 'epic',
     },
     // ---- Legendary drinks (vibrant / cosmic effects) ----
     _the_void: {
-      label: 'The Void', type: 'coffee',
-      liquidColor: '#000000', liquidColor2: '#05030a',
-      foamColor: 'rgba(30,20,60,0.70)', cupTint: '#080614',
+      label: 'The Void', type: 'void',
+      liquidColor: '#0c0614', liquidColor2: '#1a0e28',
+      foamColor: 'rgba(90,40,140,0.55)', cupTint: '#120a20',
       bobas: false, hasFoam: false, hasIce: false, rarity: 'legendary',
     },
     _aurora_brew: {
-      label: 'Aurora Brew', type: 'milktea',
-      liquidColor: '#0c1840', liquidColor2: '#3060a0',
-      foamColor: 'rgba(100,220,255,0.72)', cupTint: '#1030a0',
-      bobas: false, hasFoam: true, hasIce: true, rarity: 'legendary',
+      label: 'Aurora Brew', type: 'aurora',
+      liquidColor: '#1e1b4b', liquidColor2: '#0c1840',
+      foamColor: 'rgba(100,220,255,0.55)', cupTint: '#181060',
+      bobas: false, hasFoam: false, hasIce: true, rarity: 'legendary',
     },
     _golden_hour: {
       label: 'Golden Hour', type: 'coffee',
-      liquidColor: '#6a3a00', liquidColor2: '#d4a020',
-      foamColor: 'rgba(240,200,80,0.78)', cupTint: '#c08010',
+      liquidColor: '#451a03', liquidColor2: '#e0a030',
+      foamColor: 'rgba(252,195,60,0.80)', cupTint: '#c08010',
       bobas: false, hasFoam: false, hasIce: false, rarity: 'legendary',
     },
     _barista_secret: {
       label: "Barista's Secret", type: 'lemonade',
-      liquidColor: '#003838', liquidColor2: '#00a090',
-      foamColor: 'rgba(0,220,200,0.72)', cupTint: '#008878',
+      liquidColor: '#042f2e', liquidColor2: '#0f766e',
+      foamColor: 'rgba(45,212,191,0.72)', cupTint: '#0a6060',
       bobas: false, hasFoam: true, hasIce: true, rarity: 'legendary',
     },
   };
@@ -450,6 +450,9 @@ const DrinkModule = (function () {
     chamomile:     { waveAmp: 2, waveSpeed: 6.0, steam: true  },
     smoothie:      { waveAmp: 1, waveSpeed: 8.0, steam: false },
     lemonade:      { waveAmp: 5, waveSpeed: 2.0, steam: false },
+    // Legendary special types
+    void:          { waveAmp: 1, waveSpeed: 10.0, steam: false },
+    aurora:        { waveAmp: 2, waveSpeed:  5.0, steam: false },
     // Layered shop drinks
     ca_phe_sua_da: { waveAmp: 2, waveSpeed: 5.0, steam: false },
     dalgona:       { waveAmp: 2, waveSpeed: 5.5, steam: false },
@@ -494,6 +497,9 @@ const DrinkModule = (function () {
       @keyframes lfDropR { 0%{transform:translate(0,0);opacity:0} 10%{opacity:0.55} 78%{transform:translate(-0.45px,7px);opacity:0.52} 100%{transform:translate(-0.58px,9px);opacity:0} }
       @keyframes lfRipple { 0%{transform:scale(0.3);opacity:0.9} 100%{transform:scale(4.2);opacity:0} }
       @keyframes lfDrinkChange { 0%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(0.91)} }
+      @keyframes voidStar { 0%,100%{opacity:0.08;transform:scale(0.6)} 50%{opacity:1;transform:scale(1.4)} }
+      @keyframes voidOrbit { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+      @keyframes auroraFlow { 0%,100%{transform:translateX(-10px) scaleY(0.85);opacity:0.55} 40%{transform:translateX(8px) scaleY(1.18);opacity:1} 70%{transform:translateX(-5px) scaleY(0.92);opacity:0.75} }
     `;
     document.head.appendChild(style);
   }
@@ -597,6 +603,7 @@ const DrinkModule = (function () {
     matcha_latte:'matcha', boba:'milktea', lavender_latte:'milktea',
     hot_choc:'coffee', vienna_coffee:'coffee',
     rose_gold:'smoothie', galaxy_brew:'smoothie', midnight_esp:'coffee',
+    the_void:'void', aurora_brew:'aurora',
     cherry_blossom:'chamomile', barista_secret:'coffee',
     golden_hour:'lemonade', aurora_brew:'smoothie', the_void:'coffee',
   };
@@ -707,6 +714,9 @@ const DrinkModule = (function () {
     iced_matcha:   { lt: 'rgba(145,205,130,0.90)', dk: 'rgba(38,88,38,0.92)' },
     caramel_mac:   { lt: 'rgba(215,175,105,0.90)', dk: 'rgba(80,38,8,0.92)'  },
     irish_coffee:  { lt: 'rgba(175,128,72,0.90)',  dk: 'rgba(50,18,5,0.92)'  },
+    void:          { lt: 'rgba(110,55,180,0.75)',  dk: 'rgba(12,4,28,0.96)'  },
+    aurora:        { lt: 'rgba(80,200,240,0.55)',  dk: 'rgba(8,10,60,0.90)'  },
+    lemonade:      { lt: 'rgba(255,255,255,0.30)', dk: 'rgba(0,0,0,0.12)'    },
   };
 
   function buildCupWalls(d, type, CX, CW, CTY, CBY) {
@@ -1158,25 +1168,104 @@ const DrinkModule = (function () {
     }
 
     if (type === 'irish_coffee') {
-      // Dark whiskey-coffee base (bottom) + thick cream float (top)
+      // Gradient-blend approach: whiskey-dark amber base blending into green-kissed cream
       const cofPh   = Math.min(1, pct / 38);
-      const creamPh = Math.min(1, Math.max(0, (pct - 60) / 30));   // pct 60→90
-      const crFrac = 0.25 * creamPh, cofFrac = Math.max(0.06, 1 - crFrac);
-      const cofY = fillY + fillH * crFrac;
-      const blnd = Math.min(8, fillH * 0.05);
-      const cofOp = Math.min(0.94, cofPh * 2.0), crOp = Math.min(0.90, creamPh * 2.0);
+      const creamPh = Math.min(1, Math.max(0, (pct - 58) / 32));
+      const crFrac  = 0.28 * creamPh;
+      const cofY    = fillY + fillH * crFrac;
+      const blnd    = Math.min(14, fillH * 0.10); // wider blend zone = softer transition
+      const cofOp   = Math.min(0.94, cofPh * 2.0), crOp = Math.min(0.90, creamPh * 2.0);
+      // Irish green cream tint
+      const irishCream = 'rgba(215,252,215,0.92)';
       return `
-        <rect x="${CX}" y="${cofY}" width="${CW}" height="${fillH * cofFrac + 5}" fill="#1e0d08" opacity="${cofOp.toFixed(2)}"/>
-        <path d="${wavePath(cofY, 3, false)}" fill="#150a05" opacity="${(cofOp * 0.52).toFixed(2)}"
-          style="animation:lfW1 4s ease-in-out infinite ${wOff1}"/>
+        <rect x="${CX}" y="${fillY}" width="${CW}" height="${fillH + 5}" fill="#1e0d08" opacity="${cofOp.toFixed(2)}"/>
+        <path d="${wavePath(fillY + fillH*0.5, 3, false)}" fill="#160a05" opacity="${(cofOp * 0.45).toFixed(2)}"
+          style="animation:lfW1 4.2s ease-in-out infinite ${wOff1}"/>
         ${creamPh > 0.02 ? `
-          <rect x="${CX}" y="${fillY}" width="${CW}" height="${fillH * crFrac + 5}" fill="#f8f2e8" opacity="${crOp.toFixed(2)}"/>
-          <rect x="${CX}" y="${cofY}" width="${CW}" height="${blnd}" fill="#f8f2e8" opacity="${(crOp * 0.36).toFixed(2)}"/>
-          <path d="${wavePath(fillY, 2, true)}" fill="#f0e8d8" opacity="${(creamPh * 0.62).toFixed(2)}"
+          <rect x="${CX}" y="${fillY}" width="${CW}" height="${fillH * crFrac + blnd}" fill="${irishCream}" opacity="${crOp.toFixed(2)}"/>
+          <rect x="${CX}" y="${fillY + fillH * crFrac}" width="${CW}" height="${blnd}" fill="${irishCream}" opacity="${(crOp * 0.42).toFixed(2)}"/>
+          <path d="${wavePath(fillY, 2, true)}" fill="rgba(200,245,200,0.55)" opacity="${(creamPh * 0.65).toFixed(2)}"
             style="animation:lfW2 6s ease-in-out infinite ${wOff2}"/>
-          <ellipse cx="${CX+CW/2}" cy="${fillY+2}" rx="${CW*0.44}" ry="7"
-            fill="#fff8f0" opacity="${(crOp * 0.70).toFixed(2)}"/>
+          <ellipse cx="${CX+CW/2}" cy="${fillY+2}" rx="${CW*0.44}" ry="8"
+            fill="rgba(230,255,230,0.75)" opacity="${(crOp * 0.65).toFixed(2)}"/>
         ` : ''}`;
+    }
+
+    // ─── VOID — Cosmic purple-black with stars + orbit ring ────────────────────────────
+    if (type === 'void') {
+      const starSeeds = [
+        [36,135,1.2,1.5],[62,88,0.9,2.2],[78,148,1.5,1.8],[44,72,1.0,2.5],
+        [97,118,1.2,1.2],[112,84,0.9,2.0],[54,140,1.4,1.6],[88,96,1.1,1.9],
+        [72,62,0.8,2.3],[104,143,1.5,1.4],[32,104,1.0,2.1],[118,112,1.2,1.7],
+        [58,76,0.9,2.4],[92,132,1.3,1.5],[48,118,1.1,2.0],[108,68,0.8,1.9],
+        [68,148,1.4,1.3],[82,78,1.0,2.2],[114,98,0.9,2.6],[40,90,1.1,1.4],
+      ];
+      // More stars = more progress
+      const starCount = Math.floor(3 + (pct / 100) * 17);
+      const stars = starSeeds.slice(0, Math.min(starCount, starSeeds.length)).map(([sx,sy,sr,sdur]) => {
+        const sy2 = Math.max(fillY + 6, Math.min(CBY - 6, sy));
+        return `<circle cx="${sx}" cy="${sy2}" r="${sr}" fill="rgba(255,255,255,${(0.2 + Math.min(0.6, pct/150)).toFixed(2)})"
+          style="animation:voidStar ${sdur}s ease-in-out infinite ${ao(sdur)}"/>`;
+      }).join('');
+      const orbitY = fillY + 7;
+      const orbitRx = CW * 0.42;
+      return `
+        <rect x="${CX-1}" y="${fillY}" width="${CW+2}" height="${CBY-fillY+5}" fill="url(#houseVoid)" opacity="0.96"/>
+        <rect x="${CX-1}" y="${fillY}" width="${CW+2}" height="${CBY-fillY+5}" fill="rgba(50,15,90,0.18)"/>
+        <path d="${wP1}" fill="rgba(70,25,110,0.50)"
+          style="animation:lfW1 ${wSpd}s ease-in-out infinite ${wOff1}"/>
+        <ellipse cx="${CX+CW/2}" cy="${fillY+CBY*0.38}" rx="${CW*0.18}" ry="${fillH*0.1}"
+          fill="rgba(40,10,80,0.40)"/>
+        ${stars}
+        ${pct > 25 ? `
+          <g style="animation:voidOrbit 7s linear infinite ${ao(7)};transform-origin:${CX+CW/2}px ${orbitY}px">
+            <ellipse cx="${CX+CW/2}" cy="${orbitY}" rx="${orbitRx}" ry="5"
+              fill="none" stroke="rgba(212,165,8,0.65)" stroke-width="1.8" stroke-dasharray="6 3"/>
+          </g>
+        ` : ''}
+        ${pct > 60 ? `
+          <g style="animation:voidOrbit 11s linear infinite reverse ${ao(11)};transform-origin:${CX+CW/2}px ${orbitY+4}px">
+            <ellipse cx="${CX+CW/2}" cy="${orbitY+4}" rx="${orbitRx*0.62}" ry="3.5"
+              fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="3 5"/>
+          </g>
+        ` : ''}
+      `;
+    }
+
+    // ─── AURORA — Northern lights flowing color bands ──────────────────────────────
+    if (type === 'aurora') {
+      const band1Ph = Math.min(1, pct / 40);
+      const band2Ph = Math.min(1, Math.max(0, (pct - 28) / 42));
+      const band3Ph = Math.min(1, Math.max(0, (pct - 55) / 38));
+      const auroraY1 = fillY + fillH * 0.45;
+      const auroraY2 = fillY + fillH * 0.62;
+      const auroraY3 = fillY + fillH * 0.28;
+      const aCX = CX + CW/2;
+      const pour = (pct > 4 && pct < 92) ? buildPourStream(d.liquidColor, fillY, CTY, 'milktea') : '';
+      return `
+        <rect x="${CX-1}" y="${fillY}" width="${CW+2}" height="${CBY-fillY+5}" fill="${liquidFill}" opacity="0.92"/>
+        <path d="${wP2}" fill="${d.liquidColor2}" opacity="0.35"
+          style="animation:lfW2 ${wSpd*1.3}s ease-in-out infinite ${wOff2}"/>
+        <path d="${wP1}" fill="rgba(30,40,100,0.55)"
+          style="animation:lfW1 ${wSpd}s ease-in-out infinite ${wOff1}"/>
+        ${band1Ph > 0.03 ? `
+          <ellipse cx="${aCX}" cy="${auroraY1}" rx="${CW*0.42}" ry="${Math.max(5, fillH*0.16)}"
+            fill="rgba(167,139,250,${(band1Ph*0.32).toFixed(2)})"
+            style="animation:auroraFlow 9s ease-in-out infinite ${ao(9)};transform-origin:${aCX}px ${auroraY1}px"/>
+        ` : ''}
+        ${band2Ph > 0.03 ? `
+          <ellipse cx="${aCX}" cy="${auroraY2}" rx="${CW*0.40}" ry="${Math.max(4, fillH*0.14)}"
+            fill="rgba(34,211,238,${(band2Ph*0.30).toFixed(2)})"
+            style="animation:auroraFlow 12s ease-in-out infinite reverse ${ao(12)};transform-origin:${aCX}px ${auroraY2}px"/>
+        ` : ''}
+        ${band3Ph > 0.03 ? `
+          <ellipse cx="${aCX}" cy="${auroraY3}" rx="${CW*0.38}" ry="${Math.max(4, fillH*0.13)}"
+            fill="rgba(52,211,153,${(band3Ph*0.26).toFixed(2)})"
+            style="animation:auroraFlow 7s ease-in-out infinite ${ao(7)};transform-origin:${aCX}px ${auroraY3}px"/>
+        ` : ''}
+        ${pct > 55 ? generateIce(CX, fillY) : ''}
+        ${pour}
+      `;
     }
 
     // --- Standard wave-fill system for all other drink types ---
@@ -1315,6 +1404,10 @@ const DrinkModule = (function () {
     const foamColor  = (foamFill100 && foamFill100 !== 'transparent')
       ? foamFill100 : (d.hasFoam ? d.foamColor : null);
     const garnishSvg = (pct >= 100 && step100?.garnishSvg) ? step100.garnishSvg : '';
+    const svgContentRaw   = stepCfg?.svgContent || '';
+    const svgContentIsOut = stepCfg?.svgContentOutside || false;
+    const svgContentIn    = svgContentRaw && !svgContentIsOut ? svgContentRaw : '';
+    const svgContentOut   = svgContentRaw &&  svgContentIsOut ? svgContentRaw : '';
     const bgGlow     = tierCfg?.bgGlow || 'transparent';
     scene.style.filter = (bgGlow && bgGlow !== 'transparent') ? `drop-shadow(0 0 20px ${bgGlow})` : '';
 
@@ -1427,11 +1520,17 @@ const DrinkModule = (function () {
 
       ${steamSVG}
 
+      <!-- svgContent inside cup (pearls, ice, shimmer etc.) -->
+      ${svgContentIn ? `<g mask="url(#lf_cupMask)">${svgContentIn}</g>` : ''}
+
       <!-- Garnish at 100% -->
       ${garnishSvg ? `<g clip-path="url(#lf_cupClip)">${garnishSvg}</g>` : ''}
 
       <!-- Wall drizzle (boba, caramel etc.) -->
       ${buildWallDrizzle(type, CX, CW, CTY, CBY, pct)}
+
+      <!-- svgContent outside cup (orbit rings, glow halos, aurora bands) -->
+      ${svgContentOut}
 
       ${pct >= 100 ? generateSparkles() : ''}
       ${showRipple && pct > 0 ? `<g mask="url(#lf_cupMask)">${buildRipple(CX, CW, fillY)}</g>` : ''}

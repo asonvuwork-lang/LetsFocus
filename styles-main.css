@@ -4136,3 +4136,24 @@ aside.right {
   transition: transform 0.15s ease;
 }
 .shelf-mini-cup:hover { transform: translateY(-4px); }
+
+/* ─── Void + Aurora + Legendary special effects ──────────────────────── */
+@keyframes voidStar {
+  0%,100% { opacity: 0.08; transform: scale(0.55); }
+  50%      { opacity: 1.00; transform: scale(1.45); }
+}
+@keyframes voidOrbit {
+  from { transform: rotate(0deg);   }
+  to   { transform: rotate(360deg); }
+}
+@keyframes auroraFlow {
+  0%,100% { transform: translateX(-10px) scaleY(0.82); opacity: 0.52; }
+  35%     { transform: translateX(9px)   scaleY(1.20); opacity: 1.00; }
+  68%     { transform: translateX(-5px)  scaleY(0.94); opacity: 0.74; }
+}
+
+/* ─── 3D depth shimmer on cup surfaces ───────────────────────────────── */
+.drink-cup-wrap svg polygon,
+.drink-cup-wrap svg path {
+  transform-box: fill-box;
+}

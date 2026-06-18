@@ -417,16 +417,40 @@ const GoalsModule = (function() {
     return (goal.subgoals.filter(s => s.completed).length / goal.subgoals.length) * 100;
   }
 
+  // Guard: track whether we've already shown the "all done" celebration for this
+  // exact completed-state so it doesn't re-fire on every renderGoals() call.
+  // Resets automatically whenever any goal becomes incomplete or a new goal is added.
+  let _allDoneCelebrated = false;
+
   function updateMainProgress() {
     const bar = document.querySelector('.progress');
     const clearBtn = document.getElementById('clearAllGoalsBtn');
     if (!bar) return;
-    if (!goals.length) { bar.style.width = '0%'; if (clearBtn) clearBtn.classList.add('hidden'); return; }
+    if (!goals.length) {
+      bar.style.width = '0%';
+      if (clearBtn) clearBtn.classList.add('hidden');
+      _allDoneCelebrated = false;
+      return;
+    }
     const pct = goals.filter(g => g.completed).length / goals.length * 100;
     bar.style.width = pct + '%';
-    const allDone = goals.length > 0 && goals.every(g => g.completed);
-    if (clearBtn) { clearBtn.classList.toggle('hidden', !allDone); }
-    if (allDone) triggerCelebration();
+    const allDone = goals.every(g => g.completed);
+    if (clearBtn) clearBtn.classList.toggle('hidden', !allDone);
+
+    if (!allDone) {
+      // Reset the guard whenever goals are not all done
+      _allDoneCelebrated = false;
+      return;
+    }
+
+    // Only fire celebration if:
+    // 1. Not already shown for this all-done state
+    // 2. User is on the goals tab (main menu), not mid-session on the timer page
+    const timerPageVisible = !document.getElementById('timerPage')?.classList.contains('hidden');
+    if (!_allDoneCelebrated && !timerPageVisible) {
+      _allDoneCelebrated = true;
+      triggerCelebration();
+    }
   }
 
   // ---- Deadlines tab ----

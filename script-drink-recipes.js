@@ -9,12 +9,13 @@ const DRINK_RECIPES = {
     allPossibleEquipment: ["EspressoMachine"],
     house: {
       bgGlow: "transparent",
+      defs: `<linearGradient id="houseEspresso" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5a2a14"/><stop offset="45%" stop-color="#2e1208"/><stop offset="100%" stop-color="#0a0301"/></linearGradient>`,
       steps: {
         20: { label: "Placing short demitasse glass", fill: "transparent" },
         40: { label: "Standard atmospheric baseline check", fill: "transparent" },
-        60: { label: "Pouring standard dark coffee wash", fill: "#1a110e" },
-        80: { label: "Filling core vessel lines", fill: "#1a110e" },
-        100: { label: "Espresso complete", fill: "#1a110e", foamFill: "transparent" }
+        60: { label: "Pouring standard dark coffee wash", fill: "url(#houseEspresso)" },
+        80: { label: "Filling core vessel lines", fill: "url(#houseEspresso)" },
+        100: { label: "Espresso complete", fill: "url(#houseEspresso)", foamFill: "transparent" }
       }
     },
     signature: {
@@ -50,12 +51,13 @@ const DRINK_RECIPES = {
     allPossibleEquipment: ["EspressoMachine"],
     house: {
       bgGlow: "transparent",
+      defs: `<linearGradient id="houseAmer" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a2818"/><stop offset="50%" stop-color="#1e1208"/><stop offset="100%" stop-color="#080502"/></linearGradient>`,
       steps: {
         20: { label: "Positioning standard clear glass tumbler", fill: "transparent" },
-        40: { label: "Adding lukewarm tap water volume base", fill: "rgba(220, 240, 255, 0.3)" },
-        60: { label: "Adding generic dark instant coffee mix blend", fill: "#271c19" },
-        80: { label: "Stirring solution pathways manually", fill: "#211612" },
-        100: { label: "Basic Americano blend complete", fill: "#211612", foamFill: "transparent" }
+        40: { label: "Adding lukewarm tap water volume base", fill: "rgba(190, 155, 110, 0.18)" },
+        60: { label: "Adding generic dark instant coffee mix blend", fill: "#2a1c14" },
+        80: { label: "Stirring solution pathways manually", fill: "#2a1c14" },
+        100: { label: "Basic Americano blend complete", fill: "#2a1c14", foamFill: "transparent" }
       }
     },
     signature: {
@@ -63,8 +65,8 @@ const DRINK_RECIPES = {
       bgGlow: "rgba(120, 67, 39, 0.08)",
       defs: `<linearGradient id="sigAmer" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#38251c"/><stop offset="100%" stop-color="#170e0a"/></linearGradient>`,
       steps: {
-        20: { label: "Filling vessel with purified 93°C hot water base", fill: "rgba(224, 242, 254, 0.4)" },
-        40: { label: "Locking double-shot basket array configurations", fill: "rgba(224, 242, 254, 0.4)" },
+        20: { label: "Filling vessel with purified 93°C hot water base", fill: "rgba(195, 165, 120, 0.22)" },
+        40: { label: "Locking double-shot basket array configurations", fill: "rgba(195, 165, 120, 0.22)" },
         60: { label: "Extracting fresh espresso directly over hot water canvas", fill: "url(#sigAmer)" },
         80: { label: "Blending fluid thresholds gracefully", fill: "url(#sigAmer)" },
         100: { label: "Preserving soft perimeter ring layer of crema", fill: "url(#sigAmer)", foamFill: "rgba(197, 142, 97, 0.35)" }
@@ -75,8 +77,8 @@ const DRINK_RECIPES = {
       bgGlow: "rgba(217, 119, 6, 0.15)",
       defs: `<linearGradient id="masterAmer" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#543310"/><stop offset="30%" stop-color="#1c1007"/><stop offset="100%" stop-color="#0b0502"/></linearGradient>`,
       steps: {
-        20: { label: "Calibrating pristine alkaline water reservoir levels", fill: "rgba(240, 249, 255, 0.5)" },
-        40: { label: "Grinding premium light-roast specialty bean profiles", fill: "rgba(240, 249, 255, 0.5)" },
+        20: { label: "Calibrating pristine alkaline water reservoir levels", fill: "rgba(200, 170, 120, 0.25)" },
+        40: { label: "Grinding premium light-roast specialty bean profiles", fill: "rgba(200, 170, 120, 0.25)" },
         60: { label: "Layering dense pulled espresso over hot water canvas", fill: "url(#masterAmer)" },
         80: { label: "Suspended watercolor oil dispersion active", fill: "url(#masterAmer)" },
         100: { label: "Perfect extraction layout integration achieved", fill: "url(#masterAmer)", foamFill: "transparent" }
@@ -91,9 +93,9 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Setting standard ceramic cup", fill: "transparent" },
         40: { label: "Pouring instant coffee water mix", fill: "#543d32" },
-        60: { label: "Stirring in cold standard table milk volume", fill: "#8f7061" },
-        80: { label: "Integrating solution profiles completely", fill: "#8f7061" },
-        100: { label: "Flat white style drink completed", fill: "#8f7061", foamFill: "transparent" }
+        60: { label: "Stirring in cold standard table milk volume", fill: "#c8a878" },
+        80: { label: "Integrating solution profiles completely", fill: "#c8a878" },
+        100: { label: "Flat white style drink completed", fill: "#c8a878", foamFill: "rgba(255,255,255,0.55)" }
       }
     },
     signature: {
@@ -132,9 +134,9 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Adding sweet generic cocoa powder scoops", fill: "transparent" },
         40: { label: "Pouring standard hot water base lines", fill: "#24140a" },
-        60: { label: "Stirring manually to break up dry lumps", fill: "#3d2314" },
-        80: { label: "Adding splash of thin cold milk directly", fill: "#523320" },
-        100: { label: "Basic Hot Cocoa ready", fill: "#523320", foamFill: "transparent" }
+        60: { label: "Stirring manually to break up dry lumps", fill: "#6a3010" },
+        80: { label: "Adding splash of thin cold milk directly", fill: "#6a3010" },
+        100: { label: "Basic Hot Cocoa ready", fill: "#6a3010", foamFill: "rgba(100,45,20,0.5)" }
       }
     },
     signature: {
@@ -175,9 +177,9 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Adding culinary grade matcha powder base", fill: "transparent" },
         40: { label: "Mixing with hot tap water structures", fill: "#3b5237" },
-        60: { label: "Pouring un-textured grocery store skim milk", fill: "#60805a" },
-        80: { label: "Blending solution channels together", fill: "#60805a" },
-        100: { label: "Basic Matcha mix complete", fill: "#60805a", foamFill: "transparent" }
+        60: { label: "Pouring un-textured grocery store skim milk", fill: "#8aaa70" },
+        80: { label: "Blending solution channels together", fill: "#8aaa70" },
+        100: { label: "Basic Matcha mix complete", fill: "#8aaa70", foamFill: "rgba(210,240,200,0.55)" }
       }
     },
     signature: {
@@ -217,9 +219,9 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Setting cup baseline configurations", fill: "transparent" },
         40: { label: "Pouring filtered basic black coffee roast blend", fill: "#241812" },
-        60: { label: "Adding simple spoonful of liquid egg yolk base", fill: "#4a3225" },
-        80: { label: "Merging liquid stages rudimentarily", fill: "#4a3225" },
-        100: { label: "Basic egg drink variation complete", fill: "#4a3225", foamFill: "transparent" }
+        60: { label: "Adding simple spoonful of liquid egg yolk base", fill: "#f0d870" },
+        80: { label: "Merging liquid stages rudimentarily", fill: "#2a1208" },
+        100: { label: "Basic egg drink variation complete", fill: "#2a1208", foamFill: "rgba(248,220,100,0.7)" }
       }
     },
     signature: {
@@ -260,21 +262,22 @@ const DRINK_RECIPES = {
       bgGlow: "transparent",
       steps: {
         20: { label: "Setting base cup asset", fill: "transparent" },
-        40: { label: "Pouring flat base milk tea blend", fill: "#d9b48f" },
-        60: { label: "Expanding base layout volume", fill: "#d9b48f" },
-        80: { label: "Filling core container lines", fill: "#d9b48f" },
-        100: { label: "Standard Milk Tea complete", fill: "#d9b48f", foamFill: "transparent" }
+        40: { label: "Pouring flat base milk tea blend", fill: "#b8906a" },
+        60: { label: "Expanding base layout volume", fill: "#b8906a" },
+        80: { label: "Filling core container lines", fill: "#b8906a" },
+        100: { label: "Standard Milk Tea complete", fill: "#b8906a", foamFill: "transparent" }
       }
     },
     signature: {
       requires: ["BobaCooker", "MilkFrother"],
       bgGlow: "rgba(217, 180, 143, 0.2)",
-      defs: `<linearGradient id="sigBobaFluid" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e3c2a6"/><stop offset="100%" stop-color="#b58d6d"/></linearGradient>`,
+      defs: `<linearGradient id="sigBobaFluid" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c9a070"/><stop offset="100%" stop-color="#8a5838"/></linearGradient>`,
       steps: {
         20: { label: "Injecting slow-cooked Indigo Boba Pearls", fill: "transparent", svgContent: `
-          <circle cx="75" cy="205" r="8" fill="#111827"/><circle cx="95" cy="210" r="8" fill="#1f2937"/>
-          <circle cx="115" cy="207" r="8" fill="#111827"/><circle cx="85" cy="195" r="8" fill="#374151"/>
-          <circle cx="105" cy="198" r="8" fill="#1f2937"/>
+          <circle cx="38" cy="140" r="7" fill="#111827"/><circle cx="58" cy="145" r="7" fill="#1f2937"/>
+          <circle cx="78" cy="141" r="7" fill="#111827"/><circle cx="98" cy="146" r="7" fill="#374151"/>
+          <circle cx="116" cy="142" r="7" fill="#1f2937"/><circle cx="50" cy="132" r="6" fill="#1f2937"/>
+          <circle cx="88" cy="134" r="6" fill="#111827"/>
         `},
         40: { label: "Settling structural assets inside glass boundaries", fill: "transparent" },
         60: { label: "Streaming standard emulsion tea liquid", fill: "url(#sigBobaFluid)" },
@@ -287,17 +290,18 @@ const DRINK_RECIPES = {
       bgGlow: "rgba(245, 158, 11, 0.2)",
       defs: `
         <linearGradient id="bsDrizzle" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2b1103" stop-opacity="0.95"/><stop offset="40%" stop-color="#542307" stop-opacity="0.6"/><stop offset="100%" stop-color="#78350f" stop-opacity="0.1"/></linearGradient>
-        <linearGradient id="masterBobaFluid" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f5e1d3"/><stop offset="60%" stop-color="#dda885"/><stop offset="100%" stop-color="#b07046"/></linearGradient>
+        <linearGradient id="masterBobaFluid" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d4a880"/><stop offset="60%" stop-color="#a06040"/><stop offset="100%" stop-color="#7a4020"/></linearGradient>
       `,
       steps: {
         20: { label: "Painting walls with caramelized Brown Sugar drizzle", fill: "url(#bsDrizzle)", svgContent: `
-          <path d="M 55 100 Q 65 140 60 210 Q 75 210 80 160 Q 90 200 100 210 Q 115 130 120 210" fill="none" stroke="#3a1702" stroke-width="5" stroke-linecap="round" opacity="0.75"/>
+          <path d="M 29 35 Q 27 75 30 125 Q 33 95 36 130" fill="none" stroke="#4a2005" stroke-width="4" stroke-linecap="round" opacity="0.72"/>
+          <path d="M 113 38 Q 115 78 112 128 Q 109 98 107 132" fill="none" stroke="#4a2005" stroke-width="4" stroke-linecap="round" opacity="0.68"/>
         `},
         40: { label: "Dropping warm signature honey boba pearls", fill: "url(#bsDrizzle)", svgContent: `
-          <circle cx="72" cy="206" r="8.5" fill="#1c0a00"/><circle cx="90" cy="212" r="8.5" fill="#2d1305"/>
-          <circle cx="110" cy="208" r="8.5" fill="#1c0a00"/><circle cx="128" cy="203" r="8.5" fill="#2d1305"/>
-          <circle cx="82" cy="194" r="8.5" fill="#451a03"/><circle cx="102" cy="197" r="8.5" fill="#1c0a00"/>
-          <circle cx="118" cy="192" r="8.5" fill="#451a03"/>
+          <circle cx="36" cy="138" r="7" fill="#1c0a00"/><circle cx="56" cy="143" r="7" fill="#2d1305"/>
+          <circle cx="76" cy="140" r="7" fill="#1c0a00"/><circle cx="96" cy="145" r="7" fill="#451a03"/>
+          <circle cx="114" cy="139" r="7" fill="#1c0a00"/><circle cx="48" cy="130" r="6.5" fill="#2d1305"/>
+          <circle cx="68" cy="133" r="6.5" fill="#1c0a00"/><circle cx="88" cy="128" r="6.5" fill="#451a03"/>
         `},
         60: { label: "Dropping premium hard-frozen square ice block arrays", fill: "url(#masterBobaFluid)", svgContent: `
           <rect x="68" y="145" width="24" height="24" rx="4" fill="#e0f2fe" opacity="0.45" transform="rotate(18 80 157)"/>
@@ -318,21 +322,21 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Dosing basic high-fructose corn syrup sugar drop", fill: "transparent" },
         40: { label: "Adding scalded standard utility milk profiles", fill: "#f4ede8" },
-        60: { label: "Pouring standard dark roast coffee mix", fill: "#6e4e3b" },
-        80: { label: "Stirring solution layout paths together", fill: "#6e4e3b" },
-        100: { label: "Sweet coffee blend complete", fill: "#6e4e3b", foamFill: "transparent" }
+        60: { label: "Pouring standard dark roast coffee mix", fill: "#2e1008" },
+        80: { label: "Stirring solution layout paths together", fill: "#2e1008" },
+        100: { label: "Sweet coffee blend complete", fill: "#2e1008", foamFill: "rgba(255,255,255,0.55)" }
       }
     },
     signature: {
       requires: ["EspressoMachine"],
       bgGlow: "rgba(180, 83, 9, 0.12)",
-      defs: `<linearGradient id="sigMacch" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7c5339"/><stop offset="100%" stop-color="#fffbeb"/></linearGradient>`,
+      defs: `<linearGradient id="sigMacch" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2a1208"/><stop offset="55%" stop-color="#8a5020"/><stop offset="100%" stop-color="#fffbeb"/></linearGradient>`,
       steps: {
         20: { label: "Coating baseline with generic store caramel syrup lines", fill: "transparent" },
         40: { label: "Filling glass layout with warm whole dairy bases", fill: "#fffbeb" },
         60: { label: "Pouring fresh espresso across the surface center point", fill: "url(#sigMacch)" },
         80: { label: "Expanding macro-layer thresholds", fill: "url(#sigMacch)" },
-        100: { label: "Soft cream layer expansion completed", fill: "url(#sigMacch)", foamFill: "rgba(255,255,255,0.6)" }
+        100: { label: "Soft cream layer expansion completed", fill: "url(#sigMacch)", foamFill: "rgba(255,255,255,0.65)" }
       }
     },
     mastercraft: {
@@ -361,7 +365,7 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Aligning workspace layout modules", fill: "transparent" },
         40: { label: "Direct baseline processing parameters", fill: "transparent" },
-        60: { label: "Extracting standard Robusta dark roast extraction", fill: "#1f1610" },
+        60: { label: "Extracting standard Robusta dark roast extraction", fill: "#fce8b3" },
         80: { label: "Increasing baseline layout structures", fill: "#1f1610" },
         100: { label: "Finished standard filter profile", fill: "#1f1610", foamFill: "transparent" }
       }
@@ -413,12 +417,13 @@ const DRINK_RECIPES = {
     allPossibleEquipment: ["EspressoMachine", "SyrupShelf", "SteamWand"],
     house: {
       bgGlow: "transparent",
+      defs: `<linearGradient id="houseLavender" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c8a8d8"/><stop offset="55%" stop-color="#9070b0"/><stop offset="100%" stop-color="#3c2850"/></linearGradient>`,
       steps: {
         20: { label: "Dosing imitation artificial lavender dye chemicals", fill: "transparent" },
         40: { label: "Adding generic hot water liquid volumes", fill: "#ebdcf0" },
-        60: { label: "Adding simple coffee powder color blends", fill: "#544657" },
-        80: { label: "Mixing fluid layout pathways together", fill: "#544657" },
-        100: { label: "Basic sweet lavender mix completed", fill: "#544657", foamFill: "transparent" }
+        60: { label: "Adding simple coffee powder color blends", fill: "url(#houseLavender)" },
+        80: { label: "Mixing fluid layout pathways together", fill: "url(#houseLavender)" },
+        100: { label: "Basic sweet lavender mix completed", fill: "url(#houseLavender)", foamFill: "rgba(220,190,248,0.6)" }
       }
     },
     signature: {
@@ -457,9 +462,9 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Pouring plain water matrix paths into container", fill: "transparent" },
         40: { label: "Pouring standard cold tap milk directly", fill: "#fcfbfa" },
-        60: { label: "Mixing instant coffee and hot water via spoon", fill: "#eab308" },
+        60: { label: "Mixing instant coffee and hot water via spoon", fill: "#fffbeb" },
         80: { label: "Pouring flat liquid layer directly over milk", fill: "#ca8a04" },
-        100: { label: "Unwhipped Dalgona variant ready", fill: "#ca8a04", foamFill: "transparent" }
+        100: { label: "Unwhipped Dalgona variant ready", fill: "#ca8a04", foamFill: "rgba(180,80,20,0.7)" }
       }
     },
     signature: {
@@ -501,10 +506,10 @@ const DRINK_RECIPES = {
       bgGlow: "transparent",
       steps: {
         20: { label: "Pouring plain water matrix paths into container", fill: "transparent" },
-        40: { label: "Shaking generic matcha tea powder in solution", fill: "#4d6b48" },
-        60: { label: "Pouring standard green dilution fluid line directly", fill: "#4d6b48" },
-        80: { label: "Fluid rising inside standard vessel assets", fill: "#4d6b48" },
-        100: { label: "Basic iced tea completed", fill: "#4d6b48", foamFill: "transparent" }
+        40: { label: "Shaking generic matcha tea powder in solution", fill: "#f5f0e8" },
+        60: { label: "Pouring standard green dilution fluid line directly", fill: "#3a7040" },
+        80: { label: "Fluid rising inside standard vessel assets", fill: "#3a7040" },
+        100: { label: "Basic iced tea completed", fill: "#3a7040", foamFill: "transparent" }
       }
     },
     signature: {
@@ -549,36 +554,38 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Dropping pink coloring agents into base vessel", fill: "transparent" },
         40: { label: "Pouring standard boiling water fluid channels", fill: "#fcebf0" },
-        60: { label: "Mixing simple utility milk components directly", fill: "#8c696f" },
-        80: { label: "Integrating fluid thresholds complete", fill: "#8c696f" },
-        100: { label: "Pink latte imitation complete", fill: "#8c696f", foamFill: "transparent" }
+        60: { label: "Mixing simple utility milk components directly", fill: "#c89060" },
+        80: { label: "Integrating fluid thresholds complete", fill: "#c89060" },
+        100: { label: "Warm latte imitation complete", fill: "#c89060", foamFill: "rgba(255,215,160,0.5)" }
       }
     },
     signature: {
       requires: ["EspressoMachine", "PetalPress"],
       bgGlow: "rgba(244, 63, 94, 0.18)",
-      defs: `<linearGradient id="sigRose" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#cc8190"/><stop offset="100%" stop-color="#5c363e"/></linearGradient>`,
+      defs: `<linearGradient id="sigRose" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e0a870"/><stop offset="55%" stop-color="#c07060"/><stop offset="100%" stop-color="#703040"/></linearGradient>`,
       steps: {
         20: { label: "Loading fresh organic rose petals into mechanics", fill: "transparent" },
         40: { label: "Activating physical petal press to extract flower oils", fill: "transparent" },
         60: { label: "Extracting blonde espresso blend components into mixture", fill: "url(#sigRose)" },
         80: { label: "Streaming pressed floral oils with textured hot milk", fill: "url(#sigRose)" },
-        100: { label: "Soft rose-colored foam layer top deck deployment", fill: "url(#sigRose)", foamFill: "#ffe4e6" }
+        100: { label: "Warm rose-copper foam layer top deck deployment", fill: "url(#sigRose)", foamFill: "rgba(255,205,155,0.75)" }
       }
     },
     mastercraft: {
       requires: ["EspressoMachine", "PetalPress", "GoldFlakeJar"],
       bgGlow: "rgba(244, 63, 94, 0.3)",
-      defs: `<linearGradient id="masterRose" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fda4af"/><stop offset="50%" stop-color="#f43f5e"/><stop offset="100%" stop-color="#4c0519"/></linearGradient>`,
+      defs: `<linearGradient id="masterRose" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f0c890"/><stop offset="45%" stop-color="#d08068"/><stop offset="100%" stop-color="#883050"/></linearGradient>`,
       steps: {
-        20: { label: "Extracting aromatic red rose hydrosol essence fields", fill: "transparent" },
-        40: { label: "Pressing natural magenta botanical pigments under high pressure", fill: "transparent" },
-        60: { label: "Blending pure white microfoam with organic beet-rose concentrates", fill: "url(#masterRose)" },
-        80: { label: "Pouring shimmering metallic pink rose-gold liquid emulsion", fill: "url(#masterRose)" },
-        100: { label: "Floating precise stamped rose petals + genuine 24k gold leaf dust", fill: "url(#masterRose)", foamFill: "#fff1f2", garnishSvg: `
-          <path d="M 85 54 Q 100 38 115 54 Q 100 70 85 54 Z" fill="#e11d48" opacity="0.85"/>
-          <circle cx="92" cy="48" r="1.5" fill="#fbbf24"/>
-          <circle cx="110" cy="60" r="2" fill="#f59e0b"/>
+        20: { label: "Extracting aromatic warm rose hydrosol essence fields", fill: "transparent" },
+        40: { label: "Infusing champagne gold botanical oils under high pressure", fill: "transparent" },
+        60: { label: "Blending warm gold microfoam with rose-copper concentrates", fill: "url(#masterRose)" },
+        80: { label: "Pouring shimmering rose-gold metallic liquid emulsion", fill: "url(#masterRose)" },
+        100: { label: "Floating genuine 24k gold leaf flakes on champagne foam", fill: "url(#masterRose)", foamFill: "#ffe8d0", garnishSvg: `
+          <ellipse cx="100" cy="50" rx="14" ry="9" fill="none" stroke="#d4a060" stroke-width="1.5" opacity="0.8"/>
+          <circle cx="88" cy="47" r="2" fill="#fbbf24" style="animation:sparkle 1.8s ease-in-out infinite"/>
+          <circle cx="112" cy="53" r="1.5" fill="#f59e0b" style="animation:sparkle 2.2s ease-in-out infinite"/>
+          <circle cx="100" cy="44" r="1.8" fill="#fbbf24" style="animation:sparkle 1.5s ease-in-out infinite"/>
+          <circle cx="94" cy="57" r="1.2" fill="#f59e0b" style="animation:sparkle 2.0s ease-in-out infinite"/>
         `}
       }
     }
@@ -588,12 +595,13 @@ const DRINK_RECIPES = {
     allPossibleEquipment: ["EspressoMachine", "IceBucket"],
     house: {
       bgGlow: "transparent",
+      defs: `<linearGradient id="houseMidnight" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#302848"/><stop offset="50%" stop-color="#18101e"/><stop offset="100%" stop-color="#060408"/></linearGradient>`,
       steps: {
         20: { label: "Setting simple clear glass shell", fill: "transparent" },
-        40: { label: "Filling with warm room temperature tap water", fill: "rgba(230,230,240,0.3)" },
-        60: { label: "Dropping standard dark food colorings inside", fill: "#14121a" },
-        80: { label: "Expanding drink configuration volume", fill: "#14121a" },
-        100: { label: "Basic mix complete", fill: "#14121a", foamFill: "transparent" }
+        40: { label: "Filling with warm room temperature tap water", fill: "rgba(80,60,120,0.25)" },
+        60: { label: "Dropping standard dark food colorings inside", fill: "url(#houseMidnight)" },
+        80: { label: "Expanding drink configuration volume", fill: "url(#houseMidnight)" },
+        100: { label: "Basic mix complete", fill: "url(#houseMidnight)", foamFill: "transparent" }
       }
     },
     signature: {
@@ -637,35 +645,49 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Dosing processed sweet cherry imitation fluids", fill: "transparent" },
         40: { label: "Adding generic untextured boiled dairy lines", fill: "#faebd7" },
-        60: { label: "Stirring contents manually into pink fluid field", fill: "#9c7680" },
-        80: { label: "Fluid expanding across vessel constraints", fill: "#9c7680" },
-        100: { label: "Basic pink cherry variant ready", fill: "#9c7680", foamFill: "transparent" }
+        60: { label: "Stirring contents manually into soft blush field", fill: "#f0d8e4" },
+        80: { label: "Fluid expanding across vessel constraints", fill: "#c8a0b8" },
+        100: { label: "Soft sakura blush variant ready", fill: "#c8a0b8", foamFill: "rgba(255,240,248,0.6)" }
       }
     },
     signature: {
       requires: ["EspressoMachine", "PetalPress"],
       bgGlow: "rgba(236, 72, 153, 0.18)",
-      defs: `<linearGradient id="sigSakura" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#cc8fa3"/><stop offset="100%" stop-color="#54313d"/></linearGradient>`,
+      defs: `<linearGradient id="sigSakura" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f4dce8"/><stop offset="55%" stop-color="#c898b0"/><stop offset="100%" stop-color="#7a3858"/></linearGradient>`,
       steps: {
         20: { label: "Loading freshly harvested sakura cherry blossoms", fill: "transparent" },
         40: { label: "Stamping flower petals to yield pure floral oil essence", fill: "transparent" },
         60: { label: "Extracting standard light espresso roast layers directly", fill: "url(#sigSakura)" },
         80: { label: "Combining flower essence with hot milk into cup base", fill: "url(#sigSakura)" },
-        100: { label: "Thin white foam top deck integration completed", fill: "url(#sigSakura)", foamFill: "#fdf2f8" }
+        100: { label: "Thin dusty-mauve foam top deck integration completed", fill: "url(#sigSakura)", foamFill: "#fdf0f8" }
       }
     },
     mastercraft: {
       requires: ["EspressoMachine", "PetalPress", "SteamWand"],
       bgGlow: "rgba(236, 72, 153, 0.35)",
-      defs: `<linearGradient id="masterSakura" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fbcfe8"/><stop offset="50%" stop-color="#f472b6"/><stop offset="100%" stop-color="#4c0519"/></linearGradient>`,
+      defs: `<linearGradient id="masterSakura" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fce8f0"/><stop offset="50%" stop-color="#d8a8c0"/><stop offset="100%" stop-color="#7a3858"/></linearGradient>`,
       steps: {
         20: { label: "Formulating true Japanese sakura flower absolute fluid matrix", fill: "transparent" },
         40: { label: "Using high-output steam wand to texture velvety milk microfoam", fill: "transparent" },
-        60: { label: "Pouring texturized milk down to lift beautiful pastel pink cloud layers", fill: "url(#masterSakura)" },
-        80: { label: "Suspended pastel matrix expanding perfectly", fill: "url(#masterSakura)" },
-        100: { label: "Floating delicate, whole stamped cherry blossom petals on foam", fill: "url(#masterSakura)", foamFill: "#ffffff", garnishSvg: `
-          <path d="M 75 52 Q 85 40 90 52 Q 85 64 75 52 Z" fill="#f472b6"/>
-          <path d="M 125 56 Q 115 44 110 56 Q 115 68 125 56 Z" fill="#f472b6"/>
+        60: { label: "Pouring texturized milk to lift beautiful ethereal blush layers", fill: "url(#masterSakura)" },
+        80: { label: "Suspended delicate pastel matrix expanding perfectly", fill: "url(#masterSakura)" },
+        100: { label: "Floating delicate 5-petal sakura blossoms on silken foam", fill: "url(#masterSakura)", foamFill: "#fdf8fc", garnishSvg: `
+          <g transform="translate(85,52)">
+            <path d="M0,-10 Q5,-5 0,0 Q-5,-5 0,-10Z" fill="#f4c8dc" opacity="0.9"/>
+            <path d="M9,-3 Q5,2 0,0 Q3,-5 9,-3Z" fill="#f4c8dc" opacity="0.9"/>
+            <path d="M5,8 Q0,5 0,0 Q5,3 5,8Z" fill="#f4c8dc" opacity="0.9"/>
+            <path d="M-5,8 Q0,5 0,0 Q-5,3 -5,8Z" fill="#f4c8dc" opacity="0.9"/>
+            <path d="M-9,-3 Q-3,-5 0,0 Q-5,2 -9,-3Z" fill="#f4c8dc" opacity="0.9"/>
+            <circle cx="0" cy="0" r="2.5" fill="#fde68a"/>
+          </g>
+          <g transform="translate(114,56)">
+            <path d="M0,-9 Q4,-4 0,0 Q-4,-4 0,-9Z" fill="#e8b0cc" opacity="0.85"/>
+            <path d="M8,-3 Q4,2 0,0 Q3,-4 8,-3Z" fill="#e8b0cc" opacity="0.85"/>
+            <path d="M4,7 Q0,4 0,0 Q4,2 4,7Z" fill="#e8b0cc" opacity="0.85"/>
+            <path d="M-4,7 Q0,4 0,0 Q-4,2 -4,7Z" fill="#e8b0cc" opacity="0.85"/>
+            <path d="M-8,-3 Q-3,-4 0,0 Q-4,2 -8,-3Z" fill="#e8b0cc" opacity="0.85"/>
+            <circle cx="0" cy="0" r="2" fill="#fde68a"/>
+          </g>
         `}
       }
     }
@@ -678,12 +700,13 @@ const DRINK_RECIPES = {
     allPossibleEquipment: ["SiphonBrewer", "SteamWand"],
     house: {
       bgGlow: "transparent",
+      defs: `<linearGradient id="houseSecret" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a4840"/><stop offset="50%" stop-color="#0a2820"/><stop offset="100%" stop-color="#021008"/></linearGradient>`,
       steps: {
         20: { label: "Checking core secret database registries", fill: "transparent" },
-        40: { label: "Pouring standard leftover counter coffee drips", fill: "#42281d" },
-        60: { label: "Adding generic non-dairy powdered creamer lines", fill: "#54382c" },
-        80: { label: "Rising solution layouts matched inside framework", fill: "#54382c" },
-        100: { label: "Mystery kitchen blend finished", fill: "#54382c", foamFill: "transparent" }
+        40: { label: "Pouring standard leftover counter coffee drips", fill: "url(#houseSecret)" },
+        60: { label: "Discovering teal cold brew in the back fridge", fill: "url(#houseSecret)" },
+        80: { label: "Rising solution layouts matched inside framework", fill: "url(#houseSecret)" },
+        100: { label: "Mystery teal blend finished", fill: "url(#houseSecret)", foamFill: "rgba(0,180,160,0.45)" }
       }
     },
     signature: {
@@ -709,12 +732,12 @@ const DRINK_RECIPES = {
         20: { label: "Assembling custom dual-globe vacuum glass siphon columns", fill: "transparent" },
         40: { label: "Igniting butane burner to push boiling water into upper glass globe", fill: "transparent" },
         60: { label: "Extinguishing flame to draw crystal-clear brew down through cloth filters", fill: "url(#animeSiphon)", svgContent: `
-          <circle cx="96" cy="150" r="35" fill="url(#neonGlowCore)"/>
-        `},
+          <circle cx="70" cy="92" r="35" fill="url(#neonGlowCore)"/>
+        `, svgContentOutside: true },
         80: { label: "Decanting effervescent luminescent siphon fluid directly into cup", fill: "url(#animeSiphon)", svgContent: `
-          <circle cx="96" cy="120" r="45" fill="url(#neonGlowCore)"/>
-          <line x1="55" y1="130" x2="135" y2="130" stroke="#99f6e4" stroke-width="2" stroke-dasharray="4 6"/>
-        `},
+          <circle cx="70" cy="75" r="45" fill="url(#neonGlowCore)"/>
+          <line x1="28" y1="110" x2="112" y2="110" stroke="#99f6e4" stroke-width="2" stroke-dasharray="4 6"/>
+        `, svgContentOutside: true },
         100: { label: "Crowning with an ethereal microfoam cloud via delicate wand work", fill: "url(#animeSiphon)", foamFill: "#ccfbf1", garnishSvg: `
           <line x1="50" y1="54" x2="142" y2="54" stroke="#06b6d4" stroke-width="3" stroke-dasharray="1 5" stroke-linecap="round"/>
           <polygon points="96,40 100,48 108,48 102,53 104,61 96,56 88,61 90,53 84,48 92,48" fill="#2dd4bf"/>
@@ -727,12 +750,13 @@ const DRINK_RECIPES = {
     allPossibleEquipment: ["EspressoMachine", "GoldFlakeJar", "SyrupShelf"],
     house: {
       bgGlow: "transparent",
+      defs: `<linearGradient id="houseGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e0a830"/><stop offset="50%" stop-color="#8a5818"/><stop offset="100%" stop-color="#2e1a06"/></linearGradient>`,
       steps: {
         20: { label: "Adding cheap yellow food coloring dye matrices", fill: "transparent" },
         40: { label: "Pouring standard boiling industrial water channels", fill: "#fef9c3" },
-        60: { label: "Mixing plain room temperature store milk volumes", fill: "#87663d" },
-        80: { label: "Drink canvas matching alignment limits", fill: "#87663d" },
-        100: { label: "Yellow hued drink execution complete", fill: "#87663d", foamFill: "transparent" }
+        60: { label: "Mixing plain room temperature store milk volumes", fill: "url(#houseGold)" },
+        80: { label: "Drink canvas matching alignment limits", fill: "url(#houseGold)" },
+        100: { label: "Amber golden drink execution complete", fill: "url(#houseGold)", foamFill: "rgba(252,210,60,0.55)" }
       }
     },
     signature: {
@@ -758,11 +782,11 @@ const DRINK_RECIPES = {
         20: { label: "Layering real, organic raw amber maple honey reduction fields", fill: "transparent" },
         40: { label: "Infusing thick dark vanilla bean pod syrup paste down walls", fill: "transparent" },
         60: { label: "Extracting high-fat blonde espresso crema down center targets", fill: "url(#goldLiquidBody)", svgContent: `
-          <path d="M50 140 Q96 110 142 140 Z" fill="url(#animeGold)" opacity="0.6"/>
+          <path d="M28 115 Q70 92 112 115 Z" fill="url(#animeGold)" opacity="0.65"/>
         `},
         80: { label: "Pouring shimmering metallic golden-amber liquid configuration", fill: "url(#goldLiquidBody)", svgContent: `
-          <path d="M50 100 Q96 70 142 100 Z" fill="url(#animeGold)" opacity="0.8"/>
-          <circle cx="70" cy="130" r="3" fill="#ffffff"/><circle cx="120" cy="110" r="2" fill="#ffffff"/>
+          <path d="M28 85 Q70 62 112 85 Z" fill="url(#animeGold)" opacity="0.85"/>
+          <circle cx="50" cy="105" r="2.5" fill="#ffffff" opacity="0.8"/><circle cx="92" cy="95" r="2" fill="#ffffff" opacity="0.8"/>
         `},
         100: { label: "Floating multiple sheets of pure, genuine 24k gold leaf flakes", fill: "url(#goldLiquidBody)", foamFill: "url(#animeGold)", garnishSvg: `
           <polygon points="96,34 100,44 110,44 102,50 105,60 96,54 87,60 90,50 82,44 92,44" fill="#ffffff"/>
@@ -777,12 +801,13 @@ const DRINK_RECIPES = {
     allPossibleEquipment: ["SiphonBrewer", "ColdBrewTower"],
     house: {
       bgGlow: "transparent",
+      defs: `<linearGradient id="houseAurora" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#303870"/><stop offset="50%" stop-color="#181e3a"/><stop offset="100%" stop-color="#060814"/></linearGradient>`,
       steps: {
         20: { label: "Pouring tap water into baseline container profiles", fill: "transparent" },
-        40: { label: "Stirring in leftover dye powders from inventory", fill: "#445c6e" },
-        60: { label: "Pouring unseparated muddy bluish coffee mixture", fill: "#213642" },
-        80: { label: "Drink volume rising matching baseline metrics", fill: "#213642" },
-        100: { label: "Basic colored coffee mix complete", fill: "#213642", foamFill: "transparent" }
+        40: { label: "Stirring in leftover dye powders from inventory", fill: "#2a3050" },
+        60: { label: "Pouring deep space cold brew mixture", fill: "url(#houseAurora)" },
+        80: { label: "Drink volume rising matching baseline metrics", fill: "url(#houseAurora)" },
+        100: { label: "Deep space cold brew complete", fill: "url(#houseAurora)", foamFill: "transparent" }
       }
     },
     signature: {
@@ -808,12 +833,12 @@ const DRINK_RECIPES = {
         20: { label: "Engaging low-temperature nitrogen gas siphon brewing chambers", fill: "transparent" },
         40: { label: "Pulling slow drip tower coffee directly into vaporized fields", fill: "transparent" },
         60: { label: "Injecting blue spirulina flower concentrates under light vacuum pressures", fill: "url(#animeAurora)", svgContent: `
-          <path d="M50 120 Q70 90 96 120 T142 120 L142 220 L50 220 Z" fill="url(#auroraWave)" opacity="0.5"/>
-        `},
+          <path d="M20 100 Q44 75 70 100 Q96 125 120 100 L120 180 L20 180 Z" fill="url(#auroraWave)" opacity="0.55"/>
+        `, svgContentOutside: true },
         80: { label: "Dispensing mesmerizing green-to-purple iridescent northern lights gradient", fill: "url(#animeAurora)", svgContent: `
-          <path d="M50 90 Q70 60 96 90 T142 90 L142 220 L50 220 Z" fill="url(#auroraWave)" opacity="0.7"/>
-          <circle cx="75" cy="110" r="2.5" fill="#ffffff"/><circle cx="115" cy="130" r="2" fill="#ffffff"/>
-        `},
+          <path d="M20 75 Q44 50 70 75 Q96 100 120 75 L120 180 L20 180 Z" fill="url(#auroraWave)" opacity="0.75"/>
+          <circle cx="48" cy="95" r="2.5" fill="#ffffff" opacity="0.9"/><circle cx="92" cy="112" r="2" fill="#ffffff" opacity="0.85"/>
+        `, svgContentOutside: true },
         100: { label: "Dynamic active color wave system established successfully", fill: "url(#animeAurora)", foamFill: "transparent", garnishSvg: `
           <path d="M 52 54 C 75 30, 115 70, 140 45" fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
           <path d="M 56 58 C 80 38, 110 62, 136 49" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
@@ -826,24 +851,25 @@ const DRINK_RECIPES = {
     allPossibleEquipment: ["EspressoMachine", "GoldFlakeJar", "PourOverSet"],
     house: {
       bgGlow: "transparent",
+      defs: `<linearGradient id="houseVoid" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2a1440"/><stop offset="50%" stop-color="#140828"/><stop offset="100%" stop-color="#050210"/></linearGradient>`,
       steps: {
         20: { label: "Calibrating target core environment", fill: "transparent" },
         40: { label: "Readying framework configurations", fill: "transparent" },
-        60: { label: "Extracting basic dense dark espresso roast", fill: "#09090b" },
-        80: { label: "Increasing target layout boundaries", fill: "#09090b" },
-        100: { label: "Finished", fill: "#09090b", foamFill: "transparent" }
+        60: { label: "Extracting cosmic void essence", fill: "url(#houseVoid)" },
+        80: { label: "Increasing target layout boundaries", fill: "url(#houseVoid)" },
+        100: { label: "The Void stabilized", fill: "url(#houseVoid)", foamFill: "rgba(90,40,140,0.45)" }
       }
     },
     signature: {
       requires: ["EspressoMachine"],
       bgGlow: "rgba(39, 39, 42, 0.3)",
-      defs: `<linearGradient id="sigVoid" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#18181b"/><stop offset="100%" stop-color="#020203"/></linearGradient>`,
+      defs: `<linearGradient id="sigVoid" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#220e36"/><stop offset="50%" stop-color="#100620"/><stop offset="100%" stop-color="#03010a"/></linearGradient>`,
       steps: {
         20: { label: "Engaging commercial high-bar pressure pump settings", fill: "transparent" },
         40: { label: "Priming group head infrastructure mechanics", fill: "transparent" },
         60: { label: "Executing absolute darkness extraction compression", fill: "url(#sigVoid)" },
         80: { label: "Macro volume expanding cleanly", fill: "url(#sigVoid)" },
-        100: { label: "Developing structural ultra-dark micro-crema layer", fill: "url(#sigVoid)", foamFill: "rgba(63,63,70,0.6)" }
+        100: { label: "Developing structural deep-violet micro-crema layer", fill: "url(#sigVoid)", foamFill: "rgba(100,50,160,0.6)" }
       }
     },
     mastercraft: {
@@ -857,12 +883,12 @@ const DRINK_RECIPES = {
         20: { label: "Opening absolute gravitational spatial baseline models", fill: "transparent" },
         40: { label: "Configuring multi-axis layered dynamic filter grid arrays", fill: "transparent" },
         60: { label: "Stabilizing black hole central density singularity flow", fill: "url(#animeSingularity)", svgContent: `
-          <ellipse cx="96" cy="160" rx="30" ry="10" fill="none" stroke="url(#goldOrbit)" stroke-width="2" opacity="0.5" stroke-dasharray="4 4"/>
-        `},
+          <ellipse cx="70" cy="158" rx="50" ry="12" fill="none" stroke="url(#goldOrbit)" stroke-width="2" opacity="0.55" stroke-dasharray="4 4" style="animation:voidOrbit 6s linear infinite"/>
+        `, svgContentOutside: true },
         80: { label: "Compressing cosmic matter profiles into liquid fields", fill: "url(#animeSingularity)", svgContent: `
-          <ellipse cx="96" cy="130" rx="42" ry="14" fill="none" stroke="url(#goldOrbit)" stroke-width="3" opacity="0.7" stroke-dasharray="8 4"/>
-          <ellipse cx="96" cy="145" rx="25" ry="8" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.4"/>
-        `},
+          <ellipse cx="70" cy="158" rx="58" ry="14" fill="none" stroke="url(#goldOrbit)" stroke-width="3.5" opacity="0.75" stroke-dasharray="8 4" style="animation:voidOrbit 5s linear infinite"/>
+          <ellipse cx="70" cy="145" rx="38" ry="9" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.5" style="animation:voidOrbit 9s linear reverse infinite"/>
+        `, svgContentOutside: true },
         100: { label: "Suspending high-contrast stardust gold ring system vectors", fill: "url(#animeSingularity)", foamFill: "transparent", garnishSvg: `
           <circle cx="96" cy="54" r="28" fill="none" stroke="url(#goldOrbit)" stroke-width="4" stroke-dasharray="12 6"/>
           <circle cx="96" cy="54" r="14" fill="#000000" stroke="#ffffff" stroke-width="2"/>
@@ -883,9 +909,9 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Positioning standard clear glass mug", fill: "transparent" },
         40: { label: "Pouring standard coffee base mix", fill: "#4a3227" },
-        60: { label: "Pouring un-textured boiling table milk", fill: "#bfa395" },
-        80: { label: "Rising fluid boundaries complete", fill: "#bfa395" },
-        100: { label: "Basic Latte complete", fill: "#bfa395", foamFill: "transparent" }
+        60: { label: "Pouring un-textured boiling table milk", fill: "#d4a870" },
+        80: { label: "Rising fluid boundaries complete", fill: "#d4a870" },
+        100: { label: "Basic Latte complete", fill: "#d4a870", foamFill: "rgba(255,255,255,0.5)" }
       }
     },
     signature: {
@@ -924,9 +950,9 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Setting standard wide ceramic bowl cup", fill: "transparent" },
         40: { label: "Pouring utility instant coffee mix blend", fill: "#3d2a21" },
-        60: { label: "Adding loose spooned bubbly hot milk directly", fill: "#8c6c5e" },
-        80: { label: "Merging volume layouts together", fill: "#8c6c5e" },
-        100: { label: "Basic Cappuccino style ready", fill: "#8c6c5e", foamFill: "transparent" }
+        60: { label: "Adding loose spooned bubbly hot milk directly", fill: "#8a4820" },
+        80: { label: "Merging volume layouts together", fill: "#8a4820" },
+        100: { label: "Basic Cappuccino style ready", fill: "#8a4820", foamFill: "rgba(255,255,255,0.6)" }
       }
     },
     signature: {
@@ -964,9 +990,9 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Adding thin commercial chocolate syrup lines", fill: "transparent" },
         40: { label: "Pouring utility generic coffee solution loops", fill: "#42281d" },
-        60: { label: "Adding untextured grocery store whole milk", fill: "#614033" },
-        80: { label: "Stirring solution channels manually together", fill: "#614033" },
-        100: { label: "Basic sweet mocha mix complete", fill: "#614033", foamFill: "transparent" }
+        60: { label: "Adding untextured grocery store whole milk", fill: "#2a0e0e" },
+        80: { label: "Stirring solution channels manually together", fill: "#2a0e0e" },
+        100: { label: "Basic sweet mocha mix complete", fill: "#2a0e0e", foamFill: "rgba(255,255,255,0.4)" }
       }
     },
     signature: {
@@ -1003,10 +1029,10 @@ const DRINK_RECIPES = {
       bgGlow: "transparent",
       steps: {
         20: { label: "Placing short demitasse glass vessel", fill: "transparent" },
-        40: { label: "Pouring standard utility dark roast mix lines", fill: "#211612" },
-        60: { label: "Adding simple dollop of standard table milk foam", fill: "#211612" },
-        80: { label: "Final alignment parsing complete cleanly", fill: "#211612" },
-        100: { label: "Basic Macchiato ready", fill: "#211612", foamFill: "transparent" }
+        40: { label: "Pouring standard utility dark roast mix lines", fill: "#1c1410" },
+        60: { label: "Adding simple dollop of standard table milk foam", fill: "#1c1410" },
+        80: { label: "Final alignment parsing complete cleanly", fill: "#1c1410" },
+        100: { label: "Basic Macchiato ready", fill: "#1c1410", foamFill: "rgba(245,235,215,0.7)" }
       }
     },
     signature: {
@@ -1045,9 +1071,9 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Pouring standard filtered black coffee mix", fill: "#1c1410" },
         40: { label: "Adding generic brown table sugar granules", fill: "#1c1410" },
-        60: { label: "Adding simple splash of cold table heavy cream", fill: "#33241d" },
-        80: { label: "Stirring solution layout paths together", fill: "#33241d" },
-        100: { label: "Basic sweet coffee variant complete", fill: "#33241d", foamFill: "transparent" }
+        60: { label: "Adding simple splash of cold table heavy cream", fill: "#3a2018" },
+        80: { label: "Stirring solution layout paths together", fill: "#3a2018" },
+        100: { label: "Basic sweet coffee variant complete", fill: "#3a2018", foamFill: "rgba(210,255,210,0.45)" }
       }
     },
     signature: {
@@ -1059,7 +1085,7 @@ const DRINK_RECIPES = {
         40: { label: "Running high temperature pour over drip routines manually", fill: "url(#sigIrish)" },
         60: { label: "Expanding baseline drink volume layout frameworks", fill: "url(#sigIrish)" },
         80: { label: "Fluid level climbing matching structural marks", fill: "url(#sigIrish)" },
-        100: { label: "Floating standard cold cream layers across the surfaces", fill: "url(#sigIrish)", foamFill: "rgba(255,255,255,0.8)" }
+        100: { label: "Floating Irish green-kissed cream layer", fill: "url(#sigIrish)", foamFill: "rgba(215,255,215,0.88)" }
       }
     },
     mastercraft: {
@@ -1071,8 +1097,15 @@ const DRINK_RECIPES = {
         40: { label: "Executing precision target ratio pour-over filter infusions", fill: "url(#masterIrish)" },
         60: { label: "Using electric frother to shake up premium alternative cold thick cream", fill: "url(#masterIrish)" },
         80: { label: "Layering base components perfectly without disturbing solution lines", fill: "url(#masterIrish)" },
-        100: { label: "Floating custom aerated cold velvet cream layer head flawlessly", fill: "url(#masterIrish)", foamFill: "#ffffff", garnishSvg: `
-          <path d="M 85 54 L 100 40 L 115 54 L 100 68 Z" fill="#34d399" opacity="0.4"/>
+        100: { label: "Floating custom aerated green-kissed cream head flawlessly", fill: "url(#masterIrish)", foamFill: "rgba(220,255,220,0.95)", garnishSvg: `
+          <g transform="translate(100,54)">
+            <path d="M0,-12 Q8,-6 0,0 Q-8,-6 0,-12Z" fill="#34d399" opacity="0.75"/>
+            <path d="M11,-4 Q6,6 0,0 Q5,-7 11,-4Z" fill="#34d399" opacity="0.75"/>
+            <path d="M7,10 Q-3,8 0,0 Q6,4 7,10Z" fill="#34d399" opacity="0.75"/>
+            <path d="M-7,10 Q3,8 0,0 Q-6,4 -7,10Z" fill="#34d399" opacity="0.75"/>
+            <path d="M-11,-4 Q-6,6 0,0 Q-5,-7 -11,-4Z" fill="#34d399" opacity="0.75"/>
+            <circle cx="0" cy="0" r="2.5" fill="#fbbf24"/>
+          </g>
         `}
       }
     }
@@ -1085,9 +1118,9 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Pouring standard utility black coffee blends", fill: "#211915" },
         40: { label: "Skipping specialized whipped cream injection modules", fill: "#211915" },
-        60: { label: "Squirting standard store bought oil cream directly", fill: "#403129" },
-        80: { label: "Merging solution stages rudimentarily", fill: "#403129" },
-        100: { label: "Basic sweet coffee style finished", fill: "#403129", foamFill: "transparent" }
+        60: { label: "Squirting standard store bought oil cream directly", fill: "#5a3820" },
+        80: { label: "Merging solution stages rudimentarily", fill: "#5a3820" },
+        100: { label: "Basic sweet coffee style finished", fill: "#5a3820", foamFill: "rgba(255,248,228,0.45)" }
       }
     },
     signature: {
@@ -1099,7 +1132,7 @@ const DRINK_RECIPES = {
         40: { label: "Filling container frames with clean black roast lines", fill: "url(#sigVienna)" },
         60: { label: "Expanding drink capacity layout lines cleanly", fill: "url(#sigVienna)" },
         80: { label: "Awaiting final topping additions patiently", fill: "url(#sigVienna)" },
-        100: { label: "Crowning presentation with thick layers of hand whipped cream", fill: "url(#sigVienna)", foamFill: "rgba(255,255,255,0.85)" }
+        100: { label: "Crowning presentation with thick vanilla whipped cream", fill: "url(#sigVienna)", foamFill: "rgba(255,248,228,0.9)" }
       }
     },
     mastercraft: {
@@ -1111,9 +1144,11 @@ const DRINK_RECIPES = {
         40: { label: "Infusing high body single origin espresso bean matrices", fill: "url(#masterVienna)" },
         60: { label: "Using electric frother to build rigid peaks inside vanilla heavy creams", fill: "url(#masterVienna)" },
         80: { label: "Rising coffee solution lines leveling perfectly across grids", fill: "url(#masterVienna)" },
-        100: { label: "Floating elegant handcrafted peaks of rich vanilla infused whipped cream", fill: "url(#masterVienna)", foamFill: "#fffdfa", garnishSvg: `
-          <path d="M 70 54 Q 100 15 130 54 Z" fill="#fffdfa"/>
-          <circle cx="100" cy="38" r="3" fill="#78350f"/>
+        100: { label: "Floating elegant vanilla-infused whipped cream peaks with cinnamon", fill: "url(#masterVienna)", foamFill: "#fff8e8", garnishSvg: `
+          <path d="M 70 54 Q 100 15 130 54 Z" fill="#fff8e8"/>
+          <circle cx="100" cy="36" r="3.5" fill="#92400e"/>
+          <circle cx="88" cy="44" r="1.5" fill="#b45309" opacity="0.6"/>
+          <circle cx="112" cy="44" r="1.5" fill="#b45309" opacity="0.6"/>
         `}
       }
     }
@@ -1125,10 +1160,10 @@ const DRINK_RECIPES = {
       bgGlow: "transparent",
       steps: {
         20: { label: "Placing plain scoop of standard grocery retail ice cream", fill: "transparent" },
-        40: { label: "Pouring leftover cold counter coffee liquid over scoop", fill: "#543f35" },
-        60: { label: "Melting solution boundaries together directly", fill: "#543f35" },
-        80: { label: "Increasing base layout volume dimensions", fill: "#543f35" },
-        100: { label: "Basic coffee dessert execution completed", fill: "#543f35", foamFill: "transparent" }
+        40: { label: "Pouring leftover cold counter coffee liquid over scoop", fill: "#fffdf5" },
+        60: { label: "Gelato meeting hot coffee, melting gracefully", fill: "#a06040" },
+        80: { label: "Increasing base layout volume dimensions", fill: "#a06040" },
+        100: { label: "Basic coffee dessert execution completed", fill: "#a06040", foamFill: "rgba(255,252,240,0.6)" }
       }
     },
     signature: {
