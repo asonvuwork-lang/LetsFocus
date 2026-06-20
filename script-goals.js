@@ -17,6 +17,7 @@ const GoalsModule = (function() {
 
   function saveData() {
     localStorage.setItem('goals', JSON.stringify(goals));
+    document.dispatchEvent(new CustomEvent('letsfocus:datasave', { detail: { key: 'goals' } }));
     // Keep bill board in sync
     if (typeof DrinkModule !== 'undefined') setTimeout(() => DrinkModule.renderBillBoard(), 50);
   }

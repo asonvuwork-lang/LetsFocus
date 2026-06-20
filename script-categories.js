@@ -89,6 +89,7 @@ const CategoriesModule = (function () {
 
   function save(cats) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cats));
+    document.dispatchEvent(new CustomEvent('letsfocus:datasave', { detail: { key: STORAGE_KEY } }));
   }
 
   function getAll() { return load(); }

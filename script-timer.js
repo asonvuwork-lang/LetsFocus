@@ -88,7 +88,7 @@ const TimerModule = (function() {
     const list = document.getElementById('goalPickerList');
     const nextBtn = document.getElementById('goalPickerNextBtn');
     if (!list) return;
-    const goals = JSON.parse(localStorage.getItem('goals')) || [];
+    const goals = (typeof GoalsModule !== 'undefined') ? GoalsModule.getGoals() : (JSON.parse(localStorage.getItem('goals')) || []);
     if (!goals.length) {
       list.innerHTML = '<p class="goal-picker-empty">No goals yet — add one on the Goals tab first!</p>';
       if (nextBtn) nextBtn.disabled = true;
@@ -1139,5 +1139,5 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
     initSoundPresets();
   }
 
-  return { init, showTimerPage, hideTimerPage };
+  return { init, showTimerPage, hideTimerPage, playChime: playSoftChime };
 })();

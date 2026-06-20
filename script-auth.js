@@ -263,6 +263,19 @@ const AuthModule = (function () {
   async function init() {
     SupabaseModule.init();
 
+    // ---- Safe sync trigger via CustomEvent (replaces localStorage.setItem monkeypatch) ----
+    // Any module that saves important data dispatches: document.dispatchEvent(new CustomEvent('letsfocus:datasave', { detail: { key } }))
+    // Auth listens here and forwards to Supabase — no prototype mutation needed.
+    const SYNC_KEYS = new Set(['goals','letsfocus_categories_v2','letsfocus_stats','letsfocus_xp','letsfocus_bill_positions']);
+    function wireSyncListener() {
+      document.addEventListener('letsfocus:datasave', (e) => {
+        if (SYNC_KEYS.has(e.detail?.key)) {
+          SupabaseModule.scheduleSyncUp();
+          showSyncStatus('☁ Saving…');
+        }
+      });
+    }
+
     // Listen for auth changes
     SupabaseModule.onAuthChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
@@ -275,16 +288,7 @@ const AuthModule = (function () {
         // Migrate any local data if this is first login
         await SupabaseModule.migrateLocalData();
         bootApp();
-
-        // Schedule background sync whenever localStorage changes
-        const origSetItem = localStorage.setItem.bind(localStorage);
-        localStorage.setItem = function(key, value) {
-          origSetItem(key, value);
-          if (['goals','letsfocus_categories_v2','letsfocus_stats','letsfocus_xp','letsfocus_bill_positions'].includes(key)) {
-            SupabaseModule.scheduleSyncUp();
-            showSyncStatus('☁ Saving…');
-          }
-        };
+        wireSyncListener();
 
       } else if (event === 'SIGNED_OUT') {
         document.getElementById('userPill')?.remove();
@@ -301,14 +305,7 @@ const AuthModule = (function () {
       await SupabaseModule.syncAllDown();
       showSyncStatus('✅ Synced');
       bootApp();
-      // Wire localStorage sync
-      const origSetItem = localStorage.setItem.bind(localStorage);
-      localStorage.setItem = function(key, value) {
-        origSetItem(key, value);
-        if (['goals','letsfocus_categories_v2','letsfocus_stats','letsfocus_xp','letsfocus_bill_positions'].includes(key)) {
-          SupabaseModule.scheduleSyncUp();
-        }
-      };
+      wireSyncListener();
     } else if (isGuest) {
       bootApp();
     } else {

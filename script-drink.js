@@ -1677,7 +1677,12 @@ const DrinkModule = (function () {
   // Persistent positions stored per goal id
   const POSITIONS_KEY = 'letsfocus_bill_positions';
   function loadPositions() { try { return JSON.parse(localStorage.getItem(POSITIONS_KEY)||'{}'); } catch(e) { return {}; } }
-  function savePositions(p) { try { localStorage.setItem(POSITIONS_KEY, JSON.stringify(p)); } catch(e) {} }
+  function savePositions(p) {
+    try {
+      localStorage.setItem(POSITIONS_KEY, JSON.stringify(p));
+      document.dispatchEvent(new CustomEvent('letsfocus:datasave', { detail: { key: POSITIONS_KEY } }));
+    } catch(e) {}
+  }
 
   function getCatColor(categoryName) {
     if (categoryName && typeof CategoriesModule !== 'undefined') {

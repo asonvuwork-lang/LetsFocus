@@ -1,6 +1,20 @@
 // =============================================
 // SUPABASE CLIENT + SYNC LAYER
 // =============================================
+//
+// ⚠️  SECURITY CHECKLIST — REQUIRED BEFORE PUBLIC HOSTING ⚠️
+// The anon key below is safe to expose in client-side code ONLY IF
+// Row Level Security (RLS) is enabled on ALL tables in Supabase.
+//
+// Required RLS policies for each table (goals, categories, stats, xp, bill_positions, session_notes):
+//   SELECT  → auth.uid() = user_id
+//   INSERT  → auth.uid() = user_id
+//   UPDATE  → auth.uid() = user_id
+//   DELETE  → auth.uid() = user_id
+//
+// Verify in Supabase Dashboard → Table Editor → [table] → RLS Policies.
+// Without RLS, any authenticated user can read/write ALL users' data.
+// =============================================
 const SupabaseModule = (function () {
 
   const SUPABASE_URL = 'https://ipntjmcqlottizmmhytr.supabase.co';

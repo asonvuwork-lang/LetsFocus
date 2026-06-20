@@ -61,7 +61,12 @@ const XPModule = (function () {
   const CATEGORIES = ['All', 'Streak', 'Goals', 'Focus Time', 'Pomodoro', 'Time of Day', 'Deadlines'];
 
   function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); } catch(e) { return {}; } }
-  function save(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e) {} }
+  function save(d) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+      document.dispatchEvent(new CustomEvent('letsfocus:datasave', { detail: { key: STORAGE_KEY } }));
+    } catch(e) {}
+  }
   function todayKey() { return new Date().toISOString().slice(0,10); }
 
   function getRank(xp) { let r=RANKS[0]; for(const rr of RANKS){if(xp>=rr.xp)r=rr;else break;} return r; }

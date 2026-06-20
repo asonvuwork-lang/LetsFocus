@@ -12,7 +12,10 @@ const StatsModule = (function () {
   }
 
   function saveStats(data) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      document.dispatchEvent(new CustomEvent('letsfocus:datasave', { detail: { key: STORAGE_KEY } }));
+    } catch(e) {}
   }
 
   function todayKey() {

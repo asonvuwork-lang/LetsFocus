@@ -136,16 +136,11 @@ const TemplatesModule = (function () {
   }
 
   function init() {
-    // Add Templates button next to the add-goal controls
-    const addBtn = document.getElementById('addGoalBtn');
-    if (!addBtn) return;
-    const tmplBtn = document.createElement('button');
-    tmplBtn.id = 'templatesBtn';
-    tmplBtn.className = 'templates-btn';
-    tmplBtn.innerHTML = '📋 Templates';
-    tmplBtn.title = 'Load a goal template';
-    tmplBtn.addEventListener('click', showModal);
-    addBtn.parentNode.insertBefore(tmplBtn, addBtn.nextSibling);
+    // Wire the existing #templatesBtn in HTML — do NOT inject a duplicate
+    const tmplBtn = document.getElementById('templatesBtn');
+    if (tmplBtn) {
+      tmplBtn.addEventListener('click', showModal);
+    }
   }
 
   return { init, showModal };
