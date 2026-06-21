@@ -328,20 +328,37 @@ const ShopModule = (function () {
     `;
 
     const slotsEl = container.querySelector('#chalkSlots');
+    // Track RAF handles per card to cancel cleanly on mouseleave
+    const cardRAFs = new Map();
+
     slots.forEach((slot, i) => {
       const isOwnedNow = slot.owned || isOwned(slot.id);
       const cost = slot.discount ? Math.floor(slot.cost*(1-slot.discount/100)) : slot.cost;
       const rarKey = slot.rarity || 'equipment';
       const meta = RARITY_META[rarKey];
+      const isDrink = slot.type === 'drink';
+      const uid = slot.id + '_' + i;
+
       const card = document.createElement('div');
       card.className = `chalk-card chalk-rarity-${rarKey}${isOwnedNow ? ' chalk-owned' : ''}${slot.comboId ? ' chalk-combo' : ''}`;
+
+      // Cup preview HTML (drinks only) — shows at 100% by default
+      const cupPreviewHTML = isDrink ? `
+        <div class="chalk-cup-preview" id="cupPreview_${uid}">
+          ${typeof DrinkModule !== 'undefined'
+            ? DrinkModule.generateShopCupSVG(slot.id, 100, uid)
+            : `<div style="font-size:3rem;line-height:1">${slot.emoji}</div>`}
+        </div>
+        <div class="chalk-cup-label">preview</div>
+      ` : `<div class="chalk-card-emoji">${slot.emoji}</div>`;
+
       card.innerHTML = `
         ${slot.comboId ? `<div class="chalk-combo-tag">🔗 Combo Set</div>` : ''}
-        <div class="chalk-card-emoji">${slot.emoji}</div>
-        <div class="chalk-card-name">${slot.name}</div>
-        <div class="chalk-card-rarity" style="color:${meta.chalk}; text-shadow: 0 0 8px ${meta.glow}">
+        ${cupPreviewHTML}
+        <div class="chalk-card-rarity-pill" style="background:${meta.glow}22;border-color:${meta.chalk}55;color:${meta.chalk}">
           ${meta.label}
         </div>
+        <div class="chalk-card-name">${slot.name}</div>
         <div class="chalk-card-desc">${slot.desc}</div>
         ${slot.discount ? `
           <div class="chalk-discount">-${slot.discount}% ${slot.discount>=30 ? '☕ Morning deal' : '🌙 Evening deal'}</div>
@@ -356,6 +373,44 @@ const ShopModule = (function () {
         }
         ${slot.comboId ? `<div class="chalk-combo-note">Part of <em>${slot.comboId}</em></div>` : ''}
       `;
+
+      // ---- Hover fill animation (drinks only, desktop only) ----
+      if (isDrink && typeof DrinkModule !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
+        const cupEl = card.querySelector(`#cupPreview_${uid}`);
+
+        card.addEventListener('mouseenter', () => {
+          // Cancel any existing RAF for this card
+          if (cardRAFs.has(card)) {
+            cancelAnimationFrame(cardRAFs.get(card));
+            cardRAFs.delete(card);
+          }
+          const DURATION = 2200; // ms for 0 → 100%
+          const start = performance.now();
+
+          function tick(now) {
+            const elapsed = now - start;
+            const pct = Math.min(100, (elapsed / DURATION) * 100);
+            if (cupEl) cupEl.innerHTML = DrinkModule.generateShopCupSVG(slot.id, pct, uid);
+            if (pct < 100) {
+              cardRAFs.set(card, requestAnimationFrame(tick));
+            } else {
+              cardRAFs.delete(card);
+            }
+          }
+          cardRAFs.set(card, requestAnimationFrame(tick));
+        });
+
+        card.addEventListener('mouseleave', () => {
+          // Cancel fill animation
+          if (cardRAFs.has(card)) {
+            cancelAnimationFrame(cardRAFs.get(card));
+            cardRAFs.delete(card);
+          }
+          // Snap back to full cup
+          if (cupEl) cupEl.innerHTML = DrinkModule.generateShopCupSVG(slot.id, 100, uid);
+        });
+      }
+
       if (!isOwnedNow) {
         card.querySelector('.chalk-buy-btn').addEventListener('click', () => buyItem(i));
       }
@@ -373,12 +428,246 @@ const ShopModule = (function () {
     };
     updateFull();
     _fullCountdownTimer = setInterval(updateFull, 1000);
+
+    // ---- Roll panel (below the 4 daily slots) ----
+    renderRollPanel(container);
   }
+
+  // =============================================
+  // ROLL SYSTEM — Mystery Brews
+  // =============================================
+  const ROLL_COST_SINGLE = 30;
+  const ROLL_COST_TEN    = 250;
+  const ROLL_REFUND_DUPE = 8;
+  const ROLL_HISTORY_MAX = 10;
+
+  // Rarity weights for rolling (flat, level-independent for simplicity & fairness)
+  const ROLL_WEIGHTS = { common: 55, uncommon: 28, rare: 12, epic: 4, legendary: 1 };
+
+  let isRolling = false; // prevent double-clicks during animation
+
+  function rollRarityForGacha() {
+    const r = Math.random() * 100;
+    let cum = 0;
+    for (const [rarity, weight] of Object.entries(ROLL_WEIGHTS)) {
+      cum += weight;
+      if (r < cum) return rarity;
+    }
+    return 'common';
+  }
+
+  function pickDrinkByRarity(rarity) {
+    const pool = DRINKS.filter(d => d.rarity === rarity);
+    if (!pool.length) return DRINKS[0];
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function performRoll() {
+    const rarity = rollRarityForGacha();
+    const drink  = pickDrinkByRarity(rarity);
+    const d      = loadShop();
+    const owned  = d.owned_drinks || [];
+    const isNew  = !owned.includes(drink.id);
+
+    if (isNew) {
+      d.owned_drinks = [...owned, drink.id];
+    } else {
+      // Refund beans for duplicate
+      saveBeans(getBeans() + ROLL_REFUND_DUPE);
+    }
+
+    // Save roll history (last ROLL_HISTORY_MAX)
+    if (!d.rollHistory) d.rollHistory = [];
+    d.rollHistory.unshift({ id: drink.id, rarity: drink.rarity, emoji: drink.emoji, name: drink.name, isNew, ts: Date.now() });
+    if (d.rollHistory.length > ROLL_HISTORY_MAX) d.rollHistory = d.rollHistory.slice(0, ROLL_HISTORY_MAX);
+
+    // Pity counter (stored for future use)
+    d.rollCount = (d.rollCount || 0) + 1;
+
+    saveShop(d);
+    return { drink, isNew, rarity };
+  }
+
+  function doSingleRoll() {
+    if (isRolling) return;
+    const beans = getBeans();
+    if (beans < ROLL_COST_SINGLE) {
+      showBeansToast(`Need ${ROLL_COST_SINGLE - beans} more ☕ beans`);
+      return;
+    }
+    isRolling = true;
+    saveBeans(beans - ROLL_COST_SINGLE);
+    updateBeanDisplay();
+
+    const result = performRoll();
+    renderRollReveal([result], () => {
+      isRolling = false;
+      updateRollButtons();
+      updateRollHistory();
+      if (result.isNew) updateBeanDisplay(); // collection count update
+    });
+  }
+
+  function doTenRoll() {
+    if (isRolling) return;
+    const beans = getBeans();
+    if (beans < ROLL_COST_TEN) {
+      showBeansToast(`Need ${ROLL_COST_TEN - beans} more ☕ beans`);
+      return;
+    }
+    isRolling = true;
+    saveBeans(beans - ROLL_COST_TEN);
+    updateBeanDisplay();
+
+    const results = Array.from({ length: 10 }, () => performRoll());
+    renderRollReveal(results, () => {
+      isRolling = false;
+      updateRollButtons();
+      updateRollHistory();
+      updateBeanDisplay();
+    });
+  }
+
+  function renderRollReveal(results, onDone) {
+    const stage = document.getElementById('rollRevealStage');
+    if (!stage) { onDone(); return; }
+
+    const RARITY_META_R = {
+      common:    { chalk: '#d4c5a9', label: 'Common'    },
+      uncommon:  { chalk: '#7ec8c8', label: 'Uncommon'  },
+      rare:      { chalk: '#c39bd3', label: 'Rare'      },
+      epic:      { chalk: '#f0a500', label: 'Epic'      },
+      legendary: { chalk: '#ffd700', label: 'Legendary' },
+    };
+
+    stage.innerHTML = '<div class="roll-reveal-cards" id="rollRevealCards"></div>';
+    const container = stage.querySelector('#rollRevealCards');
+
+    results.forEach((result, i) => {
+      const meta = RARITY_META_R[result.rarity] || RARITY_META_R.common;
+      const card = document.createElement('div');
+      card.className = `roll-card rarity-${result.rarity}`;
+      card.innerHTML = `
+        <div class="roll-card-emoji">${result.drink.emoji}</div>
+        <div class="roll-card-name">${result.drink.name}</div>
+        <div class="roll-card-rarity" style="color:${meta.chalk}">${meta.label}</div>
+        <div class="roll-card-badge ${result.isNew ? 'new-badge' : 'dupe-badge'}">
+          ${result.isNew ? '✨ New!' : `+${ROLL_REFUND_DUPE} ☕`}
+        </div>
+      `;
+      container.appendChild(card);
+
+      // Staggered flip animation
+      setTimeout(() => {
+        card.classList.add('roll-card-flip');
+      }, i * 140);
+    });
+
+    // All cards revealed — call onDone
+    const totalDelay = results.length * 140 + 600;
+    setTimeout(onDone, totalDelay);
+  }
+
+  function updateRollButtons() {
+    const beans = getBeans();
+    const singleBtn = document.getElementById('rollSingleBtn');
+    const tenBtn    = document.getElementById('rollTenBtn');
+    const needEl    = document.getElementById('rollNeedMsg');
+
+    if (!singleBtn) return;
+
+    const canSingle = beans >= ROLL_COST_SINGLE;
+    const canTen    = beans >= ROLL_COST_TEN;
+
+    singleBtn.disabled = !canSingle || isRolling;
+    tenBtn.disabled    = !canTen    || isRolling;
+
+    if (needEl) {
+      if (!canSingle) {
+        needEl.textContent = `You need ${ROLL_COST_SINGLE - beans} more beans for a single roll`;
+        needEl.style.display = 'block';
+      } else if (!canTen) {
+        needEl.textContent = `You need ${ROLL_COST_TEN - beans} more beans for 10× roll`;
+        needEl.style.display = 'block';
+      } else {
+        needEl.style.display = 'none';
+      }
+    }
+  }
+
+  function updateRollHistory() {
+    const strip = document.getElementById('rollHistoryStrip');
+    if (!strip) return;
+    const d = loadShop();
+    const history = d.rollHistory || [];
+    if (!history.length) { strip.innerHTML = ''; return; }
+
+    strip.innerHTML = history.map(h => `
+      <div class="roll-history-pip rarity-${h.rarity}" title="${h.name}">
+        ${h.emoji}
+        <span class="pip-tip">${h.name} · ${h.rarity}${h.isNew ? ' · ✨ New' : ''}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderRollPanel(container) {
+    const beans = getBeans();
+    const canSingle = beans >= ROLL_COST_SINGLE;
+    const canTen    = beans >= ROLL_COST_TEN;
+    const d = loadShop();
+    const history = d.rollHistory || [];
+
+    const panel = document.createElement('div');
+    panel.className = 'roll-panel';
+    panel.innerHTML = `
+      <div class="roll-panel-header">
+        <div class="roll-panel-title">🎰 Mystery Brews</div>
+        <div class="roll-panel-sub">Roll for a random drink · Duplicates refund ${ROLL_REFUND_DUPE} ☕ beans</div>
+      </div>
+
+      <div class="roll-btn-row">
+        <button class="roll-btn roll-btn-single" id="rollSingleBtn" ${!canSingle || isRolling ? 'disabled' : ''}>
+          ☕ Roll ×1
+          <span class="roll-btn-cost">${ROLL_COST_SINGLE} beans</span>
+        </button>
+        <button class="roll-btn roll-btn-ten" id="rollTenBtn" ${!canTen || isRolling ? 'disabled' : ''}>
+          ✨ Roll ×10
+          <span class="roll-btn-cost">${ROLL_COST_TEN} beans · save 50</span>
+        </button>
+      </div>
+
+      ${!canSingle ? `<div class="roll-btn-need" id="rollNeedMsg">You need ${ROLL_COST_SINGLE - beans} more beans for a single roll</div>` : '<div class="roll-btn-need" id="rollNeedMsg" style="display:none"></div>'}
+
+      <div class="roll-reveal-stage" id="rollRevealStage"></div>
+
+      ${history.length ? `
+        <div class="roll-history-label">Recent rolls</div>
+        <div class="roll-history-strip" id="rollHistoryStrip">
+          ${history.map(h => `
+            <div class="roll-history-pip rarity-${h.rarity}">
+              ${h.emoji}
+              <span class="pip-tip">${h.name} · ${h.rarity}${h.isNew ? ' · ✨ New' : ''}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : `<div class="roll-history-strip" id="rollHistoryStrip"></div>`}
+    `;
+
+    container.appendChild(panel);
+
+    panel.querySelector('#rollSingleBtn').addEventListener('click', doSingleRoll);
+    panel.querySelector('#rollTenBtn').addEventListener('click', doTenRoll);
+  }
+
+  // =============================================
+  // END ROLL SYSTEM
+  // =============================================
 
   function init() {
     updateBeanDisplay();
   }
 
   return { init, awardBeans, getBeans, getOwned, isOwned, setActiveDrink,
-           renderShopTab, renderSideShop, updateBeanDisplay, DRINKS, EQUIPMENT };
+           renderShopTab, renderSideShop, updateBeanDisplay, DRINKS, EQUIPMENT,
+           doSingleRoll, doTenRoll };
 })();
