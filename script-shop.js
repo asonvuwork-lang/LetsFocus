@@ -9,7 +9,7 @@ const ShopModule = (function () {
   // ---- Full catalogue ----
   const DRINKS = [
     { id: 'espresso',       name: 'Espresso',              rarity: 'common',    cost: 25,  emoji: '☕', desc: 'A sharp, focused shot.' },
-    { id: 'americano',      name: 'Americano',             rarity: 'common',    cost: 28,  emoji: '🫖', desc: 'Long and smooth.' },
+    { id: 'americano',      name: 'Americano',             rarity: 'common',    cost: 28,  emoji: '🖤', desc: 'Long and smooth.' },
     { id: 'flat_white',     name: 'Flat White',            rarity: 'common',    cost: 27,  emoji: '🥛', desc: 'Velvet meets espresso.' },
     { id: 'hot_choc',       name: 'Hot Chocolate',         rarity: 'common',    cost: 30,  emoji: '🍫', desc: 'Cozy comfort in a cup.' },
     { id: 'matcha_latte',   name: 'Matcha Latte',          rarity: 'uncommon',  cost: 50,  emoji: '🍵', desc: 'Earthy green serenity.' },
@@ -17,7 +17,7 @@ const ShopModule = (function () {
     { id: 'boba',           name: 'Brown Sugar Boba',      rarity: 'uncommon',  cost: 58,  emoji: '🧋', desc: 'Chewy pearls of joy.' },
     { id: 'caramel_mac',    name: 'Caramel Macchiato',     rarity: 'uncommon',  cost: 60,  emoji: '🍮', desc: 'Sweet caramel swirls.' },
     { id: 'ca_phe_sua_da',  name: 'Cà Phê Sữa Đá',        rarity: 'rare',      cost: 80,  emoji: '🧊', desc: 'Vietnamese iced legend.' },
-    { id: 'lavender_latte', name: 'Lavender Honey Latte',  rarity: 'rare',      cost: 82,  emoji: '💜', desc: 'Floral and dreamy.' },
+    { id: 'lavender_latte', name: 'Lavender Honey Latte',  rarity: 'rare',      cost: 82,  emoji: '🪻', desc: 'Floral and dreamy.' },
     { id: 'dalgona',        name: 'Dalgona Coffee',        rarity: 'rare',      cost: 84,  emoji: '☁️', desc: 'Whipped to perfection.' },
     { id: 'iced_matcha',    name: 'Iced Matcha',           rarity: 'rare',      cost: 85,  emoji: '🌿', desc: 'Cool and vibrant.' },
     { id: 'rose_gold',      name: 'Rose Gold Latte',       rarity: 'epic',      cost: 120, emoji: '🌹', desc: 'Blush tones and magic.' },
@@ -31,10 +31,10 @@ const ShopModule = (function () {
     // New drinks (from enhanced recipe engine)
     { id: 'latte',          name: 'Latte',                 rarity: 'uncommon',  cost: 55,  emoji: '🥛', desc: 'Silky milk, velvety espresso.' },
     { id: 'cappuccino',     name: 'Cappuccino',            rarity: 'uncommon',  cost: 58,  emoji: '☁️', desc: 'Equal thirds of perfection.' },
-    { id: 'macchiato',      name: 'Macchiato',             rarity: 'uncommon',  cost: 52,  emoji: '🫙', desc: 'Espresso stained with foam.' },
+    { id: 'macchiato',      name: 'Macchiato',             rarity: 'uncommon',  cost: 52,  emoji: '🫘', desc: 'Espresso stained with foam.' },
     { id: 'mocha',          name: 'Mocha',                 rarity: 'rare',      cost: 78,  emoji: '🍫', desc: 'Coffee meets chocolate.' },
     { id: 'irish_coffee',   name: 'Irish Coffee',          rarity: 'rare',      cost: 80,  emoji: '🍀', desc: 'Warmth with a little kick.' },
-    { id: 'vienna_coffee',  name: 'Vienna Coffee',         rarity: 'rare',      cost: 82,  emoji: '🎩', desc: 'Crowned with whipped cream.' },
+    { id: 'vienna_coffee',  name: 'Vienna Coffee',         rarity: 'rare',      cost: 82,  emoji: '🍦', desc: 'Crowned with whipped cream.' },
     { id: 'affogato',       name: 'Affogato',              rarity: 'epic',      cost: 115, emoji: '🍨', desc: 'Espresso drowns the gelato.' },
   ];
 
@@ -663,11 +663,150 @@ const ShopModule = (function () {
   // END ROLL SYSTEM
   // =============================================
 
+  // =============================================
+  // CODE REDEMPTION SYSTEM
+  // =============================================
+  const CODES_KEY = 'letsfocus_codes_redeemed';
+  const SECRET_CODES = {
+    'YouDeserveIt': {
+      reward:  'drink',
+      drinkId: 'birthday_cake',
+      message: '🎂 Birthday Cake unlocked! Check your Collection.',
+    },
+  };
+
+  function getRedeemedCodes() {
+    try { return JSON.parse(localStorage.getItem(CODES_KEY) || '[]'); } catch(e) { return []; }
+  }
+  function saveRedeemedCodes(arr) {
+    try { localStorage.setItem(CODES_KEY, JSON.stringify(arr)); } catch(e) {}
+  }
+
+  function isCodeRedeemed(code) {
+    return getRedeemedCodes().includes(code.trim().toLowerCase());
+  }
+
+  function redeemCode(code) {
+    const trimmed = code.trim();
+    // Case-insensitive lookup
+    const matchKey = Object.keys(SECRET_CODES).find(k => k.toLowerCase() === trimmed.toLowerCase());
+    if (!matchKey) {
+      showCustomAlert('❌ Invalid code. Check the spelling and try again.');
+      return false;
+    }
+    const normalised = trimmed.toLowerCase();
+    if (isCodeRedeemed(normalised)) {
+      showCustomAlert('☕ Already redeemed! Check your Collection.');
+      return false;
+    }
+    const entry = SECRET_CODES[matchKey];
+    // Mark code used
+    const redeemed = getRedeemedCodes();
+    redeemed.push(normalised);
+    saveRedeemedCodes(redeemed);
+    // Unlock the drink reward
+    if (entry.reward === 'drink') {
+      const d = loadShop();
+      if (!d.owned_drinks) d.owned_drinks = [];
+      if (!d.owned_drinks.includes(entry.drinkId)) {
+        d.owned_drinks.push(entry.drinkId);
+      }
+      // Also mark in code-exclusive list for collection rendering
+      if (!d.code_drinks) d.code_drinks = [];
+      if (!d.code_drinks.includes(entry.drinkId)) {
+        d.code_drinks.push(entry.drinkId);
+      }
+      saveShop(d);
+    }
+    showCustomAlert(entry.message);
+    return true;
+  }
+
+  function getCodeDrinks() {
+    const d = loadShop();
+    return d.code_drinks || [];
+  }
+
+  function showCodeModal() {
+    const existing = document.getElementById('codeRedeemModal');
+    if (existing) { existing.remove(); return; }
+
+    const modal = document.createElement('div');
+    modal.id = 'codeRedeemModal';
+    modal.style.cssText = `
+      position:fixed;inset:0;background:rgba(40,22,10,0.72);
+      z-index:20000;display:flex;align-items:center;justify-content:center;
+      backdrop-filter:blur(4px);
+    `;
+    modal.innerHTML = `
+      <div style="
+        background:rgba(245,241,235,0.98);border-radius:20px;
+        padding:2rem 2.2rem;max-width:380px;width:90%;
+        box-shadow:0 20px 60px rgba(0,0,0,0.4);
+        border:2px solid rgba(139,111,71,0.25);
+        text-align:center;
+        font-family:'Playfair Display',serif;
+      ">
+        <div style="font-size:2.8rem;margin-bottom:0.6rem;">🎟️</div>
+        <h2 style="color:#4a3429;font-size:1.5rem;margin-bottom:0.4rem;">Redeem a Code</h2>
+        <p style="font-family:'Source Sans Pro',sans-serif;font-size:0.85rem;color:#8b6f47;margin-bottom:1.4rem;">
+          Enter a special code to unlock exclusive drinks.
+        </p>
+        <input id="codeRedeemInput" type="text" placeholder="Enter your code…"
+          style="
+            width:100%;padding:12px 16px;
+            border:2px solid rgba(139,111,71,0.25);border-radius:12px;
+            font-family:'Source Sans Pro',sans-serif;font-size:1rem;
+            background:rgba(245,241,235,0.9);color:#4a3429;
+            margin-bottom:1rem;box-sizing:border-box;
+            transition:border-color 0.2s ease;outline:none;
+          "/>
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <button id="codeRedeemSubmit" style="
+            background:linear-gradient(135deg,#8b6f47,#6b5139);
+            color:#f5f1eb;border:none;padding:12px 28px;
+            border-radius:12px;font-family:'Playfair Display',serif;
+            font-size:1rem;font-weight:600;cursor:pointer;flex:1;
+          ">Redeem</button>
+          <button id="codeRedeemCancel" style="
+            background:rgba(245,241,235,0.8);color:#6b5139;
+            border:2px solid rgba(139,111,71,0.25);padding:12px 20px;
+            border-radius:12px;font-family:'Playfair Display',serif;
+            font-size:1rem;cursor:pointer;
+          ">Cancel</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const input = modal.querySelector('#codeRedeemInput');
+    input.focus();
+    input.addEventListener('focus', () => input.style.borderColor = 'rgba(139,111,71,0.6)');
+    input.addEventListener('blur',  () => input.style.borderColor = 'rgba(139,111,71,0.25)');
+
+    const submit = () => {
+      const val = input.value.trim();
+      if (!val) { input.style.borderColor = '#dc2626'; return; }
+      modal.remove();
+      redeemCode(val);
+    };
+
+    modal.querySelector('#codeRedeemSubmit').addEventListener('click', submit);
+    modal.querySelector('#codeRedeemCancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submit();
+      if (e.key === 'Escape') modal.remove();
+    });
+  }
+
   function init() {
     updateBeanDisplay();
+    // Wire the Enter Code button in the sidebar
+    document.getElementById('enterCodeBtn')?.addEventListener('click', showCodeModal);
   }
 
   return { init, awardBeans, getBeans, getOwned, isOwned, setActiveDrink,
            renderShopTab, renderSideShop, updateBeanDisplay, DRINKS, EQUIPMENT,
-           doSingleRoll, doTenRoll };
+           doSingleRoll, doTenRoll, redeemCode, getCodeDrinks, showCodeModal };
 })();

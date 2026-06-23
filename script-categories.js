@@ -22,7 +22,7 @@ const CategoriesModule = (function () {
     { id: '🎲 Random',        label: '🎲 Random',              rarity: 'base',      emoji: '🎲' },
     // ── Common collection ──
     { id: 'espresso',         label: 'Espresso',               rarity: 'common',    emoji: '☕' },
-    { id: 'americano',        label: 'Americano',              rarity: 'common',    emoji: '🫖' },
+    { id: 'americano',        label: 'Americano',              rarity: 'common',    emoji: '🖤' },
     { id: 'flat_white',       label: 'Flat White',             rarity: 'common',    emoji: '🥛' },
     { id: 'hot_choc',         label: 'Hot Chocolate',          rarity: 'common',    emoji: '🍫' },
     // ── Uncommon collection ──
@@ -32,15 +32,15 @@ const CategoriesModule = (function () {
     { id: 'caramel_mac',      label: 'Caramel Macchiato',      rarity: 'uncommon',  emoji: '🍮' },
     { id: 'latte',            label: 'Latte',                  rarity: 'uncommon',  emoji: '🥛' },
     { id: 'cappuccino',       label: 'Cappuccino',             rarity: 'uncommon',  emoji: '☁️' },
-    { id: 'macchiato',        label: 'Macchiato',              rarity: 'uncommon',  emoji: '🫙' },
+    { id: 'macchiato',        label: 'Macchiato',              rarity: 'uncommon',  emoji: '🫘' },
     // ── Rare collection ──
     { id: 'ca_phe_sua_da',    label: 'Cà Phê Sữa Đá',         rarity: 'rare',      emoji: '🧊' },
-    { id: 'lavender_latte',   label: 'Lavender Honey Latte',   rarity: 'rare',      emoji: '💜' },
+    { id: 'lavender_latte',   label: 'Lavender Honey Latte',   rarity: 'rare',      emoji: '🪻' },
     { id: 'dalgona',          label: 'Dalgona Coffee',         rarity: 'rare',      emoji: '☁️' },
     { id: 'iced_matcha',      label: 'Iced Matcha',            rarity: 'rare',      emoji: '🌿' },
     { id: 'mocha',            label: 'Mocha',                  rarity: 'rare',      emoji: '🍫' },
     { id: 'irish_coffee',     label: 'Irish Coffee',           rarity: 'rare',      emoji: '🍀' },
-    { id: 'vienna_coffee',    label: 'Vienna Coffee',          rarity: 'rare',      emoji: '🎩' },
+    { id: 'vienna_coffee',    label: 'Vienna Coffee',          rarity: 'rare',      emoji: '🍦' },
     // ── Epic collection ──
     { id: 'rose_gold',        label: 'Rose Gold Latte',        rarity: 'epic',      emoji: '🌹' },
     { id: 'galaxy_brew',      label: 'Galaxy Cold Brew',       rarity: 'epic',      emoji: '🌌' },
@@ -52,6 +52,8 @@ const CategoriesModule = (function () {
     { id: 'golden_hour',      label: 'Golden Hour Latte',      rarity: 'legendary', emoji: '✨' },
     { id: 'aurora_brew',      label: 'Aurora Brew',            rarity: 'legendary', emoji: '🌈' },
     { id: 'the_void',         label: 'The Void',               rarity: 'legendary', emoji: '🕳️' },
+    // Code-exclusive — not in shop/gacha pool, only via 'YouDeserveIt' code
+    { id: 'birthday_cake',    label: 'Birthday Cake',          rarity: 'legendary', emoji: '🎂', codeExclusive: true },
   ];
 
   const RARITY_STYLE = {

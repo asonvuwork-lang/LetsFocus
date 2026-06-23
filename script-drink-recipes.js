@@ -444,7 +444,10 @@ const DRINK_RECIPES = {
       defs: `<linearGradient id="masterLavender" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d8b4fe"/><stop offset="40%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#4c1d95"/></linearGradient>`,
       steps: {
         20: { label: "Infusing slow-simmered organic French lavender flower syrup", fill: "transparent" },
-        40: { label: "Drizzling raw local wildflower honey along internal glass walls", fill: "transparent" },
+        40: { label: "Drizzling raw local wildflower honey along internal glass walls", fill: "transparent", svgContent: `
+          <path d="M 28 38 Q 26 75 29 118 Q 32 90 35 122" fill="none" stroke="#d4922a" stroke-width="3.5" stroke-linecap="round" opacity="0.7"/>
+          <path d="M 114 40 Q 116 77 113 120 Q 110 92 108 124" fill="none" stroke="#e8a838" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+        ` },
         60: { label: "Steaming rich alternative milk to optimal silky microfoam weight", fill: "#4c1d95" },
         80: { label: "Pouring precision espresso layers to produce distinct herbal banding profiles", fill: "url(#masterLavender)" },
         100: { label: "Suspending dried culinary lavender botanical blossoms on foam", fill: "url(#masterLavender)", foamFill: "#ffffff", garnishSvg: `
@@ -688,6 +691,79 @@ const DRINK_RECIPES = {
             <path d="M-8,-3 Q-3,-4 0,0 Q-4,2 -8,-3Z" fill="#e8b0cc" opacity="0.85"/>
             <circle cx="0" cy="0" r="2" fill="#fde68a"/>
           </g>
+        `}
+      }
+    }
+  },
+
+  galaxyColdBrew: {
+    allPossibleEquipment: ["IceBucket", "ColdBrewTower", "ButterflyPeaJar"],
+    house: {
+      bgGlow: "transparent",
+      defs: `<linearGradient id="houseGalaxy" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2a1a4a"/><stop offset="55%" stop-color="#16102a"/><stop offset="100%" stop-color="#080510"/></linearGradient>`,
+      steps: {
+        20: { label: "Pouring store-bought cold brew concentrate into plain vessel", fill: "transparent" },
+        40: { label: "Filling with tap water across standard mix ratios", fill: "#22183a" },
+        60: { label: "Adding artificial blue food dye drops to darken solution", fill: "url(#houseGalaxy)" },
+        80: { label: "Expanding liquid volume across vessel boundary thresholds", fill: "url(#houseGalaxy)" },
+        100: { label: "Basic dark cold brew imitation complete", fill: "url(#houseGalaxy)", foamFill: "rgba(120,80,200,0.3)" }
+      }
+    },
+    signature: {
+      requires: ["ColdBrewTower"],
+      bgGlow: "rgba(99, 60, 200, 0.2)",
+      defs: `<linearGradient id="sigGalaxy" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4a2888"/><stop offset="55%" stop-color="#1e1240"/><stop offset="100%" stop-color="#09050f"/></linearGradient>`,
+      steps: {
+        20: { label: "Loading coarsely ground single-origin dark roast into cold tower", fill: "transparent" },
+        40: { label: "Allowing chilled filtered water to steep for 16 hours under cold brew tower", fill: "transparent" },
+        60: { label: "Drawing slow cold-steeped concentrate extract down into vessel", fill: "url(#sigGalaxy)" },
+        80: { label: "Liquid deepening into rich dark coffee extraction field", fill: "url(#sigGalaxy)" },
+        100: { label: "Deep cold brew concentrate complete — cold tower yield locked", fill: "url(#sigGalaxy)", foamFill: "rgba(130,80,220,0.35)" }
+      }
+    },
+    mastercraft: {
+      requires: ["IceBucket", "ColdBrewTower", "ButterflyPeaJar"],
+      bgGlow: "rgba(120, 60, 220, 0.4)",
+      defs: `
+        <linearGradient id="masterGalaxy" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7c3aed"/><stop offset="45%" stop-color="#2e1065"/><stop offset="100%" stop-color="#050210"/></linearGradient>
+        <radialGradient id="galaxyNebula" cx="50%" cy="60%" r="50%"><stop offset="0%" stop-color="#a78bfa" stop-opacity="0.35"/><stop offset="100%" stop-color="#2e1065" stop-opacity="0"/></radialGradient>
+      `,
+      steps: {
+        20: { label: "Laying a bed of crushed clear ice across the bottom of the vessel", fill: "transparent", svgContent: `
+          <circle cx="62" cy="210" r="6" fill="#dbeafe" opacity="0.6"/>
+          <circle cx="78" cy="216" r="5" fill="#e0f2fe" opacity="0.7"/>
+          <circle cx="120" cy="208" r="6" fill="#dbeafe" opacity="0.6"/>
+          <circle cx="136" cy="214" r="5" fill="#e0f2fe" opacity="0.65"/>
+          <circle cx="100" cy="220" r="7" fill="#ffffff" opacity="0.5"/>
+        `},
+        40: { label: "Steeping dried butterfly pea flowers to yield vivid indigo concentrate", fill: "transparent", svgContent: `
+          <circle cx="62" cy="190" r="6" fill="#dbeafe" opacity="0.45"/>
+          <circle cx="78" cy="196" r="5" fill="#e0f2fe" opacity="0.5"/>
+          <circle cx="120" cy="188" r="6" fill="#dbeafe" opacity="0.45"/>
+          <circle cx="136" cy="195" r="5" fill="#e0f2fe" opacity="0.5"/>
+          <circle cx="84" cy="222" r="3" fill="#c4b5fd" opacity="0.6"/>
+          <circle cx="112" cy="218" r="3.5" fill="#a78bfa" opacity="0.55"/>
+        `},
+        60: { label: "Pouring cold brew concentrate through butterfly pea infusion layer", fill: "url(#masterGalaxy)", svgContent: `
+          <circle cx="62" cy="170" r="6" fill="#dbeafe" opacity="0.3"/>
+          <circle cx="78" cy="176" r="5" fill="#e0f2fe" opacity="0.35"/>
+          <circle cx="120" cy="168" r="6" fill="#dbeafe" opacity="0.3"/>
+          <circle cx="136" cy="175" r="5" fill="#e0f2fe" opacity="0.35"/>
+          <circle cx="90" cy="185" r="3" fill="#c4b5fd" opacity="0.5"/>
+          <circle cx="110" cy="180" r="3.5" fill="#a78bfa" opacity="0.45"/>
+        `},
+        80: { label: "Nebula swirl expanding as cold brew merges with blue pea layer", fill: "url(#masterGalaxy)", svgContent: `
+          <ellipse cx="100" cy="140" rx="52" ry="22" fill="url(#galaxyNebula)"/>
+          <circle cx="70" cy="130" r="2" fill="#e9d5ff" opacity="0.7" style="animation:sparkle 2.2s ease-in-out infinite"/>
+          <circle cx="128" cy="145" r="1.5" fill="#c4b5fd" opacity="0.65" style="animation:sparkle 1.8s ease-in-out infinite"/>
+          <circle cx="100" cy="122" r="1.8" fill="#ddd6fe" opacity="0.6" style="animation:sparkle 2.5s ease-in-out infinite"/>
+        `},
+        100: { label: "Topping with stardust shimmer milk foam — a cup of the cosmos", fill: "url(#masterGalaxy)", foamFill: "rgba(196,165,255,0.6)", garnishSvg: `
+          <circle cx="78" cy="50" r="1.8" fill="#e9d5ff" style="animation:sparkle 1.6s ease-in-out infinite"/>
+          <circle cx="92" cy="47" r="2.5" fill="#ddd6fe" style="animation:sparkle 2.1s ease-in-out infinite"/>
+          <circle cx="108" cy="52" r="2" fill="#c4b5fd" style="animation:sparkle 1.9s ease-in-out infinite"/>
+          <circle cx="122" cy="46" r="1.5" fill="#e9d5ff" style="animation:sparkle 2.4s ease-in-out infinite"/>
+          <circle cx="84" cy="56" r="1.2" fill="#a78bfa" style="animation:sparkle 1.7s ease-in-out infinite"/>
         `}
       }
     }

@@ -58,6 +58,8 @@ const DrinkModule = (function () {
     irish_coffee:       'irishCoffee',
     vienna_coffee:      'viennaCoffee',
     affogato:           'affogato',
+    // Code-exclusive
+    birthday_cake:      'birthdayCake',
   };
 
   // ---- Shop drink ID → unique visual key (each drink gets its own look) ----
@@ -96,6 +98,8 @@ const DrinkModule = (function () {
     golden_hour:    '_golden_hour',
     aurora_brew:    '_aurora_brew',
     the_void:       '_the_void',
+    // Code-exclusive
+    birthday_cake:  '_birthday_cake',
   };
 
   // ---- Drink definitions ----
@@ -254,6 +258,13 @@ const DrinkModule = (function () {
       foamColor: 'rgba(255,252,235,0.88)', cupTint: '#7a5020',
       bobas: false, hasFoam: false, hasIce: false, rarity: 'epic',
     },
+    _birthday_cake: {
+      label: 'Birthday Cake', type: 'birthday_cake',
+      liquidColor: '#2a1200', liquidColor2: '#f5f0e8',
+      foamColor: 'rgba(255,250,245,0.97)', cupTint: '#c0883a',
+      bobas: false, hasFoam: false, hasIce: false, rarity: 'legendary',
+      birthdayCake: true,   // triggers dedicated cake-layer SVG renderer
+    },
     _lavender_latte: {
       label: 'Lavender Latte', type: 'milktea',
       liquidColor: '#3c2850', liquidColor2: '#9070b8',
@@ -342,6 +353,18 @@ const DrinkModule = (function () {
     let chosen = thresholds[0];
     for (const t of thresholds) { if (pct >= t) chosen = t; else break; }
     return tierCfg.steps[chosen] || null;
+  }
+
+  // Collects svgContent from ALL steps up to and including pct.
+  // This keeps earlier step artwork (drizzle, pearls, ice) visible as pct rises.
+  function getCumulativeSvgContent(tierCfg, pct) {
+    if (!tierCfg?.steps) return '';
+    const thresholds = Object.keys(tierCfg.steps).map(Number).sort((a, b) => a - b);
+    let combined = '';
+    for (const t of thresholds) {
+      if (pct >= t && tierCfg.steps[t].svgContent) combined += tierCfg.steps[t].svgContent;
+    }
+    return combined;
   }
 
   // ---- Pick drink from goal's category ----
@@ -507,7 +530,8 @@ const DrinkModule = (function () {
       @keyframes lfRipple { 0%{transform:scale(0.3);opacity:0.9} 100%{transform:scale(4.2);opacity:0} }
       @keyframes lfDrinkChange { 0%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(0.91)} }
       @keyframes voidStar { 0%,100%{opacity:0.08;transform:scale(0.6)} 50%{opacity:1;transform:scale(1.4)} }
-      @keyframes voidOrbit { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+      @keyframes voidOrbitOuter { from{stroke-dashoffset:0} to{stroke-dashoffset:-232} }
+      @keyframes voidOrbitInner { from{stroke-dashoffset:0} to{stroke-dashoffset:143} }
       @keyframes auroraFlow { 0%,100%{transform:translateX(-10px) scaleY(0.85);opacity:0.55} 40%{transform:translateX(8px) scaleY(1.18);opacity:1} 70%{transform:translateX(-5px) scaleY(0.92);opacity:0.75} }
     `;
     document.head.appendChild(style);
@@ -615,6 +639,7 @@ const DrinkModule = (function () {
     the_void:'void', aurora_brew:'aurora',
     cherry_blossom:'chamomile', barista_secret:'coffee',
     golden_hour:'lemonade', aurora_brew:'smoothie', the_void:'coffee',
+    birthday_cake:'birthday_cake', _birthday_cake:'birthday_cake',
   };
 
   function buildEquipmentBg(type, fillY, CTY) {
@@ -661,6 +686,9 @@ const DrinkModule = (function () {
     _aurora_brew:     ['blue spirulina', 'teal concentrate', 'nitrogen'],
     _golden_hour:     ['blonde espresso', 'liquid gold', 'honey'],
     _barista_secret:  ['secret cold brew', 'mint oil', 'teal syrup'],
+    // Code-exclusive
+    _birthday_cake:   ['dark chocolate sponge', 'vanilla buttercream', 'Belgian ganache', 'rainbow sprinkles', 'gold drizzle'],
+    birthday_cake:    ['dark chocolate sponge', 'vanilla buttercream', 'Belgian ganache', 'rainbow sprinkles', 'gold drizzle'],
     // Aliases for type-based lookups
     ca_phe_sua_da:    ['dark roast drip', 'condensed milk', 'ice'],
     dalgona:          ['whipped coffee', 'cold milk', 'ice'],
@@ -853,7 +881,6 @@ const DrinkModule = (function () {
   function buildWallDrizzle(type, CX, CW, CTY, CBY, pct) {
     if (pct < 100) return '';
     const drizzleMap = {
-      milktea:    '#3a1702',
       caramel_mac: '#b45309',
       dalgona:    '#8a4a10',
     };
@@ -893,8 +920,22 @@ const DrinkModule = (function () {
   }
 
   // ---- Foam — unique style per drink type ----
-  function buildFoam(type, fillY, CX, CW, foamColor) {
+  // d (optional) carries special flags: thickFoam, spotFoam, whipCream
+  function buildFoam(type, fillY, CX, CW, foamColor, d) {
     const cx = CX + CW / 2;
+    // Special foam shapes override type-based logic
+    if (d?.thickFoam) return `
+      <ellipse cx="${cx}"    cy="${fillY}"   rx="${CW*0.44}" ry="11"  fill="${foamColor}" opacity="0.95"/>
+      <ellipse cx="${cx-12}" cy="${fillY-2}" rx="10"         ry="7"   fill="${foamColor}" opacity="0.75"/>
+      <ellipse cx="${cx+14}" cy="${fillY-1}" rx="9"          ry="6.5" fill="${foamColor}" opacity="0.78"/>
+      <ellipse cx="${cx}"    cy="${fillY-3}" rx="${CW*0.28}" ry="5"   fill="rgba(255,255,255,0.25)"/>`;
+    if (d?.spotFoam) return `
+      <ellipse cx="${cx}" cy="${fillY+1}" rx="${CW*0.22}" ry="5.5" fill="${foamColor}" opacity="0.82"/>
+      <ellipse cx="${cx}" cy="${fillY}"   rx="${CW*0.12}" ry="3"   fill="rgba(255,255,255,0.18)"/>`;
+    if (d?.whipCream) return `
+      <ellipse cx="${cx}" cy="${fillY-2}"  rx="${CW*0.40}" ry="10" fill="${foamColor}" opacity="0.95"/>
+      <ellipse cx="${cx}" cy="${fillY-6}"  rx="${CW*0.28}" ry="7"  fill="${foamColor}" opacity="0.90"/>
+      <ellipse cx="${cx}" cy="${fillY-10}" rx="${CW*0.16}" ry="5"  fill="rgba(255,255,255,0.30)"/>`;
     if (type === 'coffee') return `
       <ellipse cx="${cx}" cy="${fillY+2}" rx="${CW*0.44}" ry="7.5" fill="${foamColor}" opacity="0.88"/>
       <ellipse cx="${cx-14}" cy="${fillY}" rx="10" ry="6" fill="${foamColor}" opacity="0.70"/>
@@ -1031,7 +1072,7 @@ const DrinkModule = (function () {
   }
 
   // ---- Liquid layers (rendered inside cup clipPath) ----
-  function buildLiquid(d, type, fillY, fillH, CX, CW, CBY, liquidFill, foamColor, pct, wAmp, wSpd) {
+  function buildLiquid(d, type, fillY, fillH, CX, CW, CBY, liquidFill, foamColor, pct, wAmp, wSpd, CTY) {
     const wOff1 = ao(wSpd), wOff2 = ao(wSpd * 1.3);
     const wP1 = wavePath(fillY, wAmp, false);
     const wP2 = wavePath(fillY, wAmp, true);
@@ -1227,16 +1268,16 @@ const DrinkModule = (function () {
           fill="rgba(40,10,80,0.40)"/>
         ${stars}
         ${pct > 25 ? `
-          <g style="animation:voidOrbit 7s linear infinite ${ao(7)};transform-origin:${CX+CW/2}px ${orbitY}px">
-            <ellipse cx="${CX+CW/2}" cy="${orbitY}" rx="${orbitRx}" ry="5"
-              fill="none" stroke="rgba(212,165,8,0.65)" stroke-width="1.8" stroke-dasharray="6 3"/>
-          </g>
+          <ellipse cx="${CX+CW/2}" cy="${orbitY}" rx="${orbitRx}" ry="5"
+            fill="none" stroke="rgba(212,165,8,0.65)" stroke-width="1.8"
+            stroke-dasharray="32 200"
+            style="animation:voidOrbitOuter 7s linear infinite ${ao(7)}"/>
         ` : ''}
         ${pct > 60 ? `
-          <g style="animation:voidOrbit 11s linear infinite reverse ${ao(11)};transform-origin:${CX+CW/2}px ${orbitY+4}px">
-            <ellipse cx="${CX+CW/2}" cy="${orbitY+4}" rx="${orbitRx*0.62}" ry="3.5"
-              fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="3 5"/>
-          </g>
+          <ellipse cx="${CX+CW/2}" cy="${orbitY+4}" rx="${orbitRx*0.62}" ry="3.5"
+            fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.2"
+            stroke-dasharray="20 125"
+            style="animation:voidOrbitInner 11s linear infinite ${ao(11)}"/>
         ` : ''}
       `;
     }
@@ -1295,7 +1336,7 @@ const DrinkModule = (function () {
         style="animation:lfW1 ${wSpd}s ease-in-out infinite ${wOff1}"/>`;
 
     // Pour stream during active fill — width/wobble vary by drink viscosity
-    const pour = (pct > 4 && pct < 92) ? buildPourStream(d.liquidColor, fillY, 30, type) : '';
+    const pour = (pct > 4 && pct < 92) ? buildPourStream(d.liquidColor, fillY, CTY, type) : '';
 
     let inner = '';
 
@@ -1349,16 +1390,18 @@ const DrinkModule = (function () {
     }
 
     if (type === 'chamomile' && pct > 15) {
-      // Petals orbit the surface in a slow rotation
-      const orbitY = fillY + 3;
-      inner += `<g style="animation:lfSwirl 18s linear infinite ${ao(18)};transform-origin:70px ${orbitY}px">`;
-      [[CX+25,3,-15,'rgba(255,232,102,0.78)'],[CX+56,2,12,'rgba(255,242,144,0.72)'],[CX+81,4,-6,'rgba(255,226,90,0.75)']].forEach(([px,py,rot,fc]) => {
+      // Each flower floats independently — no shared rotation (which caused orbiting)
+      const floatY = fillY + 4;
+      [[CX+25, 3, -15, 'rgba(255,232,102,0.78)', ao(3.2)],
+       [CX+56, 2,  12, 'rgba(255,242,144,0.72)', ao(2.7)],
+       [CX+81, 4,  -6, 'rgba(255,226,90,0.75)',  ao(3.8)]].forEach(([px, py, rot, fc, off]) => {
         inner += `
-          <ellipse cx="${px}" cy="${orbitY+py}" rx="4.5" ry="2" fill="${fc}" transform="rotate(${rot} ${px} ${orbitY+py})"/>
-          <ellipse cx="${px}" cy="${orbitY+py}" rx="2" ry="4.5" fill="${fc}" opacity="0.75" transform="rotate(${rot+90} ${px} ${orbitY+py})"/>
-          <circle cx="${px}" cy="${orbitY+py}" r="1.8" fill="rgba(255,200,50,0.82)"/>`;
+          <g style="animation:lfFloat 3.2s ease-in-out infinite ${off};transform-origin:${px}px ${floatY+py}px">
+            <ellipse cx="${px}" cy="${floatY+py}" rx="4.5" ry="2" fill="${fc}" transform="rotate(${rot} ${px} ${floatY+py})"/>
+            <ellipse cx="${px}" cy="${floatY+py}" rx="2" ry="4.5" fill="${fc}" opacity="0.75" transform="rotate(${rot+90} ${px} ${floatY+py})"/>
+            <circle cx="${px}" cy="${floatY+py}" r="1.8" fill="rgba(255,200,50,0.82)"/>
+          </g>`;
       });
-      inner += `</g>`;
     }
 
     if (type === 'smoothie') {
@@ -1389,7 +1432,7 @@ const DrinkModule = (function () {
           });
     }
 
-    const foamSVG = foamColor && pct > 5 ? buildFoam(type, fillY, CX, CW, foamColor) : '';
+    const foamSVG = foamColor && pct > 5 ? buildFoam(type, fillY, CX, CW, foamColor, d) : '';
     return base + waves + pour + inner + foamSVG;
   }
 
@@ -1413,10 +1456,12 @@ const DrinkModule = (function () {
     const foamColor  = (foamFill100 && foamFill100 !== 'transparent')
       ? foamFill100 : (d.hasFoam ? d.foamColor : null);
     const garnishSvg = (pct >= 100 && step100?.garnishSvg) ? step100.garnishSvg : '';
-    const svgContentRaw   = stepCfg?.svgContent || '';
-    const svgContentIsOut = stepCfg?.svgContentOutside || false;
-    const svgContentIn    = svgContentRaw && !svgContentIsOut ? svgContentRaw : '';
-    const svgContentOut   = svgContentRaw &&  svgContentIsOut ? svgContentRaw : '';
+    // Cumulative: collect svgContent from ALL steps ≤ pct so earlier artwork persists
+    const svgContentCumul  = tierCfg ? getCumulativeSvgContent(tierCfg, pct) : '';
+    // stepCfg still used to check if the CURRENT step's content should be outside-cup
+    const svgContentIsOut  = stepCfg?.svgContentOutside || false;
+    const svgContentIn     = svgContentCumul && !svgContentIsOut ? svgContentCumul : '';
+    const svgContentOut    = svgContentCumul &&  svgContentIsOut ? svgContentCumul : '';
     const bgGlow     = tierCfg?.bgGlow || 'transparent';
     scene.style.filter = (bgGlow && bgGlow !== 'transparent') ? `drop-shadow(0 0 20px ${bgGlow})` : '';
 
@@ -1461,12 +1506,29 @@ const DrinkModule = (function () {
       </text>` : '';
 
     const liquidSVG = pct > 0
-      ? buildLiquid(d, type, fillY, fillH, CX, CW, CBY, liquidFill, foamColor, pct, ac.waveAmp, ac.waveSpeed)
+      ? buildLiquid(d, type, fillY, fillH, CX, CW, CBY, liquidFill, foamColor, pct, ac.waveAmp, ac.waveSpeed, CTY)
       : '';
     const steamSVG = ac.steam && pct > 0 && pct < 100 ? buildSteam(type, CTY) : '';
 
     // Inject keyframes into <head> once — they survive SVG innerHTML replacement
     injectDrinkStyles(ac.waveAmp, ac.waveSpeed);
+
+    // ---- Special flourishes (crema ring, choc drizzle, petal flecks) ----
+    // These live outside buildLiquid so they render above foam/garnish layers
+    const cremaSVG = (d.cremaRing && pct >= 90) ? `
+      <ellipse cx="${CX+CW/2}" cy="${fillY+2}" rx="${CW*0.36}" ry="5"
+        fill="none" stroke="rgba(200,145,60,0.75)" stroke-width="2.5"/>
+      <ellipse cx="${CX+CW/2}" cy="${fillY+2}" rx="${CW*0.22}" ry="3"
+        fill="rgba(185,130,50,0.35)"/>` : '';
+    const chocDrizzleSVG = (d.chocDrizzle && pct >= 90) ? `
+      <path d="M${CX+22},${fillY-4} Q${CX+34},${fillY+3} ${CX+46},${fillY-2} Q${CX+58},${fillY+4} ${CX+70},${fillY-1}"
+        stroke="#3d1200" stroke-width="2.2" fill="none" stroke-linecap="round" opacity="0.75"/>
+      <path d="M${CX+28},${fillY+2} Q${CX+42},${fillY-3} ${CX+62},${fillY+2}"
+        stroke="#3d1200" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.55"/>` : '';
+    const petalFlecksSVG = (d.petalFlecks && pct >= 90) ? `
+      <ellipse cx="${CX+22}" cy="${fillY-1}" rx="3.5" ry="1.5" fill="rgba(255,160,200,0.65)" transform="rotate(-20,${CX+22},${fillY-1})"/>
+      <ellipse cx="${CX+46}" cy="${fillY+1}" rx="3"   ry="1.2" fill="rgba(255,180,210,0.60)" transform="rotate(15,${CX+46},${fillY+1})"/>
+      <ellipse cx="${CX+66}" cy="${fillY-2}" rx="2.8" ry="1.1" fill="rgba(255,150,195,0.55)" transform="rotate(-10,${CX+66},${fillY-2})"/>` : '';
 
     scene.innerHTML = `
     <svg viewBox="0 0 150 175" xmlns="http://www.w3.org/2000/svg"
@@ -1534,6 +1596,11 @@ const DrinkModule = (function () {
 
       <!-- Garnish at 100% -->
       ${garnishSvg ? `<g clip-path="url(#lf_cupClip)">${garnishSvg}</g>` : ''}
+
+      <!-- Special flourishes: crema ring (espresso), choc drizzle (mocha/hot choc), petals (cherry blossom) -->
+      ${cremaSVG}
+      ${chocDrizzleSVG}
+      ${petalFlecksSVG}
 
       <!-- Wall drizzle (boba, caramel etc.) -->
       ${buildWallDrizzle(type, CX, CW, CTY, CBY, pct)}
@@ -1962,6 +2029,149 @@ const DrinkModule = (function () {
     const visualKey = SHOP_ID_TO_VISUAL[drinkId] || drinkId;
     const d = DRINKS[visualKey] || DRINKS[drinkId] || DRINKS['☕ Coffee'];
     const type = d.type || 'coffee';
+
+    // ---- Birthday Cake — fully custom SVG renderer ----
+    if (d.birthdayCake) {
+      const W = 100, H = 130;
+      const p = Math.max(0, Math.min(100, pct));
+      const CX = 8, CW = 84, CTY = 18, CBY = 118, cupH = CBY - CTY;
+      const cx = CX + CW / 2;
+      const clipId = `bc_clip_${uid}`;
+      const gradId = `bc_grad_${uid}`;
+      const shimId = `bc_shim_${uid}`;
+
+      const fillH   = (p / 100) * cupH;
+      const fillTop = CBY - fillH;
+
+      // Taper helpers — left/right X at a given Y inside the cup
+      function lx(y) { return CX + 8 * ((y - CTY) / cupH); }
+      function rx(y) { return CX + CW - 8 * ((y - CTY) / cupH); }
+      function clampY(y) { return Math.max(CTY, Math.min(CBY, y)); }
+
+      // 3 cake layers with cream bands between
+      const lH = fillH * 0.27;
+      const cH = fillH * 0.073;
+      const layer3Top = fillTop;
+      const cream2Top = layer3Top + lH;
+      const layer2Top = cream2Top + cH;
+      const cream1Top = layer2Top + lH;
+      const layer1Top = cream1Top + cH;
+
+      const showLayers = p > 5;
+
+      function layerPath(yTop, yBot) {
+        const yt = clampY(yTop), yb = clampY(yBot);
+        if (yt >= yb) return '';
+        return `M ${lx(yt).toFixed(1)},${yt.toFixed(1)} L ${rx(yt).toFixed(1)},${yt.toFixed(1)} L ${rx(yb).toFixed(1)},${yb.toFixed(1)} L ${lx(yb).toFixed(1)},${yb.toFixed(1)} Z`;
+      }
+
+      // Chocolate drizzle — sinusoidal streams clipped inside cup, appear at p>=75
+      function drizzleStream(startX, startY, length, wobbleAmp, wobbleFreq, color, width, opacity) {
+        let pd = `M ${startX.toFixed(1)},${startY.toFixed(1)}`;
+        const steps = 12;
+        for (let i = 1; i <= steps; i++) {
+          const t = i / steps;
+          const x = startX + Math.sin(t * wobbleFreq * Math.PI) * wobbleAmp;
+          const y = startY + length * t;
+          const cx2 = startX + Math.sin((t - 0.5 / steps) * wobbleFreq * Math.PI) * wobbleAmp * 0.6;
+          const cy2 = startY + length * (t - 0.5 / steps);
+          pd += ` Q ${cx2.toFixed(1)},${cy2.toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)}`;
+        }
+        return `<path d="${pd}" stroke="${color}" stroke-width="${width}" fill="none" stroke-linecap="round" opacity="${opacity}"/>`;
+      }
+
+      const drizzleY   = clampY(fillTop + 4);
+      const drizzleLen = Math.min(fillH * 0.55, 40);
+      const showDrizzle = p >= 75;
+      const drizzles = showDrizzle ? [
+        drizzleStream(cx - 26, drizzleY, drizzleLen,  2.5, 1.8, '#1a0800', 2.8, 0.82),
+        drizzleStream(cx - 10, drizzleY, drizzleLen, -2.0, 2.1, '#1a0800', 2.2, 0.70),
+        drizzleStream(cx + 2,  drizzleY, drizzleLen,  3.0, 1.5, '#3a1400', 2.5, 0.78),
+        drizzleStream(cx + 18, drizzleY, drizzleLen, -1.8, 2.4, '#1a0800', 2.0, 0.68),
+        drizzleStream(cx + 30, drizzleY, drizzleLen,  2.2, 1.9, '#2a0e00', 2.4, 0.75),
+      ].join('') : '';
+
+      // Rainbow sprinkles — tiny rotated rects, appear at p>=90
+      const sprinkleColors = ['#ff3b3b','#ff9900','#ffe033','#33cc44','#3399ff','#cc44ff','#ff66aa'];
+      function sprinkle(x, y, angle, color) {
+        return `<rect x="${(x-5).toFixed(1)}" y="${(y-1.5).toFixed(1)}" width="10" height="3" rx="1.5" fill="${color}" transform="rotate(${angle},${x.toFixed(1)},${y.toFixed(1)})" opacity="0.92"/>`;
+      }
+      const sprinkleData = [
+        [cx-22, fillTop-3,  35, sprinkleColors[0]],
+        [cx-10, fillTop-5, -20, sprinkleColors[1]],
+        [cx,    fillTop-4,  55, sprinkleColors[2]],
+        [cx+14, fillTop-6, -40, sprinkleColors[3]],
+        [cx+26, fillTop-3,  25, sprinkleColors[4]],
+        [cx-18, fillTop-8,  70, sprinkleColors[5]],
+        [cx+8,  fillTop-9, -60, sprinkleColors[6]],
+        [cx-4,  fillTop-7,  10, sprinkleColors[0]],
+        [cx+22, fillTop-8,  80, sprinkleColors[2]],
+      ];
+      const sprinklesSVG = (p >= 90) ? sprinkleData.map(([x,y,a,c]) => sprinkle(x,y,a,c)).join('') : '';
+
+      // Birthday candle — appears at p=100, sits above rim (no clip needed)
+      const candleSVG = (p >= 100) ? `
+        <rect x="${(cx-2).toFixed(1)}" y="${(fillTop-18).toFixed(1)}" width="4" height="14" rx="2" fill="#f5c2e0"/>
+        <ellipse cx="${cx.toFixed(1)}" cy="${(fillTop-19).toFixed(1)}" rx="3" ry="4.5" fill="#ffe066" opacity="0.92"/>
+        <ellipse cx="${cx.toFixed(1)}" cy="${(fillTop-20.5).toFixed(1)}" rx="1.5" ry="2.5" fill="#fff7aa" opacity="0.75"/>
+      ` : '';
+
+      // Gold drizzle — thin accent lines on the top cream, appear at p>=88
+      const goldDrizzleSVG = (p >= 88) ? `
+        <path d="M ${(cx-28).toFixed(1)},${(fillTop+1).toFixed(1)} Q ${cx.toFixed(1)},${(fillTop-2).toFixed(1)} ${(cx+28).toFixed(1)},${(fillTop+1).toFixed(1)}"
+          stroke="#d4a000" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.70"/>
+        <path d="M ${(cx-20).toFixed(1)},${(fillTop+3).toFixed(1)} Q ${(cx+8).toFixed(1)},${(fillTop+0.5).toFixed(1)} ${(cx+24).toFixed(1)},${(fillTop+3.5).toFixed(1)}"
+          stroke="#c89000" stroke-width="0.9" fill="none" stroke-linecap="round" opacity="0.55"/>
+      ` : '';
+
+      const cupWallPath  = `M ${CX},${CTY} L ${CX+CW},${CTY} L ${CX+CW-8},${CBY} L ${CX+8},${CBY} Z`;
+      const rimPath      = `M ${CX-2},${CTY} L ${CX+CW+2},${CTY}`;
+      const rimHighlight = `M ${CX},${CTY+2} L ${CX+CW},${CTY+2}`;
+      const cupC = d.cupTint || '#c09050';
+
+      return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+        <defs>
+          <clipPath id="${clipId}">
+            <path d="M ${CX},${CTY} L ${CX+CW},${CTY} L ${CX+CW-8},${CBY} L ${CX+8},${CBY} Z"/>
+          </clipPath>
+          <linearGradient id="${gradId}" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="${cupC}" stop-opacity="0.22"/>
+            <stop offset="50%"  stop-color="${cupC}" stop-opacity="0.06"/>
+            <stop offset="100%" stop-color="${cupC}" stop-opacity="0.28"/>
+          </linearGradient>
+          <linearGradient id="${shimId}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="rgba(255,255,255,0.18)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+          </linearGradient>
+        </defs>
+        <!-- Cup wall base -->
+        <path d="${cupWallPath}" fill="rgba(245,235,215,0.15)" stroke="${cupC}" stroke-width="1.5"/>
+        <!-- Cake layers (clipped inside cup) -->
+        ${showLayers ? `<g clip-path="url(#${clipId})">
+          <path d="${layerPath(layer1Top, CBY)}"    fill="#1c0900"/>
+          <path d="${layerPath(cream1Top, layer1Top)}" fill="#f5f0e8"/>
+          <path d="${layerPath(layer2Top, cream1Top)}" fill="#2a0e04"/>
+          <path d="${layerPath(cream2Top, layer2Top)}" fill="#f8f4ee"/>
+          <path d="${layerPath(layer3Top, cream2Top)}" fill="#1a0800"/>
+          <line x1="${lx(cream1Top).toFixed(1)}" y1="${cream1Top.toFixed(1)}" x2="${rx(cream1Top).toFixed(1)}" y2="${cream1Top.toFixed(1)}" stroke="rgba(255,255,255,0.35)" stroke-width="0.8"/>
+          <line x1="${lx(cream2Top).toFixed(1)}" y1="${cream2Top.toFixed(1)}" x2="${rx(cream2Top).toFixed(1)}" y2="${cream2Top.toFixed(1)}" stroke="rgba(255,255,255,0.35)" stroke-width="0.8"/>
+        </g>` : ''}
+        <!-- Chocolate drizzle (clipped) -->
+        ${showDrizzle ? `<g clip-path="url(#${clipId})">${drizzles}</g>` : ''}
+        <!-- Gold drizzle (clipped) -->
+        ${goldDrizzleSVG ? `<g clip-path="url(#${clipId})">${goldDrizzleSVG}</g>` : ''}
+        <!-- Cup wall shading overlay -->
+        <path d="${cupWallPath}" fill="url(#${gradId})"/>
+        <path d="M ${CX+4},${CTY+4} L ${CX+4},${CBY-10}" stroke="url(#${shimId})" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+        <!-- Rainbow sprinkles (clipped) -->
+        ${sprinklesSVG ? `<g clip-path="url(#${clipId})">${sprinklesSVG}</g>` : ''}
+        <!-- Candle (above rim, no clip) -->
+        ${candleSVG}
+        <!-- Rim -->
+        <path d="${rimPath}"      stroke="${cupC}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        <path d="${rimHighlight}" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      </svg>`;
+    }
 
     // Cup geometry — sized to fit inside shop card
     const W = 100, H = 130;

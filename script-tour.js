@@ -6,84 +6,253 @@ const TourModule = (function () {
   const STORAGE_KEY = 'letsfocus_tour_done';
 
   const STEPS = [
+    // ── 1. Welcome ─────────────────────────────────────────────────────────────
     {
       tab: 'goals',
       target: '#tab-goals',
       title: '☕ Welcome to LetsFocus!',
-      text: 'Your personal focus café. Add goals, run timed sessions, and level up as a barista the more you work.',
-      bullets: ['✏️ Add and organise goals by category', '⏱ Start focus sessions with the coffee cup', '📋 See your goals as bills on the order board'],
+      text: 'Your personal focus café — where every work session brews something delicious. Let\'s take a quick tour of everything.',
+      bullets: [
+        '🎯 Set goals and focus with a timer',
+        '☕ Earn beans and roll for collectible drinks',
+        '🏅 Level up through 10 barista ranks',
+        '🍵 Build a full collection of 27 unique drinks',
+      ],
       position: 'center',
     },
+
+    // ── 2. Adding goals ────────────────────────────────────────────────────────
     {
       tab: 'goals',
       target: '#newGoalInput',
-      title: '✏️ Add a Goal',
-      text: 'Type a goal and press Enter. You can also:',
-      bullets: ['📁 Assign a category for colour + drink pairing', '↺ Set it to repeat daily or weekly', '📅 Add a deadline so it shows up in the Deadlines tab'],
+      title: '✏️ Add Your First Goal',
+      text: 'Type anything and press Enter — that\'s all it takes. The toolbar above has a few handy extras:',
+      bullets: [
+        '🏷️ Pick Category — colour + drink pairing for the goal',
+        '📅 Deadline — shows up on the Deadlines tab with urgency colours',
+        '🔁 Recurring goals auto-reset daily or weekly',
+        '⚙ Export / Import all your data as a backup file',
+      ],
       position: 'bottom',
     },
+
+    // ── 3. List vs Board views ─────────────────────────────────────────────────
     {
       tab: 'goals',
-      target: '#billBoard',
-      title: '📋 Order Board',
-      text: 'Every goal appears here as a sticky bill — just like a café order board.',
-      bullets: ['🎨 Bill colour matches the goal\'s category', '📌 Click any bill to toggle it done', '✓ Completed bills get a green stamp'],
-      position: 'left',
+      target: '#goalListView',
+      title: '☰ List & 📋 Board Views',
+      text: 'Toggle between two views using the buttons above your goal list.',
+      bullets: [
+        '☰ List view — compact, sortable, filterable, drag-to-reorder',
+        '📋 Board view — goals become sticky bills on a corkboard',
+        '🎨 Bill colour matches the goal\'s category',
+        '✓ Double-click a bill to mark it done; completed bills get a green stamp',
+      ],
+      position: 'center',
+      beforeShow() {
+        document.getElementById('viewListBtn')?.click();
+      },
     },
+
+    // ── 4. Templates ───────────────────────────────────────────────────────────
+    {
+      tab: 'goals',
+      target: '#templatesBtn',
+      title: '📋 Goal Templates',
+      text: 'Don\'t want to start from scratch? Load a pre-built goal set in one click.',
+      bullets: [
+        '📚 Study Session, 💼 Work Day, 🏋️ Fitness Week',
+        '🎨 Creative Sprint, 🧘 Personal Development, ☀️ Morning Routine',
+        'Skips any duplicates — safe to load on an existing list',
+      ],
+      position: 'bottom',
+    },
+
+    // ── 5. Start a focus session ───────────────────────────────────────────────
     {
       tab: 'goals',
       target: '#coffeeCup',
       title: '⏱ Start a Focus Session',
-      text: 'Click the coffee cup to kick off a timed session.',
-      bullets: ['🍅 Choose Custom time or Pomodoro (25/5 cycles)', '🎵 Pick ambient sounds or a preset', '🥤 A drink fills up as you focus — based on your goal\'s category'],
+      text: 'Click the coffee cup to open the session setup. Two modes to choose from:',
+      bullets: [
+        '⚙ Custom time — set any HH : MM : SS you like',
+        '🍅 Pomodoro — 25 min work → 5 min break × 4 cycles',
+        '🥤 A drink fills up live as your session progresses',
+        '⤢ Pop Out — open timer in a floating window to multitask',
+      ],
       position: 'left',
     },
+
+    // ── 6. Drink progress cup (timer page) ─────────────────────────────────────
+    {
+      tab: 'goals',
+      target: '#drinkProgressBox',
+      title: '🥤 Your Drink Fills Up',
+      text: 'During a session the drink on the right fills from 0% to 100% as time ticks down.',
+      bullets: [
+        '🎨 Drink type matches your goal\'s category (Study → Matcha, Work → Coffee…)',
+        '⟳ Swap drink anytime without stopping the timer',
+        '✨ Hit 100% — sparkle celebration animation fires',
+        '☕ Finished cups are saved to your Drink Shelf below the cup',
+      ],
+      position: 'center',
+      beforeShow() {
+        // Spotlight the drink box description even if timerPage is hidden — use the sidebar widget instead
+        const box = document.getElementById('drinkProgressBox');
+        if (box && box.closest('#timerPage')) return; // on timer page already, fine
+      },
+    },
+
+    // ── 7. Beans & Shop widget ─────────────────────────────────────────────────
+    {
+      tab: 'goals',
+      target: '#shopSideWidget',
+      title: '☕ Beans — Your Currency',
+      text: 'Every minute of focus earns you beans. Completing goals and unlocking achievements earn bonus beans too.',
+      bullets: [
+        '⏱ 1 bean per minute focused',
+        '🎯 +10 beans for completing a goal',
+        '🏅 +25 beans per achievement unlocked',
+        '🍅 +20 bonus beans for finishing a Pomodoro cycle',
+      ],
+      position: 'left',
+    },
+
+    // ── 8. Shop page — rolling for drinks ──────────────────────────────────────
+    {
+      tab: null,
+      target: '#shopTabContent',
+      title: '🛒 The Shop — Roll for Drinks',
+      text: 'Spend your beans here to roll for new collectible drinks and equipment upgrades.',
+      bullets: [
+        '🎰 Single roll costs 30 beans · 10× roll costs 250 (50 beans saved!)',
+        '🌟 Drinks come in 5 rarities: Common → Uncommon → Rare → Epic → Legendary',
+        '🔧 Equipment unlocks higher-tier recipe stages for your drinks',
+        '🔁 Duplicate drinks refund 5 beans automatically',
+      ],
+      position: 'center',
+      beforeShow() {
+        const mainPage = document.getElementById('mainPage');
+        const shopPage = document.getElementById('shopPage');
+        if (mainPage && shopPage) {
+          mainPage.classList.add('hidden');
+          shopPage.classList.remove('hidden');
+          if (typeof ShopModule !== 'undefined') ShopModule.renderShopTab();
+        }
+      },
+    },
+
+    // ── 9. My Collection ───────────────────────────────────────────────────────
+    {
+      tab: 'collection',
+      target: '#tab-collection',
+      title: '🍵 My Collection',
+      text: 'Every drink you\'ve unlocked lives here — organised by rarity tier.',
+      bullets: [
+        '🟤 Common → 🟢 Uncommon → 🔵 Rare → 🟣 Epic → 🌟 Legendary',
+        '27 drinks to collect across the whole game',
+        '🔒 Locked drinks show as silhouettes — a hint of what\'s waiting',
+        '👑 Each drink has 3 recipe stages: House → Signature → Mastercraft',
+      ],
+      position: 'center',
+      beforeShow() {
+        // Close shop page if it was open from the previous step
+        const mainPage = document.getElementById('mainPage');
+        const shopPage = document.getElementById('shopPage');
+        if (shopPage && !shopPage.classList.contains('hidden')) {
+          shopPage.classList.add('hidden');
+          mainPage?.classList.remove('hidden');
+        }
+      },
+    },
+
+    // ── 10. Deadlines ──────────────────────────────────────────────────────────
     {
       tab: 'deadlines',
       target: '#tab-deadlines',
       title: '📅 Deadlines & Overdue Streak',
-      text: 'Goals with deadlines appear here with urgency colours. Watch out for the overdue streak!',
-      bullets: ['🟢 Green = safe  🟡 Amber = soon  🔴 Red = overdue', '🔥 Overdue streak = consecutive overdue goals', '⚠️ The higher your overdue streak, the more XP you lose per overdue goal', '💪 Completing a late goal still earns Redemption XP'],
+      text: 'Every goal with a deadline shows here with a live urgency colour. Miss too many and your XP starts dropping.',
+      bullets: [
+        '🟢 Safe · 🟡 Soon (≤3 days) · 🟠 Urgent (≤1 day) · 🔴 Overdue',
+        '🔥 Overdue streak — consecutive overdue goals stack a penalty',
+        '⚠️ Streak 1→2: −5 XP · Streak 5+: −35 XP per overdue goal',
+        '💪 Completing a late goal still earns 50% Redemption XP',
+      ],
       position: 'center',
     },
+
+    // ── 11. Stats & XP ─────────────────────────────────────────────────────────
     {
       tab: 'stats',
       target: '#tab-stats',
-      title: '📊 Stats & XP System',
-      text: 'Track your focus journey and level up your barista rank!',
-      bullets: ['☕ Earn XP for every minute focused and every goal completed', '🏅 Level up through 10 barista ranks — from Café Newcomer to Legend of the Brew', '⚡ XP log shows today\'s and last 7 days\' activity', '🏆 Unlock achievements for special milestones'],
+      title: '📊 Stats & Barista Rank',
+      text: 'Track your focus journey and watch your barista rank climb.',
+      bullets: [
+        '☕ XP for every minute focused, goal completed, and session finished',
+        '🏅 10 ranks: Café Newcomer → Legend of the Brew',
+        '📈 7-day bar chart of daily focus time',
+        '☕ Drink Shelf — every completed session adds a mini cup to your wall',
+      ],
       position: 'center',
     },
+
+    // ── 12. Achievements ───────────────────────────────────────────────────────
     {
-      tab: 'stats',
-      target: '#achievementsList',
+      tab: 'achievements',
+      target: '#tab-achievements',
       title: '🏅 Achievements',
-      text: 'Unlock badges for reaching milestones. Each unlocked achievement also gives +30 bonus XP.',
-      bullets: ['🌅 Early Bird — 5 sessions before noon', '🔥 On Fire — 7-day streak', '⚡ Speed Run — 3 goals in one day', '🍅 Pomodoro Pro — 10 full Pomodoro cycles', '💪 Comeback Kid — recover from a 3+ overdue streak'],
+      text: '30 achievements across 6 categories. Each one you unlock gives +30 bonus XP.',
+      bullets: [
+        '🔥 Streak — 3, 7, 14, 30-day focus streaks',
+        '⏱ Focus Time — 1h, 5h, 10h, 25h total focused',
+        '🍅 Pomodoro — first cycle, 10 cycles, 50 cycles',
+        '⏰ Deadlines — complete goals on time, recover from overdue streaks',
+      ],
       position: 'center',
     },
+
+    // ── 13. Categories ─────────────────────────────────────────────────────────
     {
       tab: 'categories',
       target: '#tab-categories',
       title: '🏷️ Categories',
-      text: 'Create categories with custom colours and drink pairings.',
-      bullets: ['🎨 Pick any colour — it shows on goal cards, filter tags, and bill board', '🥤 Map a drink to the category — your session drink changes accordingly', '↺ Recurring goals keep their category across resets'],
+      text: 'Categories give your goals a colour and a matching drink for your focus sessions.',
+      bullets: [
+        '🎨 Pick any colour — shows on goal cards, filter pills, and board bills',
+        '🥤 Pair a drink — that drink fills during sessions using this category',
+        '6 defaults (Study, Work, Fitness, Creative, Personal, Other) — add your own',
+        '🔍 Filter your goal list by one or more categories at once',
+      ],
       position: 'center',
     },
+
+    // ── 14. Music & Sounds ─────────────────────────────────────────────────────
     {
       tab: 'music',
       target: '#tab-music',
-      title: '🎵 Music & Sounds',
-      text: 'Set up ambient sounds for deep focus.',
-      bullets: ['☕ Café — coffee + keyboard + writing', '🌧 Rainy Day — rain + thunder + wind', '🌲 Forest — forest + wind + fire', '🎧 Deep Work — AC + keyboard + soft rain'],
+      title: '🎵 Ambient Sounds',
+      text: 'Layer up to 10 ambient sounds and save your favourite mix as a preset.',
+      bullets: [
+        '☕ Café — barista + keyboard + writing',
+        '🌧 Rainy Day — soft rain + thunder + wind',
+        '🌲 Forest — forest + wind + fireplace',
+        '🎧 Deep Work — AC hum + keyboard + soft rain',
+      ],
       position: 'center',
     },
+
+    // ── 15. Help button / finish ────────────────────────────────────────────────
     {
       tab: 'goals',
       target: '#helpBtn',
-      title: '❓ Always Here to Help',
-      text: 'Click ? any time to replay this tour. Keyboard shortcuts work on the timer page:',
-      bullets: ['Space — pause / resume', 'R — reset timer', 'Esc — back to goals', 'Click any digit — edit the time inline'],
+      title: '❓ Replay This Tour Anytime',
+      text: 'Click the ? button any time to restart this tour from step 1. A few keyboard shortcuts to remember on the timer page:',
+      bullets: [
+        'Space — pause / resume timer',
+        'R — reset timer',
+        'Esc — go back to goals',
+        'Click any HH / MM / SS digit — edit inline',
+      ],
       position: 'bottom',
     },
   ];
@@ -173,6 +342,10 @@ const TourModule = (function () {
   function showStep(idx) {
     currentStep = idx;
     const step = STEPS[idx];
+
+    // Run beforeShow action BEFORE switching tab / positioning
+    if (typeof step.beforeShow === 'function') step.beforeShow();
+
     if (step.tab) switchTab(step.tab);
 
     overlay.querySelector('#tourStepCounter').textContent = `${idx + 1} / ${STEPS.length}`;
@@ -234,7 +407,7 @@ const TourModule = (function () {
 
     // Position tooltip
     const tip = overlay.querySelector('#tourTooltip');
-    const tipW = 320, tipH = 220;
+    const tipW = 360, tipH = 280;
     let tx, ty;
 
     if (step.position === 'bottom' || rect.bottom + tipH + 16 < H) {
