@@ -9,7 +9,7 @@ const TourModule = (function () {
     // ── 1. Welcome ─────────────────────────────────────────────────────────────
     {
       tab: 'goals',
-      target: '#tab-goals',
+      target: null,
       title: '☕ Welcome to LetsFocus!',
       text: 'Your personal focus café — where every work session brews something delicious. Let\'s take a quick tour of everything.',
       bullets: [
@@ -39,7 +39,7 @@ const TourModule = (function () {
     // ── 3. List vs Board views ─────────────────────────────────────────────────
     {
       tab: 'goals',
-      target: '#goalListView',
+      target: '#goalList',
       title: '☰ List & 📋 Board Views',
       text: 'Toggle between two views using the buttons above your goal list.',
       bullets: [
@@ -83,24 +83,19 @@ const TourModule = (function () {
       position: 'left',
     },
 
-    // ── 6. Drink progress cup (timer page) ─────────────────────────────────────
+    // ── 6. Drink progress cup ───────────────────────────────────────────────────
     {
       tab: 'goals',
-      target: '#drinkProgressBox',
-      title: '🥤 Your Drink Fills Up',
-      text: 'During a session the drink on the right fills from 0% to 100% as time ticks down.',
+      target: '#coffeeCup',
+      title: '🥤 Your Drink (or Cake!) Fills Up',
+      text: 'During a session the drink fills from 0 % to 100 % as time ticks down. Special drinks reveal themselves in unique ways!',
       bullets: [
         '🎨 Drink type matches your goal\'s category (Study → Matcha, Work → Coffee…)',
         '⟳ Swap drink anytime without stopping the timer',
-        '✨ Hit 100% — sparkle celebration animation fires',
-        '☕ Finished cups are saved to your Drink Shelf below the cup',
+        '🎂 Unlock the code-exclusive Birthday Cake for a legendary 3-tier chocolate ganache experience',
+        '✨ Hit 100 % — sparkle celebration animation fires',
       ],
-      position: 'center',
-      beforeShow() {
-        // Spotlight the drink box description even if timerPage is hidden — use the sidebar widget instead
-        const box = document.getElementById('drinkProgressBox');
-        if (box && box.closest('#timerPage')) return; // on timer page already, fine
-      },
+      position: 'left',
     },
 
     // ── 7. Beans & Shop widget ─────────────────────────────────────────────────
@@ -121,7 +116,7 @@ const TourModule = (function () {
     // ── 8. Shop page — rolling for drinks ──────────────────────────────────────
     {
       tab: null,
-      target: '#shopTabContent',
+      target: null,
       title: '🛒 The Shop — Roll for Drinks',
       text: 'Spend your beans here to roll for new collectible drinks and equipment upgrades.',
       bullets: [
@@ -372,11 +367,14 @@ const TourModule = (function () {
     overlay.querySelectorAll('.tour-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
     overlay.querySelector('#tourPrev').style.visibility = idx === 0 ? 'hidden' : 'visible';
     overlay.querySelector('#tourNext').textContent = idx === STEPS.length - 1 ? 'Finish ✓' : 'Next →';
-    setTimeout(() => positionSpotlight(step), step.tab ? 200 : 0);
+    // Give extra delay when beforeShow navigates pages (shop step needs layout time)
+    const delay = step.beforeShow ? 420 : (step.tab ? 200 : 0);
+    setTimeout(() => positionSpotlight(step), delay);
   }
 
   function positionSpotlight(step) {
-    const el = step.position === 'center' ? null : document.querySelector(step.target);
+    // null target or center position → centre spotlight (large circle in middle of screen)
+    const el = (step.position === 'center' || !step.target) ? null : document.querySelector(step.target);
     const pad = 10;
     let rect;
 

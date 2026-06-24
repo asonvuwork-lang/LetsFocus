@@ -263,7 +263,7 @@ const DrinkModule = (function () {
       liquidColor: '#2a1200', liquidColor2: '#f5f0e8',
       foamColor: 'rgba(255,250,245,0.97)', cupTint: '#c0883a',
       bobas: false, hasFoam: false, hasIce: false, rarity: 'legendary',
-      birthdayCake: true,   // triggers dedicated cake-layer SVG renderer
+      birthdayCake: true,
     },
     _lavender_latte: {
       label: 'Lavender Latte', type: 'milktea',
@@ -485,6 +485,7 @@ const DrinkModule = (function () {
     // Legendary special types
     void:          { waveAmp: 1, waveSpeed: 10.0, steam: false },
     aurora:        { waveAmp: 2, waveSpeed:  5.0, steam: false },
+    birthday_cake: { waveAmp: 0, waveSpeed:  8.0, steam: false },
     // Layered shop drinks
     ca_phe_sua_da: { waveAmp: 2, waveSpeed: 5.0, steam: false },
     dalgona:       { waveAmp: 2, waveSpeed: 5.5, steam: false },
@@ -877,29 +878,36 @@ const DrinkModule = (function () {
     }
   }
 
-  // ---- Wall drizzle (boba / caramel drinks at 100%) ----
+  // ---- Organic drizzle — cubic-bezier streams running DOWN cup walls ----
+  // Each stream: { x0, y0, color, width, len, wobX } — wobX is lateral drift at end point.
+  // All streams are clipped to the provided clipId.
+  function buildOrgDrizzle(streams, clipId, opacity) {
+    const paths = streams.map(({ x0, y0, color, width, len, wobX }) => {
+      const cp1x = (x0 + wobX * 0.3).toFixed(1), cp1y = (y0 + len * 0.28).toFixed(1);
+      const cp2x = (x0 + wobX * 0.75).toFixed(1), cp2y = (y0 + len * 0.68).toFixed(1);
+      const ex   = (x0 + wobX).toFixed(1),          ey   = (y0 + len).toFixed(1);
+      return `<path d="M${x0.toFixed(1)},${y0.toFixed(1)} C${cp1x},${cp1y} ${cp2x},${cp2y} ${ex},${ey}"
+        stroke="${color}" stroke-width="${width}" fill="none" stroke-linecap="round" opacity="${opacity}"/>`;
+    }).join('');
+    return `<g clip-path="url(#${clipId})">${paths}</g>`;
+  }
+
+  // ---- Wall drizzle (caramel_mac / dalgona at 100%) ----
   function buildWallDrizzle(type, CX, CW, CTY, CBY, pct) {
     if (pct < 100) return '';
-    const drizzleMap = {
-      caramel_mac: '#b45309',
-      dalgona:    '#8a4a10',
-    };
+    const drizzleMap = { caramel_mac: '#b45309', dalgona: '#8a4a10' };
     const clr = drizzleMap[type];
     if (!clr) return '';
-
-    // Left-wall streaks
-    const lStreaks = [
-      `M ${CX+8},${CTY+8} C ${CX+6},${CTY+38} ${CX+10},${CTY+68} ${CX+8},${CTY+100}`,
-      `M ${CX+13},${CTY+4} C ${CX+11},${CTY+28} ${CX+15},${CTY+56} ${CX+11},${CTY+82}`,
-    ].map(path => `<path d="${path}" stroke="${clr}" stroke-width="1.8" fill="none" opacity="0.60" stroke-linecap="round"/>`).join('');
-
-    // Right-wall streaks
-    const rStreaks = [
-      `M ${CX+CW-8},${CTY+6} C ${CX+CW-6},${CTY+34} ${CX+CW-10},${CTY+62} ${CX+CW-8},${CTY+94}`,
-      `M ${CX+CW-13},${CTY+3} C ${CX+CW-11},${CTY+30} ${CX+CW-15},${CTY+58} ${CX+CW-12},${CTY+85}`,
-    ].map(path => `<path d="${path}" stroke="${clr}" stroke-width="1.5" fill="none" opacity="0.45" stroke-linecap="round"/>`).join('');
-
-    return `<g clip-path="url(#lf_cupClip)">${lStreaks}${rStreaks}</g>`;
+    const dropH = (CBY - CTY) * 0.72;
+    const streams = [
+      { x0: CX+10,      y0: CTY+4, color: clr, width: 3.2, len: dropH*0.85, wobX:  4 },
+      { x0: CX+20,      y0: CTY+2, color: clr, width: 1.8, len: dropH*0.60, wobX:  7 },
+      { x0: CX+CW/2-4,  y0: CTY+3, color: clr, width: 2.6, len: dropH*0.78, wobX: -5 },
+      { x0: CX+CW/2+8,  y0: CTY+1, color: clr, width: 1.4, len: dropH*0.50, wobX:  4 },
+      { x0: CX+CW-20,   y0: CTY+5, color: clr, width: 3.0, len: dropH*0.80, wobX: -5 },
+      { x0: CX+CW-10,   y0: CTY+2, color: clr, width: 1.6, len: dropH*0.55, wobX: -8 },
+    ];
+    return buildOrgDrizzle(streams, 'lf_cupClip', 0.78);
   }
 
   // ---- Milestone surface ripple (plays once at 25 / 50 / 75%) ----
@@ -1439,6 +1447,190 @@ const DrinkModule = (function () {
   // Tracks which milestone (25/50/75) has already shown its ripple this session
   let _lastRippleMilestone = -1;
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // BIRTHDAY CAKE — live timer cup renderer
+  // Produces a 3-tier dark-chocolate ganache cake that builds tier-by-tier as
+  // pct rises from 0 → 100.  Completely replaces the standard cup SVG so the
+  // elliptical top faces are never cropped by the cup clip-path.
+  //
+  // Coordinate space: viewBox "0 0 150 175"  (matches renderCup's SVG template)
+  // ─────────────────────────────────────────────────────────────────────────────
+  function buildBirthdayCakeLiveSVG(pct, d, tierCfg) {
+    const p  = Math.max(0, Math.min(100, pct));
+    const cx = 75;   // horizontal centre
+    const eH = 8;    // half-height of each tier's elliptical top face
+
+    // Tier geometry — bottom (widest) → top (narrowest)
+    const t1 = { cx: cx, by: 155, h: 35, w: 92 };
+    const t2 = { cx: cx, by: 120, h: 32, w: 70 };
+    const t3 = { cx: cx, by:  88, h: 30, w: 50 };
+
+    // Progressive-reveal fractions
+    function pf(start, end) {
+      if (p < start) return 0;
+      return Math.min(1, (p - start) / (end - start));
+    }
+    const f1 = pf(0,  20);   // tier 1 builds  0→20%
+    const f2 = pf(20, 50);   // tier 2 builds 20→50%
+    const f3 = pf(50, 70);   // tier 3 builds 50→70%
+    const drizzPh    = pf(70, 85);           // ganache drizzle 70→85%
+    const showFrost  = p >= 85 && f3 > 0.80; // cream frosting top
+    const showSprink = p >= 94 && f3 > 0.90; // rainbow sprinkles
+    const showCandle = p >= 98;               // birthday candle
+
+    // Colour palette (dark Belgian-ganache aesthetic)
+    const bodyC  = ['#2c1005', '#321208', '#2a0e04'];  // sponge per tier
+    const topC   = ['#3d1808', '#421a0a', '#3a1608'];  // ganache top face per tier
+    const rimC   = '#8b4020';
+    const drizzC = '#1a0600';                           // near-black drizzle
+
+    // ── Tier builder ────────────────────────────────────────────────────────
+    function buildTier(t, frac, bodyFill, topFill) {
+      if (frac <= 0) return '';
+      const h   = t.h * frac;
+      const hw  = t.w / 2;
+      const topY = t.by - h;
+      const op  = Math.min(1, frac * 3).toFixed(2);
+      // Sponge layer texture bands (exposed on the cut side)
+      const b1Y = topY + h * 0.35;
+      const b2Y = topY + h * 0.68;
+      const bands = frac > 0.50 ? `
+        <line x1="${(t.cx-hw+2).toFixed(1)}" y1="${b1Y.toFixed(1)}" x2="${(t.cx+hw-2).toFixed(1)}" y2="${b1Y.toFixed(1)}" stroke="rgba(255,220,180,0.16)" stroke-width="1.2"/>
+        <line x1="${(t.cx-hw+2).toFixed(1)}" y1="${b2Y.toFixed(1)}" x2="${(t.cx+hw-2).toFixed(1)}" y2="${b2Y.toFixed(1)}" stroke="rgba(255,220,180,0.11)" stroke-width="0.9"/>` : '';
+      return `
+        <ellipse cx="${t.cx}" cy="${t.by}" rx="${(hw+4).toFixed(1)}" ry="${(eH*0.55).toFixed(1)}" fill="rgba(0,0,0,0.20)" opacity="${op}"/>
+        <rect x="${(t.cx-hw).toFixed(1)}" y="${topY.toFixed(1)}" width="${t.w}" height="${h.toFixed(1)}" fill="${bodyFill}" opacity="${op}"/>
+        ${bands}
+        <rect x="${(t.cx-hw).toFixed(1)}" y="${topY.toFixed(1)}" width="6" height="${h.toFixed(1)}" fill="rgba(255,255,255,0.07)" opacity="${op}"/>
+        <rect x="${(t.cx+hw-6).toFixed(1)}" y="${topY.toFixed(1)}" width="6" height="${h.toFixed(1)}" fill="rgba(0,0,0,0.18)" opacity="${op}"/>
+        <ellipse cx="${t.cx}" cy="${topY.toFixed(1)}" rx="${hw}" ry="${eH}" fill="${topFill}" opacity="${op}"/>
+        <ellipse cx="${t.cx}" cy="${topY.toFixed(1)}" rx="${hw}" ry="${eH}" fill="none" stroke="${rimC}" stroke-width="1.3" opacity="${(Math.min(1, parseFloat(op))*0.55).toFixed(2)}"/>`;
+    }
+
+    // ── Ganache drizzle (organic bezier drops with teardrop bulbs) ──────────
+    function buildDrizzle(t, frac, phase) {
+      if (frac < 0.90 || phase <= 0) return '';
+      const hw   = t.w / 2;
+      const topY = t.by - t.h * frac;
+      const op   = phase.toFixed(2);
+      const drops = [
+        { dx: -hw*0.76, len: 16, wob:  2 },
+        { dx: -hw*0.42, len: 11, wob: -2 },
+        { dx: -hw*0.10, len: 18, wob:  3 },
+        { dx:  hw*0.22, len: 12, wob: -2 },
+        { dx:  hw*0.56, len: 16, wob:  3 },
+        { dx:  hw*0.82, len: 10, wob: -3 },
+      ];
+      return drops.map(({ dx, len, wob }) => {
+        const x   = t.cx + dx;
+        const y0  = topY + eH - 1;
+        const cp1x = (x + wob*0.3).toFixed(1), cp1y = (y0 + len*0.3).toFixed(1);
+        const cp2x = (x + wob*0.7).toFixed(1), cp2y = (y0 + len*0.7).toFixed(1);
+        const ex   = (x + wob).toFixed(1),      ey   = (y0 + len).toFixed(1);
+        return `<path d="M${x.toFixed(1)},${y0.toFixed(1)} C${cp1x},${cp1y} ${cp2x},${cp2y} ${ex},${ey}"
+          stroke="${drizzC}" stroke-width="3.8" fill="none" stroke-linecap="round" opacity="${(parseFloat(op)*0.88).toFixed(2)}"/>
+          <circle cx="${ex}" cy="${(parseFloat(ey)+2.2).toFixed(1)}" r="2.4" fill="${drizzC}" opacity="${(parseFloat(op)*0.75).toFixed(2)}"/>`;
+      }).join('');
+    }
+
+    // ── Assemble tiers and drizzle ───────────────────────────────────────────
+    const tier1SVG = buildTier(t1, f1, bodyC[0], topC[0]);
+    const tier2SVG = buildTier(t2, f2, bodyC[1], topC[1]);
+    const tier3SVG = buildTier(t3, f3, bodyC[2], topC[2]);
+    const drizzle1 = buildDrizzle(t1, f1, drizzPh);
+    const drizzle2 = buildDrizzle(t2, f2, drizzPh);
+    const drizzle3 = buildDrizzle(t3, f3, drizzPh);
+
+    // ── Cream frosting on very top (p ≥ 85) ─────────────────────────────────
+    const frostSVG = showFrost ? `
+      <ellipse cx="${t3.cx}" cy="${(t3.by-t3.h).toFixed(1)}" rx="${(t3.w/2-2).toFixed(1)}" ry="${eH-1}" fill="#f8f2ec" opacity="0.93"/>
+      <ellipse cx="${t3.cx}" cy="${(t3.by-t3.h).toFixed(1)}" rx="${(t3.w/2-6).toFixed(1)}" ry="${(eH-2.5).toFixed(1)}" fill="rgba(255,255,255,0.30)"/>` : '';
+
+    // ── Chocolate curls on top (p ≥ 85) ─────────────────────────────────────
+    const curlSVG = showFrost ? (() => {
+      const ty = t3.by - t3.h - eH + 1;
+      function curl(ox, oy, dir) {
+        return `<path d="M${(cx+ox).toFixed(1)},${(ty+oy).toFixed(1)} C${(cx+ox+dir*5).toFixed(1)},${(ty+oy-7).toFixed(1)} ${(cx+ox+dir*11).toFixed(1)},${(ty+oy-5).toFixed(1)} ${(cx+ox+dir*8).toFixed(1)},${(ty+oy+2).toFixed(1)}"
+          stroke="#3d1808" stroke-width="2.8" fill="none" stroke-linecap="round" opacity="0.86"/>`;
+      }
+      return curl(-11, 0, 1) + curl(0, -4, -1) + curl(11, 1, 1) + curl(-5, -8, 1) + curl(6, -7, -1);
+    })() : '';
+
+    // ── Rainbow sprinkles on frosting (p ≥ 94) ──────────────────────────────
+    const spCols = ['#ff3b3b','#ff9900','#ffe033','#33cc44','#3399ff','#cc44ff','#ff66aa'];
+    const sprSVG = showSprink ? (() => {
+      const ty  = t3.by - t3.h - eH + 3;
+      const hw2 = t3.w / 2 - 6;
+      return [
+        [-hw2*0.8,  0,  30, spCols[0]], [-hw2*0.4, -2, -20, spCols[1]],
+        [0,          1,  55, spCols[2]], [ hw2*0.4, -1, -40, spCols[3]],
+        [ hw2*0.8,   0,  25, spCols[4]], [-hw2*0.6,  3,  70, spCols[5]],
+        [ hw2*0.2,  -3, -60, spCols[6]],
+      ].map(([dx, dy, a, c]) => {
+        const x = cx + dx, y = ty + dy;
+        return `<rect x="${(x-4.5).toFixed(1)}" y="${(y-1.2).toFixed(1)}" width="9" height="2.4" rx="1.2" fill="${c}" transform="rotate(${a},${x.toFixed(1)},${y.toFixed(1)})" opacity="0.90"/>`;
+      }).join('');
+    })() : '';
+
+    // ── Birthday candle (p ≥ 98) ─────────────────────────────────────────────
+    const candleSVG = showCandle ? (() => {
+      const cy3 = t3.by - t3.h - eH - 2;
+      return `
+        <rect x="${(cx-3).toFixed(1)}" y="${(cy3-20).toFixed(1)}" width="6" height="17" rx="3" fill="#f8b4d9"/>
+        <path d="M${(cx-3).toFixed(1)},${(cy3-13).toFixed(1)} Q${(cx-4).toFixed(1)},${(cy3-9).toFixed(1)} ${(cx-2).toFixed(1)},${(cy3-6).toFixed(1)}" stroke="#f8d7ea" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.65"/>
+        <ellipse cx="${cx}" cy="${(cy3-26).toFixed(1)}" rx="4.5" ry="7" fill="#ffb700" opacity="0.92"/>
+        <ellipse cx="${cx}" cy="${(cy3-25).toFixed(1)}" rx="2.8" ry="4.5" fill="#fff0a0" opacity="0.88"/>
+        <ellipse cx="${cx}" cy="${(cy3-25.5).toFixed(1)}" rx="1.4" ry="2.5" fill="#ffffff" opacity="0.72"/>`;
+    })() : '';
+
+    // ── Plate ───────────────────────────────────────────────────────────────
+    const plateSVG = f1 > 0 ? `
+      <ellipse cx="${cx}" cy="${(t1.by+7).toFixed(1)}" rx="${(t1.w/2+9).toFixed(1)}" ry="8" fill="#e8ddd0" opacity="${Math.min(0.90, f1*4).toFixed(2)}"/>
+      <ellipse cx="${cx}" cy="${(t1.by+7).toFixed(1)}" rx="${(t1.w/2+9).toFixed(1)}" ry="8" fill="none" stroke="#c4a882" stroke-width="1.1" opacity="${Math.min(0.60, f1*2.5).toFixed(2)}"/>` : '';
+
+    // ── Recipe tier badge ────────────────────────────────────────────────────
+    const tierBadge = tierCfg && tierCfg.tier !== 'house' ? `
+      <text x="145" y="16" text-anchor="end" font-family="Source Sans Pro,sans-serif"
+        font-size="7.5" font-weight="700"
+        fill="${tierCfg.tier === 'mastercraft' ? '#fbbf24' : 'rgba(212,165,116,0.9)'}">
+        ${tierCfg.tier === 'mastercraft' ? '👑 MASTER' : '✦ SIG'}
+      </text>` : '';
+
+    // ── Progress % text (inside bottom tier body) ────────────────────────────
+    const pctText = p > 15 ? `
+      <text x="${cx}" y="${(t1.by - 9).toFixed(1)}"
+        text-anchor="middle" font-family="Playfair Display,serif"
+        font-size="13" font-weight="600" fill="rgba(255,255,255,0.88)">
+        ${Math.round(p)}%
+      </text>` : '';
+
+    return `<svg viewBox="0 0 150 175" xmlns="http://www.w3.org/2000/svg"
+      overflow="visible" style="width:100%;max-width:200px;margin:0 auto;display:block;">
+      ${tierBadge}
+      <!-- Drop shadow -->
+      <ellipse cx="${cx}" cy="${(t1.by+10).toFixed(1)}" rx="56" ry="8" fill="rgba(0,0,0,0.15)"/>
+      ${plateSVG}
+      <!-- Tier 1 — bottom (widest) -->
+      ${tier1SVG}
+      ${drizzle1}
+      <!-- Tier 2 — middle -->
+      ${tier2SVG}
+      ${drizzle2}
+      <!-- Tier 3 — top (narrowest) -->
+      ${tier3SVG}
+      ${drizzle3}
+      <!-- Cream frosting & chocolate curls -->
+      ${frostSVG}
+      ${curlSVG}
+      <!-- Rainbow sprinkles -->
+      ${sprSVG}
+      <!-- Birthday candle with flame -->
+      ${candleSVG}
+      ${pctText}
+      ${p >= 100 ? generateSparkles() : ''}
+    </svg>`;
+  }
+
   // ---- SVG cup renderer ----
   function renderCup(pct) {
     const scene = document.getElementById('drinkScene');
@@ -1472,6 +1664,15 @@ const DrinkModule = (function () {
 
     const type = d.type || 'coffee';
     const ac   = DRINK_ANIM[type] || DRINK_ANIM.coffee;
+
+    // Birthday Cake: 3-tier chocolate ganache cake — bypass the cup SVG entirely.
+    // The elliptical tier tops must NOT be masked by the cup clip-path, so we
+    // short-circuit here and delegate to the dedicated cake renderer.
+    if (type === 'birthday_cake') {
+      injectDrinkStyles(1, 8);  // inject keyframes so switching drinks later still works
+      scene.innerHTML = buildBirthdayCakeLiveSVG(pct, d, tierCfg);
+      return;
+    }
 
     // Cold drink flag — drives condensation drops on cup exterior
     const isCold = !!(d.hasIce || d.bobas ||
@@ -1520,11 +1721,19 @@ const DrinkModule = (function () {
         fill="none" stroke="rgba(200,145,60,0.75)" stroke-width="2.5"/>
       <ellipse cx="${CX+CW/2}" cy="${fillY+2}" rx="${CW*0.22}" ry="3"
         fill="rgba(185,130,50,0.35)"/>` : '';
-    const chocDrizzleSVG = (d.chocDrizzle && pct >= 90) ? `
-      <path d="M${CX+22},${fillY-4} Q${CX+34},${fillY+3} ${CX+46},${fillY-2} Q${CX+58},${fillY+4} ${CX+70},${fillY-1}"
-        stroke="#3d1200" stroke-width="2.2" fill="none" stroke-linecap="round" opacity="0.75"/>
-      <path d="M${CX+28},${fillY+2} Q${CX+42},${fillY-3} ${CX+62},${fillY+2}"
-        stroke="#3d1200" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.55"/>` : '';
+    const chocDrizzleSVG = (d.chocDrizzle && pct >= 90) ? (() => {
+      const clr = '#2a0d00';
+      const dropH = Math.min((CBY - fillY) * 0.85, 90);
+      const streams = [
+        { x0: CX+10,      y0: fillY-2, color: clr, width: 3.2, len: dropH*0.90, wobX:  5 },
+        { x0: CX+24,      y0: fillY-1, color: clr, width: 1.8, len: dropH*0.65, wobX:  8 },
+        { x0: CX+CW/2-4,  y0: fillY-3, color: clr, width: 2.8, len: dropH*0.80, wobX: -5 },
+        { x0: CX+CW/2+12, y0: fillY-1, color: clr, width: 1.5, len: dropH*0.55, wobX:  5 },
+        { x0: CX+CW-22,   y0: fillY-2, color: clr, width: 3.0, len: dropH*0.85, wobX: -6 },
+        { x0: CX+CW-8,    y0: fillY,   color: clr, width: 1.4, len: dropH*0.50, wobX: -9 },
+      ];
+      return buildOrgDrizzle(streams, 'lf_cupClip', 0.82);
+    })() : '';
     const petalFlecksSVG = (d.petalFlecks && pct >= 90) ? `
       <ellipse cx="${CX+22}" cy="${fillY-1}" rx="3.5" ry="1.5" fill="rgba(255,160,200,0.65)" transform="rotate(-20,${CX+22},${fillY-1})"/>
       <ellipse cx="${CX+46}" cy="${fillY+1}" rx="3"   ry="1.2" fill="rgba(255,180,210,0.60)" transform="rotate(15,${CX+46},${fillY+1})"/>
@@ -2030,148 +2239,190 @@ const DrinkModule = (function () {
     const d = DRINKS[visualKey] || DRINKS[drinkId] || DRINKS['☕ Coffee'];
     const type = d.type || 'coffee';
 
-    // ---- Birthday Cake — fully custom SVG renderer ----
+    // ── Birthday Cake — 3-tier chocolate cake (image 2 inspired) ─────────────
     if (d.birthdayCake) {
-      const W = 100, H = 130;
+      const W = 120, H = 140;
       const p = Math.max(0, Math.min(100, pct));
-      const CX = 8, CW = 84, CTY = 18, CBY = 118, cupH = CBY - CTY;
-      const cx = CX + CW / 2;
-      const clipId = `bc_clip_${uid}`;
-      const gradId = `bc_grad_${uid}`;
-      const shimId = `bc_shim_${uid}`;
 
-      const fillH   = (p / 100) * cupH;
-      const fillTop = CBY - fillH;
+      // ── Tier geometry (bottom → top, widest → narrowest) ──────────────────
+      // Each tier: { cx, cy, w, h, rx } — rx = horizontal corner radius for ellipse tops
+      // Plate sits at bottom. Tiers stack upward.
+      const plateY = 128;                        // plate ellipse centre Y
+      const t1 = { cx:60, by:124, h:28, w:74 }; // bottom tier
+      const t2 = { cx:60, by:t1.by-t1.h, h:26, w:56 }; // middle tier
+      const t3 = { cx:60, by:t2.by-t2.h, h:24, w:40 }; // top tier
 
-      // Taper helpers — left/right X at a given Y inside the cup
-      function lx(y) { return CX + 8 * ((y - CTY) / cupH); }
-      function rx(y) { return CX + CW - 8 * ((y - CTY) / cupH); }
-      function clampY(y) { return Math.max(CTY, Math.min(CBY, y)); }
+      // Ellipse half-height for the 3D top face
+      const eH = 6; // depth of elliptical top face
 
-      // 3 cake layers with cream bands between
-      const lH = fillH * 0.27;
-      const cH = fillH * 0.073;
-      const layer3Top = fillTop;
-      const cream2Top = layer3Top + lH;
-      const layer2Top = cream2Top + cH;
-      const cream1Top = layer2Top + lH;
-      const layer1Top = cream1Top + cH;
+      // ── Progressive reveal ────────────────────────────────────────────────
+      // p 0–20:  tier 1 builds up (grows in height from 0)
+      // p 20–45: tier 2 builds up
+      // p 45–65: tier 3 builds up
+      // p 65–80: chocolate ganache drizzle appears on all tiers
+      // p 80–90: cream frosting tops
+      // p 90–96: rainbow sprinkles on top
+      // p 96–100: candle lights
 
-      const showLayers = p > 5;
-
-      function layerPath(yTop, yBot) {
-        const yt = clampY(yTop), yb = clampY(yBot);
-        if (yt >= yb) return '';
-        return `M ${lx(yt).toFixed(1)},${yt.toFixed(1)} L ${rx(yt).toFixed(1)},${yt.toFixed(1)} L ${rx(yb).toFixed(1)},${yb.toFixed(1)} L ${lx(yb).toFixed(1)},${yb.toFixed(1)} Z`;
+      function tierFrac(pStart, pEnd) {
+        if (p < pStart) return 0;
+        return Math.min(1, (p - pStart) / (pEnd - pStart));
       }
 
-      // Chocolate drizzle — sinusoidal streams clipped inside cup, appear at p>=75
-      function drizzleStream(startX, startY, length, wobbleAmp, wobbleFreq, color, width, opacity) {
-        let pd = `M ${startX.toFixed(1)},${startY.toFixed(1)}`;
-        const steps = 12;
-        for (let i = 1; i <= steps; i++) {
-          const t = i / steps;
-          const x = startX + Math.sin(t * wobbleFreq * Math.PI) * wobbleAmp;
-          const y = startY + length * t;
-          const cx2 = startX + Math.sin((t - 0.5 / steps) * wobbleFreq * Math.PI) * wobbleAmp * 0.6;
-          const cy2 = startY + length * (t - 0.5 / steps);
-          pd += ` Q ${cx2.toFixed(1)},${cy2.toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)}`;
+      const f1 = tierFrac(0, 20);
+      const f2 = tierFrac(20, 45);
+      const f3 = tierFrac(45, 65);
+
+      // ── Tier SVG builder ──────────────────────────────────────────────────
+      // Each tier is: elliptical top face + rectangular body + elliptical bottom
+      // Chocolate sponge colours — each tier slightly different shade
+      function buildTier(t, frac, bodyFill, topFill, rimFill) {
+        if (frac <= 0) return '';
+        const h  = t.h * frac;               // current rendered height
+        const hw = t.w / 2;                   // half-width
+        const top_y  = t.by - h;             // top face centre Y
+        const bot_y  = t.by;                  // bottom face centre Y
+
+        // Body rectangle with slight trapezoid (perspective)
+        const bodyPath = `M ${t.cx-hw},${top_y} L ${t.cx+hw},${top_y} L ${t.cx+hw},${bot_y} L ${t.cx-hw},${bot_y} Z`;
+
+        // Exposed sponge texture on the side — thin lighter bands suggesting layers
+        const mid1Y = top_y + h * 0.35;
+        const mid2Y = top_y + h * 0.68;
+        const textureBands = frac > 0.5 ? `
+          <line x1="${t.cx-hw+1}" y1="${mid1Y.toFixed(1)}" x2="${t.cx+hw-1}" y2="${mid1Y.toFixed(1)}" stroke="rgba(255,220,180,0.18)" stroke-width="1.2"/>
+          <line x1="${t.cx-hw+1}" y1="${mid2Y.toFixed(1)}" x2="${t.cx+hw-1}" y2="${mid2Y.toFixed(1)}" stroke="rgba(255,220,180,0.12)" stroke-width="0.9"/>` : '';
+
+        // Top ellipse (chocolate ganache surface — slightly lighter)
+        const topEllipse = `<ellipse cx="${t.cx}" cy="${top_y}" rx="${hw}" ry="${eH}" fill="${topFill}"/>`;
+        // Rim highlight on top ellipse edge
+        const rimEllipse = `<ellipse cx="${t.cx}" cy="${top_y}" rx="${hw}" ry="${eH}" fill="none" stroke="${rimFill}" stroke-width="1.2" opacity="0.6"/>`;
+
+        // Shadow under each tier (bottom ellipse)
+        const shadowEllipse = `<ellipse cx="${t.cx}" cy="${bot_y}" rx="${hw+3}" ry="${eH*0.6}" fill="rgba(0,0,0,0.22)" opacity="${frac.toFixed(2)}"/>`;
+
+        return `
+          ${shadowEllipse}
+          <rect x="${t.cx-hw}" y="${top_y.toFixed(1)}" width="${t.w}" height="${h.toFixed(1)}" fill="${bodyFill}"/>
+          ${textureBands}
+          ${topEllipse}
+          ${rimEllipse}`;
+      }
+
+      const tier1SVG = buildTier(t1, f1, '#2c1005', '#3d1808', '#8b4020');
+      const tier2SVG = buildTier(t2, f2, '#321208', '#421a0a', '#8b4020');
+      const tier3SVG = buildTier(t3, f3, '#2a0e04', '#3a1608', '#8b4020');
+
+      // ── Ganache drizzle on each tier (p >= 65) ────────────────────────────
+      // Drizzle hangs OFF the bottom edge of each tier — thick drops of chocolate
+      function buildTierDrizzle(t, frac, show) {
+        if (!show || frac < 0.9) return '';  // only drizzle when tier mostly built
+        const hw = t.w / 2;
+        const top_y = t.by - t.h * frac;
+        // Drizzle streams hang DOWN from top_y
+        // Using buildOrgDrizzle pattern inline (can't call it here — different coord space)
+        // Each stream: starts at top surface, drips down 8–18px
+        const dc = '#1a0600';
+        const drops = [
+          { x: t.cx - hw*0.75, len: 14, wob:  2 },
+          { x: t.cx - hw*0.40, len: 10, wob: -1 },
+          { x: t.cx - hw*0.10, len: 16, wob:  3 },
+          { x: t.cx + hw*0.20, len: 11, wob: -2 },
+          { x: t.cx + hw*0.55, len: 15, wob:  2 },
+          { x: t.cx + hw*0.80, len:  9, wob: -3 },
+        ];
+        return drops.map(({ x, len, wob }) => {
+          const y0 = top_y + eH - 1;  // start just below the top ellipse edge
+          const cp1x = (x + wob * 0.3).toFixed(1), cp1y = (y0 + len * 0.3).toFixed(1);
+          const cp2x = (x + wob * 0.7).toFixed(1), cp2y = (y0 + len * 0.7).toFixed(1);
+          const ex   = (x + wob).toFixed(1),         ey   = (y0 + len).toFixed(1);
+          // Teardrop bulb at the bottom
+          return `<path d="M${x.toFixed(1)},${y0.toFixed(1)} C${cp1x},${cp1y} ${cp2x},${cp2y} ${ex},${ey}"
+            stroke="${dc}" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.88"/>
+            <circle cx="${ex}" cy="${(parseFloat(ey)+2).toFixed(1)}" r="2.2" fill="${dc}" opacity="0.75"/>`;
+        }).join('');
+      }
+
+      const showDrizzle = p >= 65;
+      const drizzle1 = buildTierDrizzle(t1, f1, showDrizzle);
+      const drizzle2 = buildTierDrizzle(t2, f2, showDrizzle);
+      const drizzle3 = buildTierDrizzle(t3, f3, showDrizzle);
+
+      // ── Cream frosting layer on top (p >= 80) ────────────────────────────
+      // White/cream ellipse on the very top face of tier 3
+      const frostSVG = (p >= 80 && f3 > 0.8) ? `
+        <ellipse cx="${t3.cx}" cy="${(t3.by - t3.h).toFixed(1)}" rx="${t3.w/2 - 2}" ry="${eH - 1}" fill="#f8f2ec" opacity="0.90"/>
+        <ellipse cx="${t3.cx}" cy="${(t3.by - t3.h).toFixed(1)}" rx="${t3.w/2 - 5}" ry="${(eH - 2.5).toFixed(1)}" fill="rgba(255,255,255,0.35)"/>` : '';
+
+      // ── Chocolate curl decorations on top (p >= 80) ───────────────────────
+      const curlSVG = (p >= 80 && f3 > 0.8) ? (() => {
+        const ty = t3.by - t3.h - eH + 1;
+        const cx3 = t3.cx;
+        // 3 chocolate curls — spiral paths
+        function curl(ox, oy, dir) {
+          return `<path d="M${(cx3+ox).toFixed(1)},${(ty+oy).toFixed(1)} C${(cx3+ox+dir*4).toFixed(1)},${(ty+oy-5).toFixed(1)} ${(cx3+ox+dir*8).toFixed(1)},${(ty+oy-3).toFixed(1)} ${(cx3+ox+dir*6).toFixed(1)},${(ty+oy+2).toFixed(1)}"
+            stroke="#3d1808" stroke-width="2.2" fill="none" stroke-linecap="round" opacity="0.85"/>`;
         }
-        return `<path d="${pd}" stroke="${color}" stroke-width="${width}" fill="none" stroke-linecap="round" opacity="${opacity}"/>`;
-      }
+        return curl(-8, 0, 1) + curl(0, -3, -1) + curl(8, 1, 1);
+      })() : '';
 
-      const drizzleY   = clampY(fillTop + 4);
-      const drizzleLen = Math.min(fillH * 0.55, 40);
-      const showDrizzle = p >= 75;
-      const drizzles = showDrizzle ? [
-        drizzleStream(cx - 26, drizzleY, drizzleLen,  2.5, 1.8, '#1a0800', 2.8, 0.82),
-        drizzleStream(cx - 10, drizzleY, drizzleLen, -2.0, 2.1, '#1a0800', 2.2, 0.70),
-        drizzleStream(cx + 2,  drizzleY, drizzleLen,  3.0, 1.5, '#3a1400', 2.5, 0.78),
-        drizzleStream(cx + 18, drizzleY, drizzleLen, -1.8, 2.4, '#1a0800', 2.0, 0.68),
-        drizzleStream(cx + 30, drizzleY, drizzleLen,  2.2, 1.9, '#2a0e00', 2.4, 0.75),
-      ].join('') : '';
+      // ── Rainbow sprinkles on frosting (p >= 90) ───────────────────────────
+      const sc = ['#ff3b3b','#ff9900','#ffe033','#33cc44','#3399ff','#cc44ff','#ff66aa'];
+      const sprSVG = (p >= 90 && f3 > 0.9) ? (() => {
+        const ty = t3.by - t3.h - eH + 3;
+        const hw = t3.w / 2 - 6;
+        return [
+          [-hw*0.8, 0,  30, sc[0]], [-hw*0.4, -2, -20, sc[1]], [0, 1, 55, sc[2]],
+          [ hw*0.4, -1, -40, sc[3]], [ hw*0.8, 0,  25, sc[4]],
+          [-hw*0.6, 3,  70, sc[5]], [ hw*0.2, -3, -60, sc[6]],
+        ].map(([dx, dy, a, c]) => {
+          const x = t3.cx + dx, y = ty + dy;
+          return `<rect x="${(x-4).toFixed(1)}" y="${(y-1.2).toFixed(1)}" width="8" height="2.4" rx="1.2" fill="${c}" transform="rotate(${a},${x.toFixed(1)},${y.toFixed(1)})" opacity="0.90"/>`;
+        }).join('');
+      })() : '';
 
-      // Rainbow sprinkles — tiny rotated rects, appear at p>=90
-      const sprinkleColors = ['#ff3b3b','#ff9900','#ffe033','#33cc44','#3399ff','#cc44ff','#ff66aa'];
-      function sprinkle(x, y, angle, color) {
-        return `<rect x="${(x-5).toFixed(1)}" y="${(y-1.5).toFixed(1)}" width="10" height="3" rx="1.5" fill="${color}" transform="rotate(${angle},${x.toFixed(1)},${y.toFixed(1)})" opacity="0.92"/>`;
-      }
-      const sprinkleData = [
-        [cx-22, fillTop-3,  35, sprinkleColors[0]],
-        [cx-10, fillTop-5, -20, sprinkleColors[1]],
-        [cx,    fillTop-4,  55, sprinkleColors[2]],
-        [cx+14, fillTop-6, -40, sprinkleColors[3]],
-        [cx+26, fillTop-3,  25, sprinkleColors[4]],
-        [cx-18, fillTop-8,  70, sprinkleColors[5]],
-        [cx+8,  fillTop-9, -60, sprinkleColors[6]],
-        [cx-4,  fillTop-7,  10, sprinkleColors[0]],
-        [cx+22, fillTop-8,  80, sprinkleColors[2]],
-      ];
-      const sprinklesSVG = (p >= 90) ? sprinkleData.map(([x,y,a,c]) => sprinkle(x,y,a,c)).join('') : '';
+      // ── Candle (p >= 96) ─────────────────────────────────────────────────
+      const candleSVG = (p >= 96) ? (() => {
+        const cx3 = t3.cx, cy3 = t3.by - t3.h - eH - 2;
+        return `
+          <rect x="${(cx3-2.5).toFixed(1)}" y="${(cy3-16).toFixed(1)}" width="5" height="14" rx="2.5" fill="#f8b4d9"/>
+          <path d="M${(cx3-2.5).toFixed(1)},${(cy3-10).toFixed(1)} Q${(cx3-3.5).toFixed(1)},${(cy3-7).toFixed(1)} ${(cx3-1.5).toFixed(1)},${(cy3-4).toFixed(1)}" stroke="#f8d7ea" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.65"/>
+          <ellipse cx="${cx3}" cy="${(cy3-21).toFixed(1)}" rx="3.5" ry="5.5" fill="#ffb700" opacity="0.92"/>
+          <ellipse cx="${cx3}" cy="${(cy3-20).toFixed(1)}" rx="2"   ry="3.5" fill="#fff0a0" opacity="0.88"/>
+          <ellipse cx="${cx3}" cy="${(cy3-20.5).toFixed(1)}" rx="1" ry="2"   fill="#ffffff" opacity="0.72"/>`;
+      })() : '';
 
-      // Birthday candle — appears at p=100, sits above rim (no clip needed)
-      const candleSVG = (p >= 100) ? `
-        <rect x="${(cx-2).toFixed(1)}" y="${(fillTop-18).toFixed(1)}" width="4" height="14" rx="2" fill="#f5c2e0"/>
-        <ellipse cx="${cx.toFixed(1)}" cy="${(fillTop-19).toFixed(1)}" rx="3" ry="4.5" fill="#ffe066" opacity="0.92"/>
-        <ellipse cx="${cx.toFixed(1)}" cy="${(fillTop-20.5).toFixed(1)}" rx="1.5" ry="2.5" fill="#fff7aa" opacity="0.75"/>
-      ` : '';
-
-      // Gold drizzle — thin accent lines on the top cream, appear at p>=88
-      const goldDrizzleSVG = (p >= 88) ? `
-        <path d="M ${(cx-28).toFixed(1)},${(fillTop+1).toFixed(1)} Q ${cx.toFixed(1)},${(fillTop-2).toFixed(1)} ${(cx+28).toFixed(1)},${(fillTop+1).toFixed(1)}"
-          stroke="#d4a000" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.70"/>
-        <path d="M ${(cx-20).toFixed(1)},${(fillTop+3).toFixed(1)} Q ${(cx+8).toFixed(1)},${(fillTop+0.5).toFixed(1)} ${(cx+24).toFixed(1)},${(fillTop+3.5).toFixed(1)}"
-          stroke="#c89000" stroke-width="0.9" fill="none" stroke-linecap="round" opacity="0.55"/>
-      ` : '';
-
-      const cupWallPath  = `M ${CX},${CTY} L ${CX+CW},${CTY} L ${CX+CW-8},${CBY} L ${CX+8},${CBY} Z`;
-      const rimPath      = `M ${CX-2},${CTY} L ${CX+CW+2},${CTY}`;
-      const rimHighlight = `M ${CX},${CTY+2} L ${CX+CW},${CTY+2}`;
-      const cupC = d.cupTint || '#c09050';
+      // ── Plate ─────────────────────────────────────────────────────────────
+      const plateSVG = `
+        <ellipse cx="60" cy="${plateY}" rx="44" ry="7" fill="#e8ddd0" opacity="0.9"/>
+        <ellipse cx="60" cy="${plateY}" rx="44" ry="7" fill="none" stroke="#c4a882" stroke-width="1" opacity="0.6"/>`;
 
       return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" overflow="visible">
-        <defs>
-          <clipPath id="${clipId}">
-            <path d="M ${CX},${CTY} L ${CX+CW},${CTY} L ${CX+CW-8},${CBY} L ${CX+8},${CBY} Z"/>
-          </clipPath>
-          <linearGradient id="${gradId}" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"   stop-color="${cupC}" stop-opacity="0.22"/>
-            <stop offset="50%"  stop-color="${cupC}" stop-opacity="0.06"/>
-            <stop offset="100%" stop-color="${cupC}" stop-opacity="0.28"/>
-          </linearGradient>
-          <linearGradient id="${shimId}" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stop-color="rgba(255,255,255,0.18)"/>
-            <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-          </linearGradient>
-        </defs>
-        <!-- Cup wall base -->
-        <path d="${cupWallPath}" fill="rgba(245,235,215,0.15)" stroke="${cupC}" stroke-width="1.5"/>
-        <!-- Cake layers (clipped inside cup) -->
-        ${showLayers ? `<g clip-path="url(#${clipId})">
-          <path d="${layerPath(layer1Top, CBY)}"    fill="#1c0900"/>
-          <path d="${layerPath(cream1Top, layer1Top)}" fill="#f5f0e8"/>
-          <path d="${layerPath(layer2Top, cream1Top)}" fill="#2a0e04"/>
-          <path d="${layerPath(cream2Top, layer2Top)}" fill="#f8f4ee"/>
-          <path d="${layerPath(layer3Top, cream2Top)}" fill="#1a0800"/>
-          <line x1="${lx(cream1Top).toFixed(1)}" y1="${cream1Top.toFixed(1)}" x2="${rx(cream1Top).toFixed(1)}" y2="${cream1Top.toFixed(1)}" stroke="rgba(255,255,255,0.35)" stroke-width="0.8"/>
-          <line x1="${lx(cream2Top).toFixed(1)}" y1="${cream2Top.toFixed(1)}" x2="${rx(cream2Top).toFixed(1)}" y2="${cream2Top.toFixed(1)}" stroke="rgba(255,255,255,0.35)" stroke-width="0.8"/>
-        </g>` : ''}
-        <!-- Chocolate drizzle (clipped) -->
-        ${showDrizzle ? `<g clip-path="url(#${clipId})">${drizzles}</g>` : ''}
-        <!-- Gold drizzle (clipped) -->
-        ${goldDrizzleSVG ? `<g clip-path="url(#${clipId})">${goldDrizzleSVG}</g>` : ''}
-        <!-- Cup wall shading overlay -->
-        <path d="${cupWallPath}" fill="url(#${gradId})"/>
-        <path d="M ${CX+4},${CTY+4} L ${CX+4},${CBY-10}" stroke="url(#${shimId})" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
-        <!-- Rainbow sprinkles (clipped) -->
-        ${sprinklesSVG ? `<g clip-path="url(#${clipId})">${sprinklesSVG}</g>` : ''}
-        <!-- Candle (above rim, no clip) -->
+        <!-- Plate -->
+        ${plateSVG}
+        <!-- Tier 1 — bottom (widest) -->
+        ${tier1SVG}
+        <!-- Tier 1 drizzle -->
+        ${drizzle1}
+        <!-- Tier 2 — middle -->
+        ${tier2SVG}
+        <!-- Tier 2 drizzle -->
+        ${drizzle2}
+        <!-- Tier 3 — top (narrowest) -->
+        ${tier3SVG}
+        <!-- Tier 3 drizzle -->
+        ${drizzle3}
+        <!-- Cream frosting on top -->
+        ${frostSVG}
+        <!-- Chocolate curls -->
+        ${curlSVG}
+        <!-- Sprinkles -->
+        ${sprSVG}
+        <!-- Candle -->
         ${candleSVG}
-        <!-- Rim -->
-        <path d="${rimPath}"      stroke="${cupC}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-        <path d="${rimHighlight}" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
       </svg>`;
     }
+
 
     // Cup geometry — sized to fit inside shop card
     const W = 100, H = 130;
@@ -2300,12 +2551,22 @@ const DrinkModule = (function () {
       }
     }
 
-    // ---- Chocolate drizzle (mocha + hot chocolate) ----
-    const drizzleSVG = (d.chocDrizzle && p >= 90) ? `
-      <path d="M${CX+22},${fillY-4} Q${CX+34},${fillY+3} ${CX+46},${fillY-2} Q${CX+58},${fillY+4} ${CX+70},${fillY-1}"
-        stroke="#3d1200" stroke-width="2.2" fill="none" stroke-linecap="round" opacity="0.75"/>
-      <path d="M${CX+28},${fillY+2} Q${CX+42},${fillY-3} ${CX+62},${fillY+2}"
-        stroke="#3d1200" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.55"/>` : '';
+    // ---- Chocolate drizzle — organic wall-running streams (mocha + hot choc) ----
+    const shopClipId  = `sc_clip_${uid}`;
+    const shopClipDef = `<clipPath id="${shopClipId}"><path d="M ${CX},${CTY} L ${CX+CW},${CTY} L ${CX+CW-8},${CBY} L ${CX+8},${CBY} Z"/></clipPath>`;
+    const drizzleSVG = (d.chocDrizzle && p >= 90) ? (() => {
+      const clr = '#2a0d00';
+      const dropH = Math.min((CBY - fillY) * 0.85, 70);
+      const streams = [
+        { x0: CX+8,       y0: fillY-2, color: clr, width: 3.0, len: dropH*0.88, wobX:  4 },
+        { x0: CX+20,      y0: fillY-1, color: clr, width: 1.8, len: dropH*0.62, wobX:  7 },
+        { x0: CX+CW/2-4,  y0: fillY-3, color: clr, width: 2.6, len: dropH*0.78, wobX: -4 },
+        { x0: CX+CW/2+10, y0: fillY-1, color: clr, width: 1.5, len: dropH*0.52, wobX:  5 },
+        { x0: CX+CW-18,   y0: fillY-2, color: clr, width: 2.8, len: dropH*0.82, wobX: -5 },
+        { x0: CX+CW-6,    y0: fillY,   color: clr, width: 1.3, len: dropH*0.48, wobX: -8 },
+      ];
+      return buildOrgDrizzle(streams, shopClipId, 0.80);
+    })() : '';
 
     // ---- Petal flecks (cherry blossom) ----
     const petalSVG = (d.petalFlecks && p >= 90) ? `
@@ -2331,6 +2592,7 @@ const DrinkModule = (function () {
     // we must not call here (would corrupt the active session cup).
 
     return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+      <defs>${shopClipDef}</defs>
       ${liquidSVG}
       ${iceSVG}
       ${bobasSVG}
