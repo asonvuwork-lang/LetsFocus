@@ -5,6 +5,10 @@ const TourModule = (function () {
 
   const STORAGE_KEY = 'letsfocus_tour_done';
 
+  // NOTE: beforeShow callbacks are defined as functions here so they can
+  // call switchTab() which is declared later in this same IIFE scope.
+  // Steps use lazy evaluation — beforeShow is called at runtime, not parse time.
+
   const STEPS = [
     // ── 1. Welcome ─────────────────────────────────────────────────────────────
     {
@@ -39,16 +43,16 @@ const TourModule = (function () {
     // ── 3. List vs Board views ─────────────────────────────────────────────────
     {
       tab: 'goals',
-      target: '#goalList',
+      target: '#viewListBtn',
       title: '☰ List & 📋 Board Views',
-      text: 'Toggle between two views using the buttons above your goal list.',
+      text: 'Toggle between two views using these buttons above your goal list.',
       bullets: [
         '☰ List view — compact, sortable, filterable, drag-to-reorder',
         '📋 Board view — goals become sticky bills on a corkboard',
         '🎨 Bill colour matches the goal\'s category',
         '✓ Double-click a bill to mark it done; completed bills get a green stamp',
       ],
-      position: 'center',
+      position: 'bottom',
       beforeShow() {
         document.getElementById('viewListBtn')?.click();
       },
@@ -88,12 +92,12 @@ const TourModule = (function () {
       tab: 'goals',
       target: '#coffeeCup',
       title: '🥤 Your Drink (or Cake!) Fills Up',
-      text: 'During a session the drink fills from 0 % to 100 % as time ticks down. Special drinks reveal themselves in unique ways!',
+      text: 'During a session the drink fills from 0% to 100% as time ticks down. Special drinks reveal themselves in unique ways!',
       bullets: [
         '🎨 Drink type matches your goal\'s category (Study → Matcha, Work → Coffee…)',
         '⟳ Swap drink anytime without stopping the timer',
         '🎂 Unlock the code-exclusive Birthday Cake for a legendary 3-tier chocolate ganache experience',
-        '✨ Hit 100 % — sparkle celebration animation fires',
+        '✨ Hit 100% — sparkle celebration animation fires',
       ],
       position: 'left',
     },
@@ -116,16 +120,16 @@ const TourModule = (function () {
     // ── 8. Shop page — rolling for drinks ──────────────────────────────────────
     {
       tab: null,
-      target: null,
-      title: '🛒 The Shop — Roll for Drinks',
-      text: 'Spend your beans here to roll for new collectible drinks and equipment upgrades.',
+      target: '#shopTabContent',
+      title: '🛒 The Shop — Today\'s Specials & Mystery Brews',
+      text: 'Spend your beans here. The shop has two sections — daily deals and a gacha roll system.',
       bullets: [
-        '🎰 Single roll costs 30 beans · 10× roll costs 250 (50 beans saved!)',
-        '🌟 Drinks come in 5 rarities: Common → Uncommon → Rare → Epic → Legendary',
-        '🔧 Equipment unlocks higher-tier recipe stages for your drinks',
-        '🔁 Duplicate drinks refund 5 beans automatically',
+        '🎲 4 daily slots refresh every midnight UTC — drinks & equipment at fixed prices',
+        '💎 Rarity tiers: Common → Uncommon → Rare → Epic → Legendary',
+        '🎰 Mystery Brews — roll ×1 for 30 beans or ×10 for 250 beans (50 saved!)',
+        '🔧 Equipment unlocks higher Signature & Mastercraft recipe stages for your drinks',
       ],
-      position: 'center',
+      position: 'top',
       beforeShow() {
         const mainPage = document.getElementById('mainPage');
         const shopPage = document.getElementById('shopPage');
@@ -142,22 +146,22 @@ const TourModule = (function () {
       tab: 'collection',
       target: '#tab-collection',
       title: '🍵 My Collection',
-      text: 'Every drink you\'ve unlocked lives here — organised by rarity tier.',
+      text: 'Every drink you\'ve unlocked lives here — organised by rarity tier on wooden shelves.',
       bullets: [
         '🟤 Common → 🟢 Uncommon → 🔵 Rare → 🟣 Epic → 🌟 Legendary',
         '27 drinks to collect across the whole game',
-        '🔒 Locked drinks show as silhouettes — a hint of what\'s waiting',
+        '🔒 Locked drinks show as ??? silhouettes — a hint of what\'s waiting',
         '👑 Each drink has 3 recipe stages: House → Signature → Mastercraft',
       ],
-      position: 'center',
+      position: 'top',
       beforeShow() {
-        // Close shop page if it was open from the previous step
         const mainPage = document.getElementById('mainPage');
         const shopPage = document.getElementById('shopPage');
         if (shopPage && !shopPage.classList.contains('hidden')) {
           shopPage.classList.add('hidden');
           mainPage?.classList.remove('hidden');
         }
+        switchTab('collection');
       },
     },
 
@@ -173,7 +177,10 @@ const TourModule = (function () {
         '⚠️ Streak 1→2: −5 XP · Streak 5+: −35 XP per overdue goal',
         '💪 Completing a late goal still earns 50% Redemption XP',
       ],
-      position: 'center',
+      position: 'top',
+      beforeShow() {
+        switchTab('deadlines');
+      },
     },
 
     // ── 11. Stats & XP ─────────────────────────────────────────────────────────
@@ -188,7 +195,10 @@ const TourModule = (function () {
         '📈 7-day bar chart of daily focus time',
         '☕ Drink Shelf — every completed session adds a mini cup to your wall',
       ],
-      position: 'center',
+      position: 'top',
+      beforeShow() {
+        switchTab('stats');
+      },
     },
 
     // ── 12. Achievements ───────────────────────────────────────────────────────
@@ -196,14 +206,17 @@ const TourModule = (function () {
       tab: 'achievements',
       target: '#tab-achievements',
       title: '🏅 Achievements',
-      text: '30 achievements across 6 categories. Each one you unlock gives +30 bonus XP.',
+      text: '30 achievements across 6 categories. Each one you unlock gives bonus XP and beans.',
       bullets: [
         '🔥 Streak — 3, 7, 14, 30-day focus streaks',
         '⏱ Focus Time — 1h, 5h, 10h, 25h total focused',
         '🍅 Pomodoro — first cycle, 10 cycles, 50 cycles',
         '⏰ Deadlines — complete goals on time, recover from overdue streaks',
       ],
-      position: 'center',
+      position: 'top',
+      beforeShow() {
+        switchTab('achievements');
+      },
     },
 
     // ── 13. Categories ─────────────────────────────────────────────────────────
@@ -218,7 +231,10 @@ const TourModule = (function () {
         '6 defaults (Study, Work, Fitness, Creative, Personal, Other) — add your own',
         '🔍 Filter your goal list by one or more categories at once',
       ],
-      position: 'center',
+      position: 'top',
+      beforeShow() {
+        switchTab('categories');
+      },
     },
 
     // ── 14. Music & Sounds ─────────────────────────────────────────────────────
@@ -233,7 +249,10 @@ const TourModule = (function () {
         '🌲 Forest — forest + wind + fireplace',
         '🎧 Deep Work — AC hum + keyboard + soft rain',
       ],
-      position: 'center',
+      position: 'top',
+      beforeShow() {
+        switchTab('music');
+      },
     },
 
     // ── 15. Help button / finish ────────────────────────────────────────────────
@@ -249,13 +268,14 @@ const TourModule = (function () {
         'Click any HH / MM / SS digit — edit inline',
       ],
       position: 'bottom',
+      beforeShow() {
+        switchTab('goals');
+      },
     },
   ];
 
   let currentStep = 0;
   let overlay = null;
-  let spotlight = null;
-  let tooltip = null;
 
   function shouldAutoLaunch() {
     return !localStorage.getItem(STORAGE_KEY);
@@ -280,12 +300,8 @@ const TourModule = (function () {
   function buildOverlay() {
     overlay = document.createElement('div');
     overlay.id = 'tourOverlay';
-    overlay.style.cssText = `
-      position:fixed;inset:0;z-index:30000;pointer-events:none;
-      transition:all 0.3s ease;
-    `;
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:30000;pointer-events:none;';
 
-    // Dark backdrop (4 rects around spotlight)
     overlay.innerHTML = `
       <div id="tourBackdropTop"    class="tour-backdrop-piece"></div>
       <div id="tourBackdropBottom" class="tour-backdrop-piece"></div>
@@ -309,17 +325,19 @@ const TourModule = (function () {
 
     document.body.appendChild(overlay);
 
-    // Make buttons pointer-events active
+    // Tooltip is interactive
     overlay.querySelector('#tourTooltip').style.pointerEvents = 'all';
 
     overlay.querySelector('#tourSkip').addEventListener('click', stop);
-    overlay.querySelector('#tourPrev').addEventListener('click', () => { if (currentStep > 0) showStep(currentStep - 1); });
+    overlay.querySelector('#tourPrev').addEventListener('click', () => {
+      if (currentStep > 0) showStep(currentStep - 1);
+    });
     overlay.querySelector('#tourNext').addEventListener('click', () => {
       if (currentStep < STEPS.length - 1) showStep(currentStep + 1);
       else stop();
     });
 
-    // Dots
+    // Progress dots
     const dotsEl = overlay.querySelector('#tourDots');
     STEPS.forEach((_, i) => {
       const dot = document.createElement('div');
@@ -338,98 +356,168 @@ const TourModule = (function () {
     currentStep = idx;
     const step = STEPS[idx];
 
-    // Run beforeShow action BEFORE switching tab / positioning
+    // Run beforeShow FIRST — may navigate pages / switch tabs
     if (typeof step.beforeShow === 'function') step.beforeShow();
 
+    // Then switch tab if specified and beforeShow didn't already handle it
     if (step.tab) switchTab(step.tab);
 
+    // Update tooltip content
     overlay.querySelector('#tourStepCounter').textContent = `${idx + 1} / ${STEPS.length}`;
     overlay.querySelector('#tourTitle').textContent = step.title;
     overlay.querySelector('#tourText').textContent = step.text;
 
     // Bullets
     const bulletsEl = overlay.querySelector('#tourBullets');
-    if (bulletsEl) {
-      bulletsEl.innerHTML = '';
-      if (step.bullets && step.bullets.length) {
-        bulletsEl.style.display = 'block';
-        step.bullets.forEach(b => {
-          const li = document.createElement('li');
-          li.className = 'tour-bullet';
-          li.textContent = b;
-          bulletsEl.appendChild(li);
-        });
-      } else {
-        bulletsEl.style.display = 'none';
-      }
+    bulletsEl.innerHTML = '';
+    if (step.bullets && step.bullets.length) {
+      bulletsEl.style.display = 'block';
+      step.bullets.forEach(b => {
+        const li = document.createElement('li');
+        li.className = 'tour-bullet';
+        li.textContent = b;
+        bulletsEl.appendChild(li);
+      });
+    } else {
+      bulletsEl.style.display = 'none';
     }
 
-    overlay.querySelectorAll('.tour-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+    // Update dots and buttons
+    overlay.querySelectorAll('.tour-dot').forEach((d, i) =>
+      d.classList.toggle('active', i === idx)
+    );
     overlay.querySelector('#tourPrev').style.visibility = idx === 0 ? 'hidden' : 'visible';
-    overlay.querySelector('#tourNext').textContent = idx === STEPS.length - 1 ? 'Finish ✓' : 'Next →';
-    // Give extra delay when beforeShow navigates pages (shop step needs layout time)
-    const delay = step.beforeShow ? 420 : (step.tab ? 200 : 0);
+    overlay.querySelector('#tourNext').textContent =
+      idx === STEPS.length - 1 ? 'Finish ✓' : 'Next →';
+
+    // Delay before positioning: give layout time to settle
+    // beforeShow steps (page nav / tab switch) need more time
+    const delay = step.beforeShow ? 500 : (step.tab ? 300 : 50);
     setTimeout(() => positionSpotlight(step), delay);
   }
 
   function positionSpotlight(step) {
-    // null target or center position → centre spotlight (large circle in middle of screen)
-    const el = (step.position === 'center' || !step.target) ? null : document.querySelector(step.target);
-    const pad = 10;
-    let rect;
+    const pad = 12;
+    let el = null;
 
+    if (step.target && step.position !== 'center') {
+      el = document.querySelector(step.target);
+    }
+
+    // Zero-rect guard: treat hidden / zero-size elements as not found
     if (el) {
-      rect = el.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) {
+        el = null;
+      }
+    }
+
+    let rect;
+    if (el) {
+      const r = el.getBoundingClientRect();
       rect = {
-        top:    rect.top    - pad,
-        left:   rect.left   - pad,
-        right:  rect.right  + pad,
-        bottom: rect.bottom + pad,
-        width:  rect.width  + pad * 2,
-        height: rect.height + pad * 2,
+        top:    r.top    - pad,
+        left:   r.left   - pad,
+        right:  r.right  + pad,
+        bottom: r.bottom + pad,
+        width:  r.width  + pad * 2,
+        height: r.height + pad * 2,
       };
     } else {
-      // Center spotlight — large circle in middle
-      const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
-      const r = 160;
-      rect = { top: cy - r, left: cx - r, right: cx + r, bottom: cy + r, width: r*2, height: r*2 };
+      // Centred fallback — large spotlight in middle of screen
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      const r  = 180;
+      rect = {
+        top: cy - r, left: cx - r,
+        right: cx + r, bottom: cy + r,
+        width: r * 2, height: r * 2,
+      };
     }
 
-    const W = window.innerWidth, H = window.innerHeight;
+    const W = window.innerWidth;
+    const H = window.innerHeight;
 
-    // Position backdrop pieces
-    setStyle('tourBackdropTop',    `left:0;top:0;width:${W}px;height:${Math.max(0,rect.top)}px;`);
-    setStyle('tourBackdropBottom', `left:0;top:${rect.bottom}px;width:${W}px;height:${Math.max(0,H-rect.bottom)}px;`);
-    setStyle('tourBackdropLeft',   `left:0;top:${rect.top}px;width:${Math.max(0,rect.left)}px;height:${rect.height}px;`);
-    setStyle('tourBackdropRight',  `left:${rect.right}px;top:${rect.top}px;width:${Math.max(0,W-rect.right)}px;height:${rect.height}px;`);
+    // Clamp rect so backdrop pieces never go negative
+    const rTop    = Math.max(0, rect.top);
+    const rLeft   = Math.max(0, rect.left);
+    const rRight  = Math.min(W, rect.right);
+    const rBottom = Math.min(H, rect.bottom);
 
-    // Position tooltip
-    const tip = overlay.querySelector('#tourTooltip');
-    const tipW = 360, tipH = 280;
+    setStyle('tourBackdropTop',
+      `left:0;top:0;width:${W}px;height:${rTop}px;`);
+    setStyle('tourBackdropBottom',
+      `left:0;top:${rBottom}px;width:${W}px;height:${Math.max(0, H - rBottom)}px;`);
+    setStyle('tourBackdropLeft',
+      `left:0;top:${rTop}px;width:${rLeft}px;height:${rBottom - rTop}px;`);
+    setStyle('tourBackdropRight',
+      `left:${rRight}px;top:${rTop}px;width:${Math.max(0, W - rRight)}px;height:${rBottom - rTop}px;`);
+
+    // ── Tooltip positioning ──────────────────────────────────────────────────
+    const tip  = overlay.querySelector('#tourTooltip');
+    const tipW = 380;
+    const tipH = tip.offsetHeight || 300;
+
     let tx, ty;
+    const pos = step.position || 'bottom';
 
-    if (step.position === 'bottom' || rect.bottom + tipH + 16 < H) {
-      ty = rect.bottom + 12;
+    if (pos === 'center') {
+      tx = Math.max(12, (W - tipW) / 2);
+      ty = Math.max(12, (H - tipH) / 2 + 60);
+    } else if (pos === 'top') {
+      // Tooltip above the spotlight
+      ty = Math.max(12, rTop - tipH - 16);
+      tx = Math.max(12, Math.min(rLeft + (rRight - rLeft) / 2 - tipW / 2, W - tipW - 12));
+      // If not enough room above, put it below
+      if (ty < 12) {
+        ty = rBottom + 12;
+      }
+    } else if (pos === 'bottom') {
+      ty = rBottom + 12;
+      tx = Math.max(12, Math.min(rLeft + (rRight - rLeft) / 2 - tipW / 2, W - tipW - 12));
+      // If not enough room below, put it above
+      if (ty + tipH > H - 12) {
+        ty = Math.max(12, rTop - tipH - 16);
+      }
+    } else if (pos === 'left') {
+      tx = Math.max(12, rLeft - tipW - 16);
+      ty = Math.max(12, Math.min(rTop + (rBottom - rTop) / 2 - tipH / 2, H - tipH - 12));
+      // If not enough room to the left, flip right
+      if (tx < 12) {
+        tx = rRight + 12;
+      }
+    } else if (pos === 'right') {
+      tx = rRight + 12;
+      ty = Math.max(12, Math.min(rTop + (rBottom - rTop) / 2 - tipH / 2, H - tipH - 12));
+      if (tx + tipW > W - 12) {
+        tx = Math.max(12, rLeft - tipW - 16);
+      }
     } else {
-      ty = rect.top - tipH - 12;
+      // Default: below
+      ty = rBottom + 12;
+      tx = Math.max(12, Math.min(rLeft + (rRight - rLeft) / 2 - tipW / 2, W - tipW - 12));
     }
-    if (step.position === 'left') {
-      tx = rect.left - tipW - 12;
-    } else {
-      tx = Math.max(12, Math.min(rect.left + rect.width / 2 - tipW / 2, W - tipW - 12));
-    }
+
+    // Final clamp to keep tooltip on screen
+    tx = Math.max(12, Math.min(tx, W - tipW - 12));
     ty = Math.max(12, Math.min(ty, H - tipH - 12));
 
-    tip.style.left = tx + 'px';
-    tip.style.top  = ty + 'px';
+    tip.style.left  = tx + 'px';
+    tip.style.top   = ty + 'px';
+    tip.style.width = tipW + 'px';
 
-    // Scroll target into view
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Scroll target into view if needed
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }
 
   function setStyle(id, css) {
-    const el = overlay.querySelector('#' + id);
-    if (el) el.style.cssText = 'position:fixed;background:rgba(20,10,5,0.72);transition:all 0.3s ease;pointer-events:all;' + css;
+    const el = overlay && overlay.querySelector('#' + id);
+    if (el) {
+      el.style.cssText =
+        'position:fixed;background:rgba(20,10,5,0.72);transition:all 0.25s ease;pointer-events:all;' + css;
+    }
   }
 
   function init() {
