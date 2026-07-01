@@ -85,7 +85,6 @@ function triggerCelebration() {
   showCoffeeShopClosing();
 }
 
-// Delegate to TimerModule's canonical chime — no duplicate implementation
 function playCompletionChime() {
   if (typeof TimerModule !== 'undefined' && TimerModule.playChime) {
     TimerModule.playChime();
@@ -285,7 +284,6 @@ function showCoffeeShopClosing() {
       const log = JSON.parse(localStorage.getItem('letsfocus_session_notes') || '[]');
       log.unshift({ text, date: new Date().toISOString() });
       localStorage.setItem('letsfocus_session_notes', JSON.stringify(log.slice(0, 100)));
-      // Also save to Supabase if signed in
       if (typeof SupabaseModule !== 'undefined' && SupabaseModule.uid()) {
         SupabaseModule.saveSessionNote(text);
       }
@@ -328,11 +326,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const quoteEl = document.getElementById('inspirationalQuote');
   if (quoteEl) quoteEl.textContent = quotes[Math.floor(Math.random() * quotes.length)];
 
-  // Auth init — this gates the rest of the app
+  // Auth init
   if (typeof AuthModule !== 'undefined') {
     AuthModule.init();
   } else {
-    // Fallback: no auth, boot directly
     document.dispatchEvent(new CustomEvent('letsfocus:ready'));
   }
 });
@@ -405,9 +402,6 @@ document.addEventListener('letsfocus:ready', function() {
     if (typeof TourModule !== 'undefined') TourModule.start(0);
   });
 
-  // ---- Inline Templates button ----
-  // Wired by TemplatesModule.init() — no duplicate listener needed here
-
   // ---- Goal Settings Gear (Export/Import) ----
   document.getElementById('goalSettingsBtn')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -458,7 +452,6 @@ document.addEventListener('letsfocus:ready', function() {
       showCustomAlert('❌ Invalid backup file. Please check the file and try again.');
     }
     e.target.value = '';
-    e.target.value = '';
   });
 
   // ---- Daily Quote ----
@@ -498,7 +491,6 @@ document.addEventListener('letsfocus:ready', function() {
   }
   loadDailyQuote();
 
-
   // ---- Bootstrap all modules ----
   CategoriesModule.init();
   GoalsModule.init();
@@ -528,6 +520,7 @@ document.addEventListener('letsfocus:ready', function() {
     _lBtn?.classList.add('active');
     _bBtn?.classList.remove('active');
   }
+
   function showBoardView() {
     if (!_lView || !_bView) return;
     _bView.classList.remove('goal-view-hidden');
@@ -535,7 +528,10 @@ document.addEventListener('letsfocus:ready', function() {
     _bBtn?.classList.add('active');
     _lBtn?.classList.remove('active');
     if (typeof DrinkModule !== 'undefined') DrinkModule.renderBillBoard();
+    // Apply priority outlines to bill squares after board renders
+    if (typeof GoalsModule !== 'undefined') GoalsModule.applyPriorityOutlinesToBoard();
   }
+
   _lBtn?.addEventListener('click', showListView);
   _bBtn?.addEventListener('click', showBoardView);
 
@@ -557,9 +553,6 @@ document.addEventListener('letsfocus:ready', function() {
 // ============================================================
 // FIRST-VISIT MANUAL
 // ============================================================
-// showManual() removed — TourModule (script-tour.js) handles all onboarding.
-// The ? helpBtn in header calls TourModule.start(0).
-// Migrate any users who had letsfocus_visited set but not letsfocus_tour_done.
 (function migrateOldTourKey() {
   if (localStorage.getItem('letsfocus_visited') && !localStorage.getItem('letsfocus_tour_done')) {
     localStorage.setItem('letsfocus_tour_done', '1');

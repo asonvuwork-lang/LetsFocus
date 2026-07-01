@@ -5,7 +5,6 @@
 const GoalsModule = (function() {
 
   let goals = JSON.parse(localStorage.getItem('goals')) || [];
-  // categories now stored in CategoriesModule; keep local list as names only for legacy
   let selectedCategory = null;
   let selectedGoalId = null;
   let selectedParentId = null;
@@ -15,10 +14,59 @@ const GoalsModule = (function() {
   let completionFilter = null;
   let noDeadlineFilter = false;
 
+  // ---- Deadlines tab view state ----
+  let deadlinesView = 'list'; // 'list' | 'column'
+
+  // ---- Priority constants ----
+  const PRIORITIES = {
+    crucial:    { label: 'Crucial',     color: '#ef4444', soft: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.55)',   outline: '#ef4444' },
+    upcoming:   { label: 'Upcoming',    color: '#f59e0b', soft: 'rgba(245,158,11,0.10)',  border: 'rgba(245,158,11,0.50)',  outline: '#f59e0b' },
+    interested: { label: 'Interested',  color: '#3b82f6', soft: 'rgba(59,130,246,0.09)',  border: 'rgba(59,130,246,0.40)',  outline: '#60a5fa' },
+    someday:    { label: 'Someday',     color: '#6b7280', soft: 'rgba(107,114,128,0.08)', border: 'rgba(107,114,128,0.35)', outline: '#9ca3af' },
+  };
+  const PRIORITY_ORDER = ['crucial', 'upcoming', 'interested', 'someday'];
+
+  // ---- Early-shift config ----
+  const EARLY_SHIFT_KEY = 'letsfocus_early_shift';
+  function loadEarlyShift() {
+    try { return JSON.parse(localStorage.getItem(EARLY_SHIFT_KEY) || 'null'); } catch(e) { return null; }
+  }
+  function saveEarlyShift(cfg) {
+    localStorage.setItem(EARLY_SHIFT_KEY, JSON.stringify(cfg));
+  }
+
+  // Returns the DISPLAY deadline for a goal (shifted if applicable), never mutates goal.deadline
+  function getDisplayDeadline(goal) {
+    if (!goal.deadline) return null;
+    const cfg = loadEarlyShift();
+    if (!cfg || !cfg.enabled) return goal.deadline;
+
+    // Only shift if:
+    //  1. Goal category is in the selected categories (or categories list is empty = all)
+    //  2. Deadline is > 7 days from today
+    //  3. The config was set at least 1 day ago
+    const today = new Date(); today.setHours(0,0,0,0);
+    const configuredDate = new Date(cfg.configuredAt + 'T00:00:00');
+    const dayAfterConfig = new Date(configuredDate); dayAfterConfig.setDate(dayAfterConfig.getDate() + 1);
+    if (today < dayAfterConfig) return goal.deadline; // not yet active
+
+    const dl = new Date(goal.deadline + 'T00:00:00');
+    const daysAway = Math.round((dl - today) / 86400000);
+    if (daysAway <= 7) return goal.deadline; // too close — don't shift
+
+    const catMatch = !cfg.categories || cfg.categories.length === 0 ||
+      (goal.category && cfg.categories.includes(goal.category));
+    if (!catMatch) return goal.deadline;
+
+    // Shift by cfg.days (1 or 2)
+    const shifted = new Date(dl);
+    shifted.setDate(shifted.getDate() - (cfg.days || 1));
+    return shifted.toISOString().slice(0, 10);
+  }
+
   function saveData() {
     localStorage.setItem('goals', JSON.stringify(goals));
     document.dispatchEvent(new CustomEvent('letsfocus:datasave', { detail: { key: 'goals' } }));
-    // Keep bill board in sync
     if (typeof DrinkModule !== 'undefined') setTimeout(() => DrinkModule.renderBillBoard(), 50);
   }
 
@@ -33,7 +81,6 @@ const GoalsModule = (function() {
     return '#8a6a5a';
   }
 
-  // ---- Recurring goals — check & reset at day/week boundary ----
   function checkRecurringGoals() {
     const now = new Date();
     const todayKey = now.toISOString().slice(0, 10);
@@ -75,7 +122,7 @@ const GoalsModule = (function() {
   }
 
   function addGoalProgrammatic(text, category) {
-    goals.push({ id: Date.now() + Math.random(), text, category: category || null, completed: false, subgoals: [], deadline: null });
+    goals.push({ id: Date.now() + Math.random(), text, category: category || null, completed: false, subgoals: [], deadline: null, priority: null });
     saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab();
   }
 
@@ -85,7 +132,7 @@ const GoalsModule = (function() {
     return Math.round((goals.filter(g => g.completed).length / goals.length) * 100);
   }
 
-  // ---- Deadline urgency helpers ----
+  // ---- Deadline urgency helpers (use display deadline) ----
   function getDeadlineUrgency(deadline) {
     if (!deadline) return null;
     const today = new Date(); today.setHours(0,0,0,0);
@@ -114,6 +161,14 @@ const GoalsModule = (function() {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
+  // ---- Priority pill renderer ----
+  function buildPriorityPill(priority) {
+    if (!priority) return '';
+    const p = PRIORITIES[priority];
+    if (!p) return '';
+    return `<span class="goal-priority-pill priority-${priority}">${p.label}</span>`;
+  }
+
   // ---- Rendering ----
   function renderGoals() {
     const container = document.getElementById('goalsContainer');
@@ -132,9 +187,11 @@ const GoalsModule = (function() {
     }
 
     filtered.forEach(goal => {
-      const urgency = getDeadlineUrgency(goal.deadline);
+      const displayDl = getDisplayDeadline(goal);
+      const urgency = getDeadlineUrgency(displayDl);
       const el = document.createElement('div');
       el.className = `goal-item ${goal.completed ? 'completed' : ''} ${selectedGoalId === goal.id ? 'selected' : ''} ${urgency && !goal.completed ? 'deadline-' + urgency : ''}`;
+      if (goal.priority && !goal.completed) el.classList.add('priority-' + goal.priority);
       el.dataset.id = goal.id;
 
       const content = document.createElement('div');
@@ -147,7 +204,6 @@ const GoalsModule = (function() {
         goal.completed = this.checked;
         if (goal.subgoals && goal.subgoals.length) goal.subgoals.forEach(sg => sg.completed = this.checked);
         if (!wasCompleted && goal.completed) {
-          // Check if overdue — compare against midnight today so same-day completions are never late
           const _today = new Date(); _today.setHours(0, 0, 0, 0);
           const isLate = goal.deadline && new Date(goal.deadline + 'T00:00:00') < _today;
           const overdueStreak = typeof XPModule !== 'undefined' ? XPModule.getOverdueStreak() : 0;
@@ -165,6 +221,13 @@ const GoalsModule = (function() {
       content.appendChild(chk);
       content.appendChild(span);
 
+      if (goal.priority) {
+        const pill = document.createElement('span');
+        pill.className = `goal-priority-pill priority-${goal.priority}`;
+        pill.textContent = PRIORITIES[goal.priority]?.label || goal.priority;
+        content.appendChild(pill);
+      }
+
       if (goal.category) {
         const catBadge = document.createElement('span');
         catBadge.className = 'goal-category';
@@ -179,7 +242,6 @@ const GoalsModule = (function() {
         content.appendChild(catBadge);
       }
 
-      // Recurring badge
       if (goal.recurring) {
         const recBadge = document.createElement('span');
         recBadge.className = 'goal-recurring-badge';
@@ -192,16 +254,14 @@ const GoalsModule = (function() {
         content.appendChild(recBadge);
       }
 
-      // Deadline badge + progress ring on the goal card
-      if (goal.deadline && !goal.completed) {
+      if (displayDl && !goal.completed) {
         const badgeWrap = document.createElement('span');
         badgeWrap.style.cssText = 'display:inline-flex;align-items:center;gap:4px;';
 
-        // Progress ring
         const ringWrap = document.createElement('span');
         ringWrap.className = 'deadline-ring-wrap';
-        const daysLeft = Math.ceil((new Date(goal.deadline + 'T00:00:00') - new Date()) / 86400000);
-        const totalDays = Math.ceil((new Date(goal.deadline + 'T00:00:00') - new Date(goal.id)) / 86400000) || 30;
+        const daysLeft = Math.ceil((new Date(displayDl + 'T00:00:00') - new Date()) / 86400000);
+        const totalDays = Math.ceil((new Date(displayDl + 'T00:00:00') - new Date(goal.id)) / 86400000) || 30;
         const pct = Math.max(0, Math.min(1, daysLeft / Math.max(totalDays, 1)));
         const r = 11, circ = 2 * Math.PI * r;
         const strokeColor = urgency === 'overdue' ? '#ef4444' : urgency === 'urgent' ? '#f97316' : urgency === 'soon' ? '#f59e0b' : '#22c55e';
@@ -217,7 +277,8 @@ const GoalsModule = (function() {
         const badge = document.createElement('span');
         badge.className = `deadline-badge deadline-badge-${urgency}`;
         badge.title = 'Click to change deadline';
-        badge.innerHTML = `📅 ${formatDeadlineDisplay(goal.deadline)} <span class="deadline-days">(${getDeadlineDaysLabel(goal.deadline)})</span>`;
+        const isShifted = displayDl !== goal.deadline;
+        badge.innerHTML = `📅 ${formatDeadlineDisplay(displayDl)}${isShifted ? ' <span class="deadline-shifted-tag" title="Shifted earlier to help you finish ahead of time">⚡</span>' : ''} <span class="deadline-days">(${getDeadlineDaysLabel(displayDl)})</span>`;
         badge.addEventListener('click', (e) => {
           e.stopPropagation();
           openInlineDeadlinePicker(goal, badge);
@@ -237,7 +298,7 @@ const GoalsModule = (function() {
       content.appendChild(del);
       el.appendChild(content);
 
-      // Inline deadline setter — add directly to content row so it stays on same line
+      // Inline deadline setter
       if (!goal.deadline && !goal.completed) {
         const setDl = document.createElement('span');
         setDl.className = `goal-set-deadline-inline ${selectedGoalId === goal.id ? '' : 'hidden'}`;
@@ -255,7 +316,26 @@ const GoalsModule = (function() {
         content.appendChild(setDl);
       }
 
-      // Recurring toggle (shown when goal is selected)
+      // Priority selector (shown when goal is selected)
+      if (!goal.completed && selectedGoalId === goal.id) {
+        const prioRow = document.createElement('div');
+        prioRow.className = 'goal-priority-row';
+        prioRow.innerHTML = `
+          <span class="goal-priority-label">🎯 Priority:</span>
+          <button class="goal-prio-btn ${!goal.priority ? 'active' : ''}" data-val="">None</button>
+          ${PRIORITY_ORDER.map(p => `<button class="goal-prio-btn prio-${p} ${goal.priority === p ? 'active' : ''}" data-val="${p}">${PRIORITIES[p].label}</button>`).join('')}
+        `;
+        prioRow.querySelectorAll('.goal-prio-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            goal.priority = btn.dataset.val || null;
+            saveData(); renderGoals();
+          });
+        });
+        el.appendChild(prioRow);
+      }
+
+      // Recurring toggle
       if (!goal.completed && selectedGoalId === goal.id) {
         const recRow = document.createElement('div');
         recRow.className = 'goal-recurring-row';
@@ -307,7 +387,7 @@ const GoalsModule = (function() {
         el.appendChild(subs);
       }
 
-      // Inline "add subgoal" — shown when goal is selected and not completed
+      // Inline add subgoal
       if (!goal.completed && selectedGoalId === goal.id) {
         const addSubRow = document.createElement('div');
         addSubRow.className = 'goal-add-subgoal-row';
@@ -337,7 +417,6 @@ const GoalsModule = (function() {
       dragHandle.title = 'Drag to reorder';
       el.insertBefore(dragHandle, el.firstChild);
 
-      // Drag-to-reorder
       el.setAttribute('draggable', 'true');
       el.addEventListener('dragstart', (e) => {
         e.dataTransfer.setData('text/plain', goal.id);
@@ -370,12 +449,30 @@ const GoalsModule = (function() {
       container.appendChild(el);
     });
 
-    // also refresh parent goal dropdown options if visible
     renderParentGoalDropdown();
   }
 
+  // ---- Bill Board (board view) with priority outlines ----
+  // This patch applies priority outline to bills via inline style on the note element.
+  // It hooks into DrinkModule.renderBillBoard via saveData triggering the timeout.
+  // We override here to inject priority borders post-render.
+  function applyPriorityOutlinesToBoard() {
+    setTimeout(() => {
+      const board = document.getElementById('billBoard');
+      if (!board) return;
+      goals.forEach(goal => {
+        if (!goal.priority) return;
+        const note = board.querySelector(`.bill-square[data-goal-id="${goal.id}"]`);
+        if (!note) return;
+        const p = PRIORITIES[goal.priority];
+        if (!p) return;
+        note.style.boxShadow = `inset 0 0 0 3px ${p.outline}, 2px 3px 8px rgba(0,0,0,0.35)`;
+        note.style.outline = 'none';
+      });
+    }, 80);
+  }
+
   function flashDeadlineCard(goalId) {
-    // Wait for deadline tab to re-render then flash
     setTimeout(() => {
       const card = document.querySelector(`.deadline-card[data-goal-id="${goalId}"]`);
       if (card) { card.classList.add('completing'); setTimeout(() => card.classList.remove('completing'), 900); }
@@ -418,9 +515,6 @@ const GoalsModule = (function() {
     return (goal.subgoals.filter(s => s.completed).length / goal.subgoals.length) * 100;
   }
 
-  // Guard: track whether we've already shown the "all done" celebration for this
-  // exact completed-state so it doesn't re-fire on every renderGoals() call.
-  // Resets automatically whenever any goal becomes incomplete or a new goal is added.
   let _allDoneCelebrated = false;
 
   function updateMainProgress() {
@@ -439,14 +533,10 @@ const GoalsModule = (function() {
     if (clearBtn) clearBtn.classList.toggle('hidden', !allDone);
 
     if (!allDone) {
-      // Reset the guard whenever goals are not all done
       _allDoneCelebrated = false;
       return;
     }
 
-    // Only fire celebration if:
-    // 1. Not already shown for this all-done state
-    // 2. User is on the goals tab (main menu), not mid-session on the timer page
     const timerPageVisible = !document.getElementById('timerPage')?.classList.contains('hidden');
     if (!_allDoneCelebrated && !timerPageVisible) {
       _allDoneCelebrated = true;
@@ -454,31 +544,47 @@ const GoalsModule = (function() {
     }
   }
 
-  // ---- Deadlines tab ----
+  // ================================================================
+  // DEADLINES TAB
+  // ================================================================
   function renderDeadlinesTab() {
     renderOverdueNotifications();
     renderUpcomingAlerts();
-    renderDeadlinesList();
+    renderDeadlinesViewContent();
   }
 
+  function renderDeadlinesViewContent() {
+    if (deadlinesView === 'column') {
+      renderDeadlinesColumn();
+    } else {
+      renderDeadlinesList();
+    }
+  }
+
+  // ---- Overdue Notifications ----
   function renderOverdueNotifications() {
     const container = document.getElementById('overdueNotifications');
     if (!container) return;
     container.innerHTML = '';
-    const overdueGoals = goals.filter(g => !g.completed && getDeadlineUrgency(g.deadline) === 'overdue');
+    const overdueGoals = goals.filter(g => {
+      if (g.completed) return false;
+      const dl = getDisplayDeadline(g);
+      return getDeadlineUrgency(dl) === 'overdue';
+    });
     if (!overdueGoals.length) return;
 
     overdueGoals.forEach(goal => {
+      const dl = getDisplayDeadline(goal);
       const card = document.createElement('div');
       card.className = 'overdue-notification-card';
       const today = new Date(); today.setHours(0,0,0,0);
-      const dl = new Date(goal.deadline + 'T00:00:00');
-      const daysOver = Math.abs(Math.round((dl - today) / (1000 * 60 * 60 * 24)));
+      const dlDate = new Date(dl + 'T00:00:00');
+      const daysOver = Math.abs(Math.round((dlDate - today) / (1000 * 60 * 60 * 24)));
       card.innerHTML = `
         <div class="overdue-icon">⏰</div>
         <div class="overdue-body">
           <div class="overdue-title">Deadline passed: <strong>${goal.text}</strong></div>
-          <div class="overdue-meta">Was due ${formatDeadlineDisplay(goal.deadline)} · ${daysOver} day${daysOver !== 1 ? 's' : ''} ago</div>
+          <div class="overdue-meta">Was due ${formatDeadlineDisplay(dl)} · ${daysOver} day${daysOver !== 1 ? 's' : ''} ago</div>
         </div>
         <div class="overdue-actions">
           <button class="overdue-btn change">📅 New Date</button>
@@ -519,13 +625,15 @@ const GoalsModule = (function() {
     dialog.querySelector('#modalDateCancel').addEventListener('click', () => document.body.removeChild(modal));
   }
 
+  // ---- Upcoming Alerts ----
   function renderUpcomingAlerts() {
     const container = document.getElementById('upcomingAlerts');
     if (!container) return;
     container.innerHTML = '';
     const alertGoals = goals.filter(g => {
       if (g.completed) return false;
-      const u = getDeadlineUrgency(g.deadline);
+      const dl = getDisplayDeadline(g);
+      const u = getDeadlineUrgency(dl);
       return u === 'urgent' || u === 'soon';
     });
     if (!alertGoals.length) return;
@@ -534,14 +642,18 @@ const GoalsModule = (function() {
     banner.className = 'upcoming-alerts-banner';
     banner.innerHTML = `<div class="upcoming-alerts-title">☕ Heads up — goals coming up soon</div>`;
     alertGoals.forEach(g => {
+      const dl = getDisplayDeadline(g);
       const row = document.createElement('div');
-      row.className = `upcoming-alert-row alert-${getDeadlineUrgency(g.deadline)}`;
-      row.innerHTML = `<span class="upcoming-alert-dot"></span><strong>${g.text}</strong><span class="upcoming-alert-when">${getDeadlineDaysLabel(g.deadline)}</span>`;
+      row.className = `upcoming-alert-row alert-${getDeadlineUrgency(dl)}`;
+      row.innerHTML = `<span class="upcoming-alert-dot"></span><strong>${g.text}</strong><span class="upcoming-alert-when">${getDeadlineDaysLabel(dl)}</span>`;
       banner.appendChild(row);
     });
     container.appendChild(banner);
   }
 
+  // ================================================================
+  // LIST VIEW — deadlines sorted closest to furthest
+  // ================================================================
   function renderDeadlinesList() {
     const container = document.getElementById('deadlinesList');
     if (!container) return;
@@ -558,48 +670,244 @@ const GoalsModule = (function() {
 
     const sorted = [...withDeadline].sort((a, b) => {
       if (a.completed !== b.completed) return a.completed ? 1 : -1;
-      return new Date(a.deadline) - new Date(b.deadline);
+      const da = getDisplayDeadline(a), db = getDisplayDeadline(b);
+      return new Date(da) - new Date(db);
     });
 
-    sorted.forEach(goal => {
-      const urgency = getDeadlineUrgency(goal.deadline);
-      const card = document.createElement('div');
-      card.className = `deadline-card ${goal.completed ? 'completed' : 'deadline-' + urgency}`;
-      card.dataset.goalId = goal.id;
+    sorted.forEach(goal => buildDeadlineCard(goal, container));
+  }
 
-      // Build overdue streak pill if applicable
-      const overdueStreak = typeof XPModule !== 'undefined' ? XPModule.getOverdueStreak() : 0;
-      const overduePill = (urgency === 'overdue' && overdueStreak > 0) ? `
-        <div class="overdue-streak-pill" title="You have ${overdueStreak} consecutive overdue goal${overdueStreak > 1 ? 's' : ''} — this reduces your XP gain">
-          🔥 ${overdueStreak} overdue streak
-          <span class="overdue-streak-xp">−${overdueStreak >= 7 ? 35 : overdueStreak >= 4 ? 20 : overdueStreak >= 2 ? 10 : 5} XP/goal</span>
-        </div>` : '';
+  // ================================================================
+  // COLUMN VIEW — 4 urgency columns
+  // ================================================================
+  function renderDeadlinesColumn() {
+    const container = document.getElementById('deadlinesList');
+    if (!container) return;
+    container.innerHTML = '';
 
-      const subCount = goal.subgoals ? goal.subgoals.length : 0;
-      const subDone = goal.subgoals ? goal.subgoals.filter(s => s.completed).length : 0;
+    const withDeadline = goals.filter(g => g.deadline);
+    const emptyEl = document.getElementById('deadlinesEmpty');
+    if (!withDeadline.length) {
+      if (emptyEl) emptyEl.classList.remove('hidden');
+      return;
+    }
+    if (emptyEl) emptyEl.classList.add('hidden');
 
-      card.innerHTML = `
-        <div class="deadline-card-left">
-          <div class="deadline-card-urgency-bar"></div>
-          <div class="deadline-card-body">
-            <div class="deadline-card-title ${goal.completed ? 'completed' : ''}">${goal.text}</div>
-            ${goal.category ? `<span class="goal-category" data-cat="${goal.category}" style="background:${getCategoryColor(goal.category)}22;color:${getCategoryColor(goal.category)};border-color:${getCategoryColor(goal.category)}55">${goal.category}</span>` : ''}
-            ${subCount ? `<div class="deadline-card-sub">${subDone}/${subCount} subtasks done</div>` : ''}
-            ${overduePill}
-          </div>
+    // Sort each column closest to furthest
+    const cols = {
+      overdue:   { label: '🔴 Overdue',   goals: [], class: 'col-overdue'  },
+      urgent:    { label: '🟠 Urgent',     goals: [], class: 'col-urgent'   },
+      soon:      { label: '🟡 Soon',       goals: [], class: 'col-soon'     },
+      safe:      { label: '🟢 On Track',   goals: [], class: 'col-safe'     },
+      completed: { label: '✅ Done',       goals: [], class: 'col-done'     },
+    };
+
+    withDeadline.forEach(goal => {
+      if (goal.completed) { cols.completed.goals.push(goal); return; }
+      const dl = getDisplayDeadline(goal);
+      const u = getDeadlineUrgency(dl) || 'safe';
+      cols[u].goals.push(goal);
+    });
+
+    // Sort each column by display deadline
+    Object.values(cols).forEach(col => {
+      col.goals.sort((a, b) => new Date(getDisplayDeadline(a)) - new Date(getDisplayDeadline(b)));
+    });
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'deadlines-column-view';
+
+    Object.entries(cols).forEach(([key, col]) => {
+      const colEl = document.createElement('div');
+      colEl.className = `dl-column ${col.class}`;
+      colEl.innerHTML = `
+        <div class="dl-column-header">
+          <span class="dl-column-title">${col.label}</span>
+          <span class="dl-column-count">${col.goals.length}</span>
         </div>
-        <div class="deadline-card-right">
-          <div class="deadline-card-date">${formatDeadlineDisplay(goal.deadline)}</div>
-          <div class="deadline-card-days deadline-days-${urgency}">${goal.completed ? '✓ Done' : getDeadlineDaysLabel(goal.deadline)}</div>
-          ${!goal.completed ? `<button class="deadline-card-edit-btn">📅 Edit</button>` : ''}
-        </div>`;
+        <div class="dl-column-body" data-col="${key}"></div>
+      `;
+      const body = colEl.querySelector('.dl-column-body');
+      if (!col.goals.length) {
+        body.innerHTML = `<div class="dl-column-empty">Nothing here ☕</div>`;
+      } else {
+        col.goals.forEach(goal => buildDeadlineCard(goal, body, true));
+      }
+      wrapper.appendChild(colEl);
+    });
 
-      card.querySelector('.deadline-card-edit-btn') && card.querySelector('.deadline-card-edit-btn').addEventListener('click', () => {
+    container.appendChild(wrapper);
+  }
+
+  // ================================================================
+  // DEADLINE CARD BUILDER (shared by list + column)
+  // ================================================================
+  function buildDeadlineCard(goal, container, compact = false) {
+    const displayDl = getDisplayDeadline(goal);
+    const urgency = goal.completed ? 'done' : (getDeadlineUrgency(displayDl) || 'safe');
+    const isShifted = displayDl && displayDl !== goal.deadline;
+
+    const card = document.createElement('div');
+    card.className = `deadline-card-v2 ${goal.completed ? 'dl-completed' : 'dl-' + urgency}${compact ? ' dl-compact' : ''}`;
+    card.dataset.goalId = goal.id;
+
+    if (goal.priority && !goal.completed) card.classList.add('dl-priority-' + goal.priority);
+
+    const overdueStreak = typeof XPModule !== 'undefined' ? XPModule.getOverdueStreak() : 0;
+    const overduePill = (urgency === 'overdue' && overdueStreak > 0) ? `
+      <div class="overdue-streak-pill" title="Overdue streak — reduces XP gain">
+        🔥 ${overdueStreak} overdue
+        <span class="overdue-streak-xp">−${overdueStreak >= 7 ? 35 : overdueStreak >= 4 ? 20 : overdueStreak >= 2 ? 10 : 5} XP</span>
+      </div>` : '';
+
+    const subCount = goal.subgoals ? goal.subgoals.length : 0;
+    const subDone  = goal.subgoals ? goal.subgoals.filter(s => s.completed).length : 0;
+    const priorityBadge = goal.priority ? `<span class="dl-priority-badge priority-${goal.priority}">${PRIORITIES[goal.priority]?.label}</span>` : '';
+
+    // Category badge
+    const catColor = getCategoryColor(goal.category);
+    const catBadge = goal.category ? `<span class="goal-category" data-cat="${goal.category}" style="background:${catColor}22;color:${catColor};border-color:${catColor}55">${goal.category}</span>` : '';
+
+    // Shifted indicator
+    const shiftBadge = isShifted ? `<span class="dl-shifted-badge" title="Deadline shifted 1–2 days earlier to help you finish on time">⚡ Early shift</span>` : '';
+
+    card.innerHTML = `
+      <div class="dl-card-accent"></div>
+      <div class="dl-card-body">
+        <div class="dl-card-top">
+          <div class="dl-card-title-row">
+            <span class="dl-card-title ${goal.completed ? 'completed' : ''}">${goal.text}</span>
+            ${priorityBadge}
+          </div>
+          <div class="dl-card-meta">
+            ${catBadge}
+            ${subCount ? `<span class="dl-card-sub">${subDone}/${subCount} subtasks</span>` : ''}
+            ${shiftBadge}
+          </div>
+          ${overduePill}
+        </div>
+        <div class="dl-card-right">
+          <div class="dl-card-date-block">
+            <div class="dl-card-month">${displayDl ? formatDeadlineDisplay(displayDl).split(' ')[0] : '—'}</div>
+            <div class="dl-card-day">${displayDl ? new Date(displayDl + 'T00:00:00').getDate() : ''}</div>
+          </div>
+          <div class="dl-card-days-label dl-days-${urgency}">${goal.completed ? '✓ Done' : (displayDl ? getDeadlineDaysLabel(displayDl) : '')}</div>
+          ${!goal.completed && displayDl ? `<button class="dl-card-edit-btn">✏️</button>` : ''}
+        </div>
+      </div>
+    `;
+
+    if (!goal.completed && displayDl) {
+      card.querySelector('.dl-card-edit-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
         showDatePickerModal(goal, () => { renderGoals(); renderDeadlinesTab(); });
       });
+    }
 
-      container.appendChild(card);
+    container.appendChild(card);
+  }
+
+  // ================================================================
+  // EARLY-SHIFT MODAL
+  // ================================================================
+  function showEarlyShiftModal() {
+    const existing = document.getElementById('earlyShiftModal');
+    if (existing) { existing.remove(); return; }
+
+    const cfg = loadEarlyShift() || { enabled: false, categories: [], days: 1 };
+    const cats = getCategoryList();
+
+    const modal = document.createElement('div');
+    modal.id = 'earlyShiftModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(40,22,10,0.72);backdrop-filter:blur(4px);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+    const box = document.createElement('div');
+    box.style.cssText = `
+      background: linear-gradient(160deg, #2a1a0e 0%, #3d2410 60%, #1e1108 100%);
+      border-radius: 20px; padding: 2rem 2.2rem; max-width: 480px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 1.5px solid rgba(212,165,116,0.25);
+      font-family: 'Playfair Display', serif; color: #f5e8d0;
+    `;
+
+    box.innerHTML = `
+      <div style="font-size:2rem;margin-bottom:0.5rem;text-align:center;">⚡</div>
+      <h3 style="text-align:center;font-size:1.4rem;font-style:italic;margin-bottom:0.5rem;color:#d4a574;">Early Shift</h3>
+      <p style="font-family:'Source Sans Pro',sans-serif;font-size:0.85rem;color:rgba(212,165,116,0.6);text-align:center;margin-bottom:1.5rem;line-height:1.5;">
+        Automatically show deadlines 1–2 days earlier than set — so you always finish ahead of time.<br>
+        Only applies to goals due more than 7 days away, starting the day after you save this.
+      </p>
+
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:1.2rem;cursor:pointer;">
+        <input type="checkbox" id="esEnabled" ${cfg.enabled ? 'checked' : ''} style="width:18px;height:18px;accent-color:#d4a574;cursor:pointer;">
+        <span style="font-size:1rem;">Enable Early Shift</span>
+      </label>
+
+      <div id="esOptions" style="${cfg.enabled ? '' : 'opacity:0.38;pointer-events:none;'}">
+        <div style="margin-bottom:1rem;">
+          <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(212,165,116,0.55);margin-bottom:8px;">Shift by</div>
+          <div style="display:flex;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Source Sans Pro',sans-serif;font-size:0.9rem;">
+              <input type="radio" name="esDays" value="1" ${(cfg.days||1)===1?'checked':''} style="accent-color:#d4a574;"> 1 day earlier
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Source Sans Pro',sans-serif;font-size:0.9rem;">
+              <input type="radio" name="esDays" value="2" ${cfg.days===2?'checked':''} style="accent-color:#d4a574;"> 2 days earlier
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(212,165,116,0.55);margin-bottom:8px;">Apply to categories (leave empty = all)</div>
+          <div id="esCatList" style="display:flex;flex-wrap:wrap;gap:7px;">
+            ${cats.map(c => `
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;
+                background:rgba(212,165,116,0.10);border:1px solid rgba(212,165,116,0.25);
+                border-radius:20px;padding:5px 12px;font-family:'Source Sans Pro',sans-serif;font-size:0.82rem;">
+                <input type="checkbox" name="esCat" value="${c}" ${cfg.categories && cfg.categories.includes(c) ? 'checked' : ''} style="accent-color:#d4a574;">
+                ${c}
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:1.6rem;justify-content:center;">
+        <button id="esSave" style="
+          background:linear-gradient(135deg,#d4a574,#8b6f47);color:#fff;border:none;
+          padding:11px 28px;border-radius:12px;font-family:'Playfair Display',serif;
+          font-size:0.95rem;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(212,165,116,0.3);">
+          Save Settings
+        </button>
+        <button id="esCancel" style="
+          background:rgba(212,165,116,0.10);color:rgba(212,165,116,0.7);
+          border:1px solid rgba(212,165,116,0.25);padding:11px 22px;border-radius:12px;
+          font-family:'Playfair Display',serif;font-size:0.95rem;cursor:pointer;">
+          Cancel
+        </button>
+      </div>
+    `;
+
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+
+    const enabledCb = box.querySelector('#esEnabled');
+    const optionsDiv = box.querySelector('#esOptions');
+    enabledCb.addEventListener('change', () => {
+      optionsDiv.style.opacity = enabledCb.checked ? '1' : '0.38';
+      optionsDiv.style.pointerEvents = enabledCb.checked ? 'all' : 'none';
     });
+
+    box.querySelector('#esSave').addEventListener('click', () => {
+      const enabled = enabledCb.checked;
+      const days = parseInt(box.querySelector('input[name="esDays"]:checked')?.value || '1');
+      const categories = [...box.querySelectorAll('input[name="esCat"]:checked')].map(i => i.value);
+      const today = new Date().toISOString().slice(0, 10);
+      saveEarlyShift({ enabled, days, categories, configuredAt: today });
+      modal.remove();
+      renderDeadlinesTab();
+      showCustomAlert(`⚡ Early Shift ${enabled ? 'enabled' : 'disabled'}! Deadlines will be ${enabled ? `shifted ${days} day${days>1?'s':''} earlier` : 'shown as set'}.`);
+    });
+    box.querySelector('#esCancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   }
 
   // ---- Goal actions ----
@@ -611,7 +919,6 @@ const GoalsModule = (function() {
     const deadlineInput = document.getElementById('newGoalDeadline');
     const deadline = deadlineInput ? deadlineInput.value || null : null;
 
-    // If a parent goal is selected → add as subgoal
     if (selectedParentId) {
       const parent = goals.find(g => g.id === selectedParentId);
       if (parent) {
@@ -628,8 +935,7 @@ const GoalsModule = (function() {
       }
     }
 
-    // Normal new goal
-    goals.push({ id: Date.now(), text, category: selectedCategory, completed: false, subgoals: [], deadline: deadline });
+    goals.push({ id: Date.now(), text, category: selectedCategory, completed: false, subgoals: [], deadline: deadline, priority: null });
     saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab();
     input.value = '';
     if (deadlineInput) { deadlineInput.value = ''; deadlineInput.classList.add('hidden'); }
@@ -655,7 +961,6 @@ const GoalsModule = (function() {
     setTimeout(() => document.getElementById('addGoalBtn')?.classList.remove('clicked'), 300);
   }
 
-  // ---- Parent goal dropdown ----
   function renderParentGoalDropdown() {
     const list = document.getElementById('parentGoalList');
     if (!list) return;
@@ -678,7 +983,6 @@ const GoalsModule = (function() {
         renderParentGoalDropdown();
         const addBtn = document.getElementById('addGoalBtn');
         if (addBtn) addBtn.textContent = selectedParentId ? '↳+' : '+';
-        // Mark none option
         document.querySelector('.parent-goal-none')?.classList.toggle('active', !selectedParentId);
       });
       list.appendChild(opt);
@@ -690,16 +994,9 @@ const GoalsModule = (function() {
     const dropdown = document.getElementById('parentGoalDropdown');
     if (!input || !dropdown) return;
 
-    input.addEventListener('focus', () => {
-      renderParentGoalDropdown();
-      dropdown.classList.remove('hidden');
-    });
-    input.addEventListener('input', () => {
-      renderParentGoalDropdown();
-    });
-    input.addEventListener('blur', () => {
-      setTimeout(() => dropdown.classList.add('hidden'), 200);
-    });
+    input.addEventListener('focus', () => { renderParentGoalDropdown(); dropdown.classList.remove('hidden'); });
+    input.addEventListener('input', () => { renderParentGoalDropdown(); });
+    input.addEventListener('blur', () => { setTimeout(() => dropdown.classList.add('hidden'), 200); });
 
     const noneOpt = dropdown.querySelector('.parent-goal-none');
     if (noneOpt) {
@@ -719,7 +1016,6 @@ const GoalsModule = (function() {
     const inp = document.getElementById('newGoalDeadline');
     if (!btn || !inp) return;
 
-    // Apply dropdown positioning class so the date picker floats below the toolbar button
     inp.classList.add('toolbar-date');
 
     btn.addEventListener('click', (e) => {
@@ -727,13 +1023,11 @@ const GoalsModule = (function() {
       const visible = !inp.classList.contains('hidden');
       inp.classList.toggle('hidden', visible);
       if (!visible) inp.focus();
-      // Show active state on button
       btn.classList.toggle('active', !visible);
     });
 
     inp.addEventListener('click', (e) => e.stopPropagation());
     inp.addEventListener('change', () => {
-      // Update button label to show chosen date
       const val = inp.value;
       if (val) {
         const d = new Date(val + 'T00:00:00');
@@ -746,7 +1040,6 @@ const GoalsModule = (function() {
       btn.classList.remove('active');
     });
 
-    // Clicking outside closes it
     document.addEventListener('click', () => {
       inp.classList.add('hidden');
       btn.classList.remove('active');
@@ -822,7 +1115,6 @@ const GoalsModule = (function() {
     });
     catSec.appendChild(catTitle); catSec.appendChild(catTags); list.appendChild(catSec);
 
-    // Suggestion D: no-deadline filter
     const dlSec = document.createElement('div'); dlSec.className = 'filter-section';
     const dlTitle = document.createElement('div'); dlTitle.className = 'filter-section-title'; dlTitle.textContent = 'Deadline';
     const dlTags = document.createElement('div'); dlTags.className = 'filter-tags';
@@ -837,7 +1129,6 @@ const GoalsModule = (function() {
   }
 
   async function addNewCategory() {
-    // Redirect to Categories tab
     const btn = document.querySelector('.tab-btn[data-tab="categories"]');
     if (btn) btn.click();
     else showCustomAlert('Open the Categories tab to manage categories.');
@@ -988,8 +1279,24 @@ const GoalsModule = (function() {
       }
     });
 
+    // Wire deadlines view toggle
+    document.getElementById('dlViewListBtn')?.addEventListener('click', () => {
+      deadlinesView = 'list';
+      document.getElementById('dlViewListBtn').classList.add('active');
+      document.getElementById('dlViewColBtn').classList.remove('active');
+      renderDeadlinesViewContent();
+    });
+    document.getElementById('dlViewColBtn')?.addEventListener('click', () => {
+      deadlinesView = 'column';
+      document.getElementById('dlViewColBtn').classList.add('active');
+      document.getElementById('dlViewListBtn').classList.remove('active');
+      renderDeadlinesViewContent();
+    });
+
+    // Wire early shift button
+    document.getElementById('dlEarlyShiftBtn')?.addEventListener('click', showEarlyShiftModal);
+
     initSortDropdown();
-    // parentGoalDropdown intentionally disabled — subgoals are added inline on each goal card
     initDeadlineDateToggle();
     checkRecurringGoals();
     renderGoals();
@@ -1012,5 +1319,8 @@ const GoalsModule = (function() {
     saveData();
   }
 
-  return { init, renderGoals, updateMainProgress, getGoals, getCompletionRate, completeGoalByIndex, renderDeadlinesTab, addGoalProgrammatic, onCategoryDeleted, renderPickCategories, renderFilterCategories };
+  return { init, renderGoals, updateMainProgress, getGoals, getCompletionRate,
+           completeGoalByIndex, renderDeadlinesTab, addGoalProgrammatic,
+           onCategoryDeleted, renderPickCategories, renderFilterCategories,
+           applyPriorityOutlinesToBoard };
 })();

@@ -189,13 +189,34 @@
     <!-- TAB: Deadlines -->
     <div class="tab-content" id="tab-deadlines">
       <div class="deadlines-page">
+
+        <!-- Header -->
         <div class="deadlines-header">
-          <h2>📅 Deadlines</h2>
-          <p class="deadlines-subtitle">Goals with upcoming or past deadlines</p>
+          <div class="deadlines-header-top">
+            <div>
+              <h2>📅 Deadlines</h2>
+              <p class="deadlines-subtitle">Goals with upcoming or past deadlines</p>
+            </div>
+            <button class="dl-early-shift-btn" id="dlEarlyShiftBtn" title="Configure early deadline shifting">
+              ⚡ Early Shift
+            </button>
+          </div>
+
+          <!-- View toggle -->
+          <div class="dl-view-toggle">
+            <button class="dl-view-btn active" id="dlViewListBtn">
+              ☰ List
+            </button>
+            <button class="dl-view-btn" id="dlViewColBtn">
+              ▦ Columns
+            </button>
+          </div>
         </div>
+
         <div id="overdueNotifications" class="overdue-notifications"></div>
         <div id="upcomingAlerts" class="upcoming-alerts"></div>
         <div id="deadlinesList" class="deadlines-list"></div>
+
         <!-- Empty state (hidden when there are deadlines) -->
         <div id="deadlinesEmpty" class="deadlines-empty hidden">
           <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" class="deadlines-empty-svg">
@@ -221,6 +242,7 @@
           <p class="deadlines-empty-title">Nothing due — enjoy your coffee ☕</p>
           <p class="deadlines-empty-sub">Add a deadline to any goal using the 📅 icon</p>
         </div>
+
       </div>
     </div>
 

@@ -1,0 +1,480 @@
+/* =================================================================
+   DEADLINES TAB — FULL REDESIGN
+   ================================================================= */
+
+/* ---- Tab scroll container ---- */
+#tab-deadlines.active {
+  overflow-y: auto;
+  max-height: calc(100vh - 120px);
+}
+
+/* ---- Page wrapper ---- */
+.deadlines-page {
+  padding: 1.8rem 2rem 3rem 5rem;
+  max-width: 1200px;
+  margin: 1.5rem auto;
+  width: calc(100% - 2rem);
+}
+
+/* ---- Header ---- */
+.deadlines-header {
+  margin-bottom: 1.5rem;
+}
+.deadlines-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.deadlines-header h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  color: #4a3429;
+  margin: 0 0 3px;
+  font-style: italic;
+}
+.deadlines-subtitle {
+  color: rgba(74,52,41,0.6);
+  font-size: 0.88rem;
+  font-style: italic;
+  margin: 0;
+}
+
+/* ---- Early Shift button ---- */
+.dl-early-shift-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(212,165,116,0.15), rgba(139,111,71,0.10));
+  border: 1.5px solid rgba(212,165,116,0.35);
+  border-radius: 12px;
+  padding: 9px 18px;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.85rem;
+  color: #8b6f47;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dl-early-shift-btn:hover {
+  background: linear-gradient(135deg, rgba(212,165,116,0.25), rgba(139,111,71,0.18));
+  border-color: rgba(212,165,116,0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(139,111,71,0.18);
+}
+
+/* ---- View Toggle ---- */
+.dl-view-toggle {
+  display: flex;
+  gap: 6px;
+}
+.dl-view-btn {
+  padding: 7px 20px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(139,111,71,0.22);
+  background: rgba(245,241,235,0.55);
+  color: rgba(107,81,57,0.65);
+  font-family: 'Playfair Display', serif;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.dl-view-btn.active {
+  background: linear-gradient(135deg, #8b6f47, #6b5139);
+  border-color: transparent;
+  color: #f5f1eb;
+  box-shadow: 0 2px 10px rgba(139,111,71,0.28);
+}
+.dl-view-btn:not(.active):hover {
+  background: rgba(245,241,235,0.9);
+  color: #6b5139;
+}
+
+/* ================================================================
+   DEADLINE CARD V2 — wider, richer, timer-tab aesthetic
+   ================================================================ */
+.deadline-card-v2 {
+  display: flex;
+  align-items: stretch;
+  background: linear-gradient(160deg,
+    rgba(252,248,242,0.97) 0%,
+    rgba(245,241,235,0.94) 60%,
+    rgba(238,230,218,0.95) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(139,111,71,0.18);
+  box-shadow:
+    0 4px 18px rgba(139,111,71,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.70);
+  overflow: hidden;
+  transition: all 0.22s ease;
+  animation: goalPopIn 0.35s ease-out;
+  margin-bottom: 10px;
+  position: relative;
+}
+.deadline-card-v2:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 28px rgba(139,111,71,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.70);
+}
+.deadline-card-v2.dl-completed {
+  opacity: 0.55;
+  filter: grayscale(0.25);
+}
+
+/* Left accent bar — urgency colour */
+.dl-card-accent {
+  width: 7px;
+  flex-shrink: 0;
+  border-radius: 16px 0 0 16px;
+  background: #22c55e;
+  transition: background 0.3s ease;
+}
+.dl-overdue  .dl-card-accent { background: #ef4444; }
+.dl-urgent   .dl-card-accent { background: #f97316; }
+.dl-soon     .dl-card-accent { background: #f59e0b; }
+.dl-safe     .dl-card-accent { background: #22c55e; }
+.dl-done     .dl-card-accent { background: #8b6f47; }
+
+/* Priority outline on top edge */
+.dl-priority-crucial   { border-top: 3px solid #ef4444; }
+.dl-priority-upcoming  { border-top: 3px solid #f59e0b; }
+.dl-priority-interested{ border-top: 3px solid #60a5fa; }
+.dl-priority-someday   { border-top: 3px solid #9ca3af; }
+
+/* Card body layout */
+.dl-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  padding: 16px 20px 14px 16px;
+  gap: 16px;
+}
+.dl-card-top {
+  flex: 1;
+  min-width: 0;
+}
+.dl-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.dl-card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #3a2510;
+  line-height: 1.3;
+}
+.dl-card-title.completed {
+  text-decoration: line-through;
+  color: rgba(74,52,41,0.45);
+}
+.dl-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.dl-card-sub {
+  font-size: 0.75rem;
+  color: rgba(107,81,57,0.60);
+  font-style: italic;
+  font-family: 'Source Sans Pro', sans-serif;
+}
+
+/* Right side — date block */
+.dl-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.dl-card-date-block {
+  background: linear-gradient(135deg, #8b6f47, #6b5139);
+  border-radius: 10px;
+  padding: 6px 14px;
+  text-align: center;
+  box-shadow: 0 3px 10px rgba(139,111,71,0.3);
+}
+.dl-card-month {
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: rgba(245,241,235,0.65);
+}
+.dl-card-day {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #f5e8d0;
+  line-height: 1.1;
+}
+.dl-card-days-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  font-family: 'Source Sans Pro', sans-serif;
+  background: rgba(34,197,94,0.12);
+  color: #15803d;
+}
+.dl-days-overdue { background: rgba(239,68,68,0.12); color: #dc2626; }
+.dl-days-urgent  { background: rgba(249,115,22,0.12); color: #c2410c; }
+.dl-days-soon    { background: rgba(245,158,11,0.12); color: #92400e; }
+.dl-days-safe    { background: rgba(34,197,94,0.12);  color: #15803d; }
+.dl-days-done    { background: rgba(139,111,71,0.12); color: #8b6f47; }
+
+.dl-card-edit-btn {
+  background: rgba(139,111,71,0.10);
+  border: 1px solid rgba(139,111,71,0.22);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  color: #8b6f47;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Playfair Display', serif;
+  white-space: nowrap;
+}
+.dl-card-edit-btn:hover {
+  background: linear-gradient(135deg, #8b6f47, #6b5139);
+  color: #f5f1eb;
+  border-color: transparent;
+}
+
+/* Compact variant (used in column view) */
+.dl-compact {
+  margin-bottom: 8px;
+  border-radius: 12px;
+}
+.dl-compact .dl-card-body {
+  padding: 12px 14px 10px 12px;
+}
+.dl-compact .dl-card-title { font-size: 0.90rem; }
+.dl-compact .dl-card-date-block { padding: 4px 10px; }
+.dl-compact .dl-card-day { font-size: 1.2rem; }
+.dl-compact .dl-card-month { font-size: 0.55rem; }
+
+/* Shifted badge */
+.dl-shifted-badge {
+  font-size: 0.68rem;
+  font-family: 'Source Sans Pro', sans-serif;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(212,165,116,0.18);
+  color: #8b6f47;
+  border: 1px solid rgba(212,165,116,0.35);
+  white-space: nowrap;
+}
+.deadline-shifted-tag {
+  font-size: 0.75em;
+  margin-left: 2px;
+  cursor: help;
+}
+
+/* ================================================================
+   COLUMN / KANBAN VIEW
+   ================================================================ */
+.deadlines-column-view {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .deadlines-column-view { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 700px) {
+  .deadlines-column-view { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .deadlines-column-view { grid-template-columns: 1fr; }
+}
+
+.dl-column {
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(245,241,235,0.55);
+  border: 1.5px solid rgba(139,111,71,0.14);
+  box-shadow: 0 3px 14px rgba(139,111,71,0.07);
+}
+
+/* Column header bar */
+.dl-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 9px;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.dl-column-count {
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.08);
+  color: inherit;
+}
+
+/* Per-column colour accents */
+.col-overdue .dl-column-header {
+  background: linear-gradient(90deg, rgba(239,68,68,0.18), rgba(239,68,68,0.10));
+  color: #b91c1c;
+  border-bottom: 2px solid rgba(239,68,68,0.25);
+}
+.col-urgent .dl-column-header {
+  background: linear-gradient(90deg, rgba(249,115,22,0.15), rgba(249,115,22,0.08));
+  color: #c2410c;
+  border-bottom: 2px solid rgba(249,115,22,0.22);
+}
+.col-soon .dl-column-header {
+  background: linear-gradient(90deg, rgba(245,158,11,0.14), rgba(245,158,11,0.07));
+  color: #92400e;
+  border-bottom: 2px solid rgba(245,158,11,0.22);
+}
+.col-safe .dl-column-header {
+  background: linear-gradient(90deg, rgba(34,197,94,0.12), rgba(34,197,94,0.06));
+  color: #15803d;
+  border-bottom: 2px solid rgba(34,197,94,0.18);
+}
+.col-done .dl-column-header {
+  background: linear-gradient(90deg, rgba(139,111,71,0.12), rgba(139,111,71,0.06));
+  color: #6b5139;
+  border-bottom: 2px solid rgba(139,111,71,0.18);
+}
+
+.dl-column-body {
+  padding: 10px 10px 12px;
+  min-height: 60px;
+}
+.dl-column-empty {
+  text-align: center;
+  padding: 18px 10px;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.78rem;
+  color: rgba(107,81,57,0.38);
+  font-style: italic;
+}
+
+/* ================================================================
+   PRIORITY SYSTEM — Goals Tab
+   ================================================================ */
+
+/* Priority pill on goal cards */
+.goal-priority-pill {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-family: 'Source Sans Pro', sans-serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 4px;
+  vertical-align: middle;
+  border: 1px solid;
+}
+.priority-crucial    { background: rgba(239,68,68,0.12);   color: #dc2626; border-color: rgba(239,68,68,0.30); }
+.priority-upcoming   { background: rgba(245,158,11,0.12);  color: #d97706; border-color: rgba(245,158,11,0.30); }
+.priority-interested { background: rgba(59,130,246,0.10);  color: #2563eb; border-color: rgba(59,130,246,0.28); }
+.priority-someday    { background: rgba(107,114,128,0.10); color: #6b7280; border-color: rgba(107,114,128,0.28); }
+
+/* Goal item left border accent by priority */
+.goal-item.priority-crucial    { border-left: 4px solid #ef4444 !important; }
+.goal-item.priority-upcoming   { border-left: 4px solid #f59e0b !important; }
+.goal-item.priority-interested { border-left: 4px solid #60a5fa !important; }
+.goal-item.priority-someday    { border-left: 4px solid #9ca3af !important; }
+
+/* Priority badge in deadline list card */
+.dl-priority-badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  font-family: 'Source Sans Pro', sans-serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid;
+}
+
+/* Priority row selector (shown when goal selected) */
+.goal-priority-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0 4px 24px;
+  flex-wrap: wrap;
+}
+.goal-priority-label {
+  font-size: 0.78rem;
+  color: rgba(107,81,57,0.65);
+  font-family: 'Source Sans Pro', sans-serif;
+  white-space: nowrap;
+}
+.goal-prio-btn {
+  padding: 4px 11px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(139,111,71,0.22);
+  background: rgba(245,241,235,0.70);
+  color: #6b5139;
+  font-size: 0.75rem;
+  font-family: 'Source Sans Pro', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.goal-prio-btn.active {
+  background: #8b6f47;
+  color: #f5f1eb;
+  border-color: transparent;
+}
+.goal-prio-btn.prio-crucial.active    { background: #ef4444; }
+.goal-prio-btn.prio-upcoming.active   { background: #f59e0b; color: #3a2000; }
+.goal-prio-btn.prio-interested.active { background: #3b82f6; }
+.goal-prio-btn.prio-someday.active    { background: #6b7280; }
+.goal-prio-btn:hover { background: rgba(245,241,235,1); }
+
+/* Board view priority outlines — applied via JS inline style */
+/* These are fallback selectors for CSS-driven approach */
+.bill-square.board-crucial    { box-shadow: inset 0 0 0 3px #ef4444, 2px 3px 8px rgba(0,0,0,0.35) !important; }
+.bill-square.board-upcoming   { box-shadow: inset 0 0 0 3px #f59e0b, 2px 3px 8px rgba(0,0,0,0.35) !important; }
+.bill-square.board-interested { box-shadow: inset 0 0 0 3px #60a5fa, 2px 3px 8px rgba(0,0,0,0.35) !important; }
+.bill-square.board-someday    { box-shadow: inset 0 0 0 3px #9ca3af, 2px 3px 8px rgba(0,0,0,0.35) !important; }
+
+/* ================================================================
+   RESPONSIVE FIXES
+   ================================================================ */
+@media (max-width: 900px) {
+  .deadlines-page {
+    padding: 1.4rem 1.2rem 2rem;
+    margin: 1rem;
+    width: calc(100% - 2rem);
+  }
+  .deadlines-column-view {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .deadlines-header-top { flex-direction: column; align-items: flex-start; }
+  .deadlines-column-view { grid-template-columns: 1fr; }
+  .dl-card-body { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .dl-card-right { flex-direction: row; align-items: center; width: 100%; justify-content: space-between; }
+}
