@@ -817,70 +817,106 @@ const GoalsModule = (function() {
     const cfg = loadEarlyShift() || { enabled: false, categories: [], days: 1 };
     const cats = getCategoryList();
 
+    // ---- JS-managed state — no native inputs ----
+    let esEnabled = cfg.enabled;
+    let esDays = cfg.days || 1;
+    let selectedCats = [...(cfg.categories || [])];
+
+    // ---- Shared button styles ----
+    // pillBase has NO border — each variant sets its own so no inheritance conflict
+    const pillBase    = 'font-family:\'Playfair Display\',serif;font-size:0.9rem;border-radius:22px;padding:10px 24px;cursor:pointer;transition:all 0.18s ease;font-weight:600;';
+    const pillOn      = pillBase + 'background:linear-gradient(135deg,#d4a574,#8b6f47);color:#fff;border:none;box-shadow:0 4px 14px rgba(212,165,116,0.4);';
+    const pillOff     = pillBase + 'background:rgba(212,165,116,0.06);color:rgba(212,165,116,0.45);border:1.5px solid rgba(212,165,116,0.22);';
+    const dayActive   = pillBase + 'background:rgba(212,165,116,0.22);color:#f5e8d0;border:1.5px solid rgba(212,165,116,0.58);';
+    const dayInactive = pillBase + 'background:transparent;color:rgba(212,165,116,0.42);border:1.5px solid rgba(212,165,116,0.18);';
+    const catActive   = 'font-family:\'Source Sans Pro\',sans-serif;font-size:0.82rem;padding:7px 16px;border-radius:20px;cursor:pointer;transition:all 0.15s ease;border:1.5px solid rgba(212,165,116,0.60);background:rgba(212,165,116,0.20);color:#f5e8d0;font-weight:600;';
+    const catInactive = 'font-family:\'Source Sans Pro\',sans-serif;font-size:0.82rem;padding:7px 16px;border-radius:20px;cursor:pointer;transition:all 0.15s ease;border:1.5px solid rgba(212,165,116,0.18);background:rgba(212,165,116,0.06);color:rgba(212,165,116,0.50);font-weight:400;';
+
     const modal = document.createElement('div');
     modal.id = 'earlyShiftModal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(40,22,10,0.72);backdrop-filter:blur(4px);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px;';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(20,10,4,0.80);backdrop-filter:blur(6px);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px;';
 
     const box = document.createElement('div');
     box.style.cssText = `
-      background: linear-gradient(160deg, #2a1a0e 0%, #3d2410 60%, #1e1108 100%);
-      border-radius: 20px; padding: 2rem 2.2rem; max-width: 480px; width: 100%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 1.5px solid rgba(212,165,116,0.25);
-      font-family: 'Playfair Display', serif; color: #f5e8d0;
+      background: linear-gradient(170deg, #2e1a0a 0%, #3d2410 50%, #221408 100%);
+      border-radius: 24px;
+      padding: 2.4rem 2.6rem 2rem;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(212,165,116,0.12);
+      border: 1px solid rgba(212,165,116,0.20);
+      font-family: 'Playfair Display', serif;
+      color: #f5e8d0;
     `;
 
     box.innerHTML = `
-      <div style="font-size:2rem;margin-bottom:0.5rem;text-align:center;">⚡</div>
-      <h3 style="text-align:center;font-size:1.4rem;font-style:italic;margin-bottom:0.5rem;color:#d4a574;">Early Shift</h3>
-      <p style="font-family:'Source Sans Pro',sans-serif;font-size:0.85rem;color:rgba(212,165,116,0.6);text-align:center;margin-bottom:1.5rem;line-height:1.5;">
-        Automatically show deadlines 1–2 days earlier than set — so you always finish ahead of time.<br>
-        Only applies to goals due more than 7 days away, starting the day after you save this.
-      </p>
+      <!-- Icon + title -->
+      <div style="text-align:center;margin-bottom:1.4rem;">
+        <div style="font-size:2.6rem;margin-bottom:0.6rem;filter:drop-shadow(0 0 12px rgba(212,165,116,0.4));">⚡</div>
+        <div style="font-size:1.55rem;font-style:italic;font-weight:700;color:#d4a574;letter-spacing:0.5px;">Early Shift</div>
+        <div style="font-family:'Source Sans Pro',sans-serif;font-size:0.82rem;color:rgba(212,165,116,0.48);margin-top:0.5rem;line-height:1.55;max-width:320px;margin-left:auto;margin-right:auto;">
+          Show deadlines 1–2 days earlier so you always finish ahead of time.
+          Applies to goals due more than 7 days away, active the day after saving.
+        </div>
+      </div>
 
-      <label style="display:flex;align-items:center;gap:10px;margin-bottom:1.2rem;cursor:pointer;">
-        <input type="checkbox" id="esEnabled" ${cfg.enabled ? 'checked' : ''} style="width:18px;height:18px;accent-color:#d4a574;cursor:pointer;">
-        <span style="font-size:1rem;">Enable Early Shift</span>
-      </label>
+      <!-- Divider -->
+      <div style="height:1px;background:rgba(212,165,116,0.12);margin-bottom:1.6rem;"></div>
 
-      <div id="esOptions" style="${cfg.enabled ? '' : 'opacity:0.38;pointer-events:none;'}">
-        <div style="margin-bottom:1rem;">
-          <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(212,165,116,0.55);margin-bottom:8px;">Shift by</div>
+      <!-- Enable toggle -->
+      <div style="margin-bottom:1.6rem;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:2px;color:rgba(212,165,116,0.45);margin-bottom:10px;">Status</div>
+        <div style="display:flex;gap:10px;">
+          <button id="esToggleOn"  style="${esEnabled ? pillOn : pillOff}">✓ Enabled</button>
+          <button id="esToggleOff" style="${esEnabled ? pillOff : pillOn}">✕ Disabled</button>
+        </div>
+      </div>
+
+      <!-- Options section (fades when disabled) -->
+      <div id="esOptions" style="transition:opacity 0.2s ease;${esEnabled ? '' : 'opacity:0.32;pointer-events:none;'}">
+
+        <!-- Shift by -->
+        <div style="margin-bottom:1.4rem;">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:2px;color:rgba(212,165,116,0.45);margin-bottom:10px;">Shift by</div>
           <div style="display:flex;gap:10px;">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Source Sans Pro',sans-serif;font-size:0.9rem;">
-              <input type="radio" name="esDays" value="1" ${(cfg.days||1)===1?'checked':''} style="accent-color:#d4a574;"> 1 day earlier
-            </label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Source Sans Pro',sans-serif;font-size:0.9rem;">
-              <input type="radio" name="esDays" value="2" ${cfg.days===2?'checked':''} style="accent-color:#d4a574;"> 2 days earlier
-            </label>
+            <button id="esDay1" style="${esDays===1 ? dayActive : dayInactive}">1 day earlier</button>
+            <button id="esDay2" style="${esDays===2 ? dayActive : dayInactive}">2 days earlier</button>
           </div>
         </div>
 
+        <!-- Categories -->
         <div>
-          <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(212,165,116,0.55);margin-bottom:8px;">Apply to categories (leave empty = all)</div>
-          <div id="esCatList" style="display:flex;flex-wrap:wrap;gap:7px;">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:2px;color:rgba(212,165,116,0.45);margin-bottom:6px;">Apply to categories</div>
+          <div style="font-family:'Source Sans Pro',sans-serif;font-size:0.75rem;color:rgba(212,165,116,0.32);margin-bottom:10px;">Leave all off to apply to every category</div>
+          <div id="esCatList" style="display:flex;flex-wrap:wrap;gap:8px;">
             ${cats.map(c => `
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;
-                background:rgba(212,165,116,0.10);border:1px solid rgba(212,165,116,0.25);
-                border-radius:20px;padding:5px 12px;font-family:'Source Sans Pro',sans-serif;font-size:0.82rem;">
-                <input type="checkbox" name="esCat" value="${c}" ${cfg.categories && cfg.categories.includes(c) ? 'checked' : ''} style="accent-color:#d4a574;">
-                ${c}
-              </label>
+              <button class="es-cat-pill" data-cat="${c}" style="${selectedCats.includes(c) ? catActive : catInactive}">${c}</button>
             `).join('')}
           </div>
         </div>
       </div>
 
-      <div style="display:flex;gap:10px;margin-top:1.6rem;justify-content:center;">
+      <!-- Divider -->
+      <div style="height:1px;background:rgba(212,165,116,0.12);margin:1.8rem 0 1.4rem;"></div>
+
+      <!-- Save / Cancel -->
+      <div style="display:flex;gap:10px;">
         <button id="esSave" style="
-          background:linear-gradient(135deg,#d4a574,#8b6f47);color:#fff;border:none;
-          padding:11px 28px;border-radius:12px;font-family:'Playfair Display',serif;
-          font-size:0.95rem;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(212,165,116,0.3);">
+          flex:1;padding:14px;border:none;border-radius:14px;
+          background:linear-gradient(135deg,#d4a574,#8b6047);
+          color:#fff;font-family:'Playfair Display',serif;
+          font-size:1rem;font-weight:700;cursor:pointer;
+          box-shadow:0 6px 20px rgba(212,165,116,0.35);
+          letter-spacing:0.3px;">
           Save Settings
         </button>
         <button id="esCancel" style="
-          background:rgba(212,165,116,0.10);color:rgba(212,165,116,0.7);
-          border:1px solid rgba(212,165,116,0.25);padding:11px 22px;border-radius:12px;
-          font-family:'Playfair Display',serif;font-size:0.95rem;cursor:pointer;">
+          padding:14px 22px;border-radius:14px;
+          background:rgba(212,165,116,0.08);
+          border:1px solid rgba(212,165,116,0.20);
+          color:rgba(212,165,116,0.55);
+          font-family:'Playfair Display',serif;
+          font-size:1rem;cursor:pointer;">
           Cancel
         </button>
       </div>
@@ -889,23 +925,46 @@ const GoalsModule = (function() {
     modal.appendChild(box);
     document.body.appendChild(modal);
 
-    const enabledCb = box.querySelector('#esEnabled');
     const optionsDiv = box.querySelector('#esOptions');
-    enabledCb.addEventListener('change', () => {
-      optionsDiv.style.opacity = enabledCb.checked ? '1' : '0.38';
-      optionsDiv.style.pointerEvents = enabledCb.checked ? 'all' : 'none';
+
+    // ---- Enable / Disable toggle ----
+    function refreshEnableButtons() {
+      box.querySelector('#esToggleOn').style.cssText  = esEnabled ? pillOn : pillOff;
+      box.querySelector('#esToggleOff').style.cssText = esEnabled ? pillOff : pillOn;
+      optionsDiv.style.opacity       = esEnabled ? '1' : '0.32';
+      optionsDiv.style.pointerEvents = esEnabled ? 'all' : 'none';
+    }
+    box.querySelector('#esToggleOn').addEventListener('click',  () => { esEnabled = true;  refreshEnableButtons(); });
+    box.querySelector('#esToggleOff').addEventListener('click', () => { esEnabled = false; refreshEnableButtons(); });
+
+    // ---- Days toggle ----
+    function refreshDayButtons() {
+      box.querySelector('#esDay1').style.cssText = esDays === 1 ? dayActive : dayInactive;
+      box.querySelector('#esDay2').style.cssText = esDays === 2 ? dayActive : dayInactive;
+    }
+    box.querySelector('#esDay1').addEventListener('click', () => { esDays = 1; refreshDayButtons(); });
+    box.querySelector('#esDay2').addEventListener('click', () => { esDays = 2; refreshDayButtons(); });
+
+    // ---- Category pills ----
+    box.querySelectorAll('.es-cat-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cat = btn.dataset.cat;
+        const idx = selectedCats.indexOf(cat);
+        if (idx === -1) selectedCats.push(cat);
+        else selectedCats.splice(idx, 1);
+        btn.style.cssText = selectedCats.includes(cat) ? catActive : catInactive;
+      });
     });
 
+    // ---- Save ----
     box.querySelector('#esSave').addEventListener('click', () => {
-      const enabled = enabledCb.checked;
-      const days = parseInt(box.querySelector('input[name="esDays"]:checked')?.value || '1');
-      const categories = [...box.querySelectorAll('input[name="esCat"]:checked')].map(i => i.value);
       const today = new Date().toISOString().slice(0, 10);
-      saveEarlyShift({ enabled, days, categories, configuredAt: today });
+      saveEarlyShift({ enabled: esEnabled, days: esDays, categories: selectedCats, configuredAt: today });
       modal.remove();
       renderDeadlinesTab();
-      showCustomAlert(`⚡ Early Shift ${enabled ? 'enabled' : 'disabled'}! Deadlines will be ${enabled ? `shifted ${days} day${days>1?'s':''} earlier` : 'shown as set'}.`);
+      showCustomAlert(`⚡ Early Shift ${esEnabled ? 'enabled' : 'disabled'}! Deadlines will be ${esEnabled ? `shifted ${esDays} day${esDays > 1 ? 's' : ''} earlier` : 'shown as set'}.`);
     });
+
     box.querySelector('#esCancel').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   }
