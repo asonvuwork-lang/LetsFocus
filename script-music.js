@@ -20,6 +20,32 @@ const MusicModule = (function () {
     ac:       'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996118/ac_nhvrqh.mp3',
   };
 
+  // ---- Sound-toggle cooldown guard ----
+  // Rapid clicking was racing play()/pause() on the same <audio> element:
+  // pause() would abort an in-flight play() promise, which rejected and
+  // looked identical to a real network/load failure, triggering the
+  // "Could not play... Check your internet connection" alert for no reason.
+  // This guard ignores repeat clicks on a sound until the previous
+  // play/pause transition has settled, and shows a small cooldown wipe
+  // animation on the button so the pause is visible instead of silent.
+  const SOUND_COOLDOWN_MS = 450;
+  const busySounds = new Set();
+
+  function triggerSoundCooldown(sound) {
+    document.querySelectorAll('.noise-toggle-btn[data-sound="' + sound + '"], .setup-noise-btn[data-sound="' + sound + '"]')
+      .forEach(btn => {
+        let overlay = btn.querySelector('.ntb-cooldown-overlay');
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.className = 'ntb-cooldown-overlay';
+          btn.appendChild(overlay);
+        }
+        overlay.style.animation = 'none';
+        void overlay.offsetWidth; // reflow — restarts the animation from scratch
+        overlay.style.animation = 'ntbCooldownDrain ' + SOUND_COOLDOWN_MS + 'ms linear forwards';
+      });
+  }
+
   // ---- Volume persistence ----
   function loadStoredVolumes() {
     try {
@@ -53,14 +79,22 @@ const MusicModule = (function () {
   }
 
   function toggleNoise(sound) {
+    if (busySounds.has(sound)) return; // still cooling down from the last click — ignore
+    busySounds.add(sound);
+    triggerSoundCooldown(sound);
+    setTimeout(() => busySounds.delete(sound), SOUND_COOLDOWN_MS);
+
     const audio = getOrCreateAudio(sound);
     if (!audio.paused) {
       audio.pause();
       syncToggleUI(sound, false);
     } else {
-      audio.play().catch(() =>
-        showCustomAlert('Could not play "' + sound + '" sound. Check your internet connection.')
-      );
+      audio.play().catch((err) => {
+        // AbortError just means a pause() interrupted this play() a moment
+        // later (a fast toggle) — not a real failure, so don't alarm the user.
+        if (err && err.name === 'AbortError') return;
+        showCustomAlert('Could not play "' + sound + '" sound. Check your internet connection.');
+      });
       syncToggleUI(sound, true);
     }
   }

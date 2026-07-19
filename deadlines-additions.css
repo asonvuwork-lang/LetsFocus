@@ -109,218 +109,256 @@
 }
 
 /* ================================================================
-   DEADLINE CARD V2 — wider, richer, timer-tab aesthetic
+   DEADLINE ROW — compact single-line list view
    ================================================================ */
-.deadline-card-v2 {
+.deadlines-list {
   display: flex;
-  align-items: stretch;
-  background: linear-gradient(160deg,
-    rgba(252,248,242,0.97) 0%,
-    rgba(245,241,235,0.94) 60%,
-    rgba(238,230,218,0.95) 100%);
-  border-radius: 16px;
-  border: 1px solid rgba(139,111,71,0.18);
-  box-shadow:
-    0 4px 18px rgba(139,111,71,0.10),
-    inset 0 1px 0 rgba(255,255,255,0.70);
-  overflow: hidden;
-  transition: all 0.22s ease;
-  animation: goalPopIn 0.35s ease-out;
-  margin-bottom: 10px;
-  position: relative;
-}
-.deadline-card-v2:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 8px 28px rgba(139,111,71,0.18),
-    inset 0 1px 0 rgba(255,255,255,0.70);
-}
-.deadline-card-v2.dl-completed {
-  opacity: 0.55;
-  filter: grayscale(0.25);
+  flex-direction: column;
+  gap: 6px;
 }
 
-/* Left accent bar — urgency colour */
-.dl-card-accent {
-  width: 9px;
-  flex-shrink: 0;
-  border-radius: 16px 0 0 16px;
-  background: #22c55e;
-  transition: background 0.3s ease;
-}
-.dl-overdue  .dl-card-accent { background: #ef4444; }
-.dl-urgent   .dl-card-accent { background: #f97316; }
-.dl-soon     .dl-card-accent { background: #f59e0b; }
-.dl-safe     .dl-card-accent { background: #22c55e; }
-.dl-done     .dl-card-accent { background: #8b6f47; }
-
-/* Priority outline on top edge */
-.dl-priority-crucial   { border-top: 3px solid #ef4444; }
-.dl-priority-upcoming  { border-top: 3px solid #f59e0b; }
-.dl-priority-interested{ border-top: 3px solid #60a5fa; }
-.dl-priority-someday   { border-top: 3px solid #9ca3af; }
-
-/* Card body layout */
-.dl-card-body {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex: 1;
-  padding: 22px 28px 20px 22px;
-  gap: 20px;
-}
-.dl-card-top {
-  flex: 1;
-  min-width: 0;
-}
-.dl-card-title-row {
+.dl-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
+  background: rgba(245,241,235,0.85);
+  border: 1px solid rgba(139,111,71,0.14);
+  border-radius: 10px;
+  padding: 9px 14px 9px 0;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  overflow: hidden;
+  animation: goalPopIn 0.3s ease-out;
 }
-.dl-card-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 1.18rem;
-  font-weight: 700;
-  color: #3a2510;
-  line-height: 1.3;
-}
-.dl-card-title.completed {
-  text-decoration: line-through;
-  color: rgba(74,52,41,0.45);
-}
-.dl-card-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 6px;
-}
-.dl-card-sub {
-  font-size: 0.8rem;
-  color: rgba(107,81,57,0.60);
-  font-style: italic;
-  font-family: 'Source Sans Pro', sans-serif;
+.dl-row:hover {
+  background: rgba(245,241,235,1);
+  box-shadow: 0 4px 14px rgba(139,111,71,0.14);
+  transform: translateY(-1px);
 }
 
-/* Right side — date block */
-.dl-card-right {
+.dl-row-accent {
+  align-self: stretch;
+  width: 5px;
+  flex-shrink: 0;
+  background: #22c55e;
+  border-radius: 10px 0 0 10px;
+}
+.dl-row.dl-overdue .dl-row-accent { background: #ef4444; }
+.dl-row.dl-urgent  .dl-row-accent { background: #f97316; }
+.dl-row.dl-soon    .dl-row-accent { background: #f59e0b; }
+.dl-row.dl-safe    .dl-row-accent { background: #22c55e; }
+
+.dl-row-main {
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.dl-prio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   flex-shrink: 0;
-  min-width: 120px;
 }
-.dl-card-date-block {
-  background: linear-gradient(135deg, #8b6f47, #5c3018);
-  border-radius: 14px;
-  padding: 10px 20px;
-  text-align: center;
-  box-shadow: 0 6px 18px rgba(139,111,71,0.38), inset 0 1px 0 rgba(255,255,255,0.10);
-  min-width: 80px;
-}
-.dl-card-month {
+.dl-row-title {
   font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #3a2510;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 340px;
+}
+.dl-row-cat {
+  font-size: 0.65rem;
+  font-family: 'Source Sans Pro', sans-serif;
+  padding: 2px 9px;
+  border-radius: 10px;
+  border: 1px solid;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dl-row-subcount {
   font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  color: rgba(245,241,235,0.60);
-  margin-bottom: 2px;
+  color: rgba(107,81,57,0.5);
+  font-family: 'Source Sans Pro', sans-serif;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-.dl-card-day {
-  font-family: 'Playfair Display', serif;
-  font-size: 2rem;
-  font-weight: 700;
-  color: #f5e8d0;
-  line-height: 1;
+.dl-shifted-mini {
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  cursor: help;
 }
-.dl-card-days-label {
-  font-size: 0.80rem;
+.dl-streak-mini {
+  font-size: 0.66rem;
   font-weight: 700;
-  padding: 5px 14px;
-  border-radius: 20px;
+  background: rgba(239,68,68,0.10);
+  color: #dc2626;
+  padding: 1px 8px;
+  border-radius: 9px;
+  flex-shrink: 0;
   white-space: nowrap;
   font-family: 'Source Sans Pro', sans-serif;
-  background: rgba(34,197,94,0.12);
-  color: #15803d;
-  text-align: center;
-  width: 100%;
+}
+.dl-row-days {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 14px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: 'Source Sans Pro', sans-serif;
 }
 .dl-days-overdue { background: rgba(239,68,68,0.12); color: #dc2626; }
 .dl-days-urgent  { background: rgba(249,115,22,0.12); color: #c2410c; }
 .dl-days-soon    { background: rgba(245,158,11,0.12); color: #92400e; }
 .dl-days-safe    { background: rgba(34,197,94,0.12);  color: #15803d; }
-.dl-days-done    { background: rgba(139,111,71,0.12); color: #8b6f47; }
-
-.dl-card-edit-btn {
-  background: rgba(139,111,71,0.10);
-  border: 1px solid rgba(139,111,71,0.22);
-  border-radius: 8px;
-  padding: 4px 10px;
-  font-size: 0.72rem;
-  color: #8b6f47;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: 'Playfair Display', serif;
-  white-space: nowrap;
-}
-.dl-card-edit-btn:hover {
-  background: linear-gradient(135deg, #8b6f47, #6b5139);
-  color: #f5f1eb;
-  border-color: transparent;
-}
-
-/* Compact variant (used in column view) */
-.dl-compact {
-  margin-bottom: 8px;
-  border-radius: 12px;
-}
-.dl-compact .dl-card-body {
-  padding: 12px 14px 10px 12px;
-}
-.dl-compact .dl-card-title { font-size: 0.90rem; }
-.dl-compact .dl-card-date-block { padding: 4px 10px; }
-.dl-compact .dl-card-day { font-size: 1.2rem; }
-.dl-compact .dl-card-month { font-size: 0.55rem; }
-
-/* Shifted badge */
-.dl-shifted-badge {
-  font-size: 0.68rem;
-  font-family: 'Source Sans Pro', sans-serif;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: rgba(212,165,116,0.18);
-  color: #8b6f47;
-  border: 1px solid rgba(212,165,116,0.35);
-  white-space: nowrap;
-}
-.deadline-shifted-tag {
-  font-size: 0.75em;
-  margin-left: 2px;
-  cursor: help;
-}
 
 /* ================================================================
-   COLUMN / KANBAN VIEW
+   DEADLINE POPOVER — shared by list rows + column chips.
+   Click-to-expand, mirrors the Order-Board bill-popover pattern.
+   Positioned as `fixed` (computed from getBoundingClientRect) so it
+   is never clipped by the scrollable column bodies or tab container.
+   ================================================================ */
+.dl-popover {
+  position: fixed;
+  background: rgba(245,241,235,0.98);
+  border: 1.5px solid rgba(139,111,71,0.25);
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+  width: 270px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  box-shadow: 0 14px 36px rgba(74,52,41,0.30);
+  z-index: 5000;
+  animation: dlPopIn 0.16s ease;
+}
+@keyframes dlPopIn {
+  from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.dl-pop-close {
+  position: absolute;
+  top: 8px; right: 8px;
+  background: rgba(139,111,71,0.1);
+  border: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  color: #6b5139;
+  cursor: pointer;
+}
+.dl-pop-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  color: #4a3429;
+  font-weight: 700;
+  margin-bottom: 8px;
+  padding-right: 22px;
+  line-height: 1.3;
+}
+.dl-pop-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.dl-pop-cat {
+  display: inline-block;
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 2px 9px;
+  border: 1px solid;
+}
+.dl-pop-date {
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.78rem;
+  color: rgba(107,81,57,0.75);
+  margin-bottom: 6px;
+}
+.dl-pop-shift-note {
+  font-size: 0.7rem;
+  color: rgba(180,130,40,0.85);
+  font-style: italic;
+  margin-bottom: 6px;
+}
+.dl-pop-streak {
+  margin-bottom: 8px;
+}
+.dl-pop-sub {
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.72rem;
+  color: rgba(107,81,57,0.55);
+  margin-bottom: 6px;
+}
+.dl-pop-sublist {
+  border-top: 1px solid rgba(139,111,71,0.1);
+  padding-top: 6px;
+  margin-bottom: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.dl-pop-subitem {
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 0.72rem;
+  color: #4a3429;
+  padding: 2px 0;
+  line-height: 1.4;
+}
+.dl-pop-subitem.done {
+  text-decoration: line-through;
+  color: rgba(107,81,57,0.4);
+}
+.dl-pop-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.dl-pop-edit-btn, .dl-pop-done-btn {
+  flex: 1;
+  padding: 7px 8px;
+  border-radius: 8px;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.76rem;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.16s ease;
+}
+.dl-pop-edit-btn {
+  background: rgba(139,111,71,0.10);
+  color: #6b5139;
+  border: 1px solid rgba(139,111,71,0.25);
+}
+.dl-pop-edit-btn:hover { background: rgba(139,111,71,0.18); }
+.dl-pop-done-btn {
+  background: linear-gradient(135deg, #8b6f47, #6b5139);
+  color: #f5f1eb;
+  border: none;
+}
+.dl-pop-done-btn:hover { box-shadow: 0 3px 10px rgba(139,111,71,0.4); }
+
+/* ================================================================
+   COLUMN / KANBAN VIEW — 4 columns, small chips, scrollable bodies.
+   No "Done" column: ticking a goal done removes it from this tab
+   entirely (it's managed on the Goals tab from then on).
    ================================================================ */
 .deadlines-column-view {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   align-items: start;
 }
-@media (max-width: 1100px) {
-  .deadlines-column-view { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 1000px) {
+  .deadlines-column-view { grid-template-columns: repeat(2, 1fr); }
 }
-@media (max-width: 700px) {
-  .deadlines-column-view { grid-template-columns: 1fr 1fr; }
-}
-@media (max-width: 480px) {
+@media (max-width: 560px) {
   .deadlines-column-view { grid-template-columns: 1fr; }
 }
 
@@ -330,6 +368,8 @@
   background: rgba(245,241,235,0.55);
   border: 1.5px solid rgba(139,111,71,0.14);
   box-shadow: 0 3px 14px rgba(139,111,71,0.07);
+  display: flex;
+  flex-direction: column;
 }
 
 /* Column header bar */
@@ -342,6 +382,7 @@
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.3px;
+  flex-shrink: 0;
 }
 .dl-column-count {
   font-family: 'Source Sans Pro', sans-serif;
@@ -374,16 +415,20 @@
   color: #15803d;
   border-bottom: 2px solid rgba(34,197,94,0.18);
 }
-.col-done .dl-column-header {
-  background: linear-gradient(90deg, rgba(139,111,71,0.12), rgba(139,111,71,0.06));
-  color: #6b5139;
-  border-bottom: 2px solid rgba(139,111,71,0.18);
-}
 
+/* Scrollable body — each column scrolls independently instead of
+   forcing the whole board to grow to fit every card */
 .dl-column-body {
-  padding: 10px 10px 12px;
-  min-height: 60px;
+  padding: 8px 8px 10px;
+  min-height: 44px;
+  max-height: 440px;
+  overflow-y: auto;
 }
+.dl-column-body::-webkit-scrollbar { width: 5px; }
+.dl-column-body::-webkit-scrollbar-track { background: transparent; }
+.dl-column-body::-webkit-scrollbar-thumb { background: rgba(139,111,71,0.30); border-radius: 3px; }
+.dl-column-body::-webkit-scrollbar-thumb:hover { background: rgba(139,111,71,0.5); }
+
 .dl-column-empty {
   text-align: center;
   padding: 18px 10px;
@@ -391,6 +436,52 @@
   font-size: 0.78rem;
   color: rgba(107,81,57,0.38);
   font-style: italic;
+}
+
+/* Compact chip — click to open the popover */
+.dl-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245,241,235,0.92);
+  border: 1px solid rgba(139,111,71,0.14);
+  border-left: 3px solid #22c55e;
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  animation: goalPopIn 0.3s ease-out;
+}
+.dl-chip:last-child { margin-bottom: 0; }
+.dl-chip:hover {
+  background: rgba(245,241,235,1);
+  box-shadow: 0 3px 10px rgba(139,111,71,0.15);
+  transform: translateX(2px);
+}
+.dl-chip.dl-overdue { border-left-color: #ef4444; }
+.dl-chip.dl-urgent  { border-left-color: #f97316; }
+.dl-chip.dl-soon    { border-left-color: #f59e0b; }
+.dl-chip.dl-safe    { border-left-color: #22c55e; }
+
+.dl-chip-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.79rem;
+  font-weight: 600;
+  color: #3a2510;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'Source Sans Pro', sans-serif;
+}
+.dl-chip-days {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: rgba(107,81,57,0.65);
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: 'Source Sans Pro', sans-serif;
 }
 
 /* ================================================================
@@ -421,19 +512,6 @@
 .goal-item.priority-upcoming   { border-left: 4px solid #f59e0b !important; }
 .goal-item.priority-interested { border-left: 4px solid #60a5fa !important; }
 .goal-item.priority-someday    { border-left: 4px solid #9ca3af !important; }
-
-/* Priority badge in deadline list card */
-.dl-priority-badge {
-  display: inline-block;
-  font-size: 0.62rem;
-  font-weight: 700;
-  font-family: 'Source Sans Pro', sans-serif;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: 10px;
-  border: 1px solid;
-}
 
 /* Priority row selector (shown when goal selected) */
 .goal-priority-row {
@@ -494,6 +572,5 @@
 @media (max-width: 600px) {
   .deadlines-header-top { flex-direction: column; align-items: flex-start; }
   .deadlines-column-view { grid-template-columns: 1fr; }
-  .dl-card-body { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .dl-card-right { flex-direction: row; align-items: center; width: 100%; justify-content: space-between; }
+  .dl-row-title { max-width: 140px; }
 }

@@ -169,6 +169,22 @@ const GoalsModule = (function() {
     return `<span class="goal-priority-pill priority-${priority}">${p.label}</span>`;
   }
 
+  // ---- Shared completion logic (Goals-tab checkbox + Deadlines-tab popover) ----
+  // Never call this without also calling saveData()/updateMainProgress()/renderGoals()/
+  // renderDeadlinesTab() afterward — this only mutates goal state + fires XP/stats.
+  function applyGoalCompletion(goal, checked) {
+    const wasCompleted = goal.completed;
+    goal.completed = checked;
+    if (goal.subgoals && goal.subgoals.length) goal.subgoals.forEach(sg => sg.completed = checked);
+    if (!wasCompleted && goal.completed) {
+      const _today = new Date(); _today.setHours(0, 0, 0, 0);
+      const isLate = goal.deadline && new Date(goal.deadline + 'T00:00:00') < _today;
+      const overdueStreak = typeof XPModule !== 'undefined' ? XPModule.getOverdueStreak() : 0;
+      if (typeof XPModule !== 'undefined') XPModule.onGoalComplete(goal, isLate, overdueStreak);
+      if (typeof StatsModule !== 'undefined') StatsModule.recordGoalComplete();
+    }
+  }
+
   // ---- Rendering ----
   function renderGoals() {
     const container = document.getElementById('goalsContainer');
@@ -200,17 +216,7 @@ const GoalsModule = (function() {
       const chk = document.createElement('input');
       chk.type = 'checkbox'; chk.className = 'goal-checkbox'; chk.checked = goal.completed;
       chk.addEventListener('change', function() {
-        const wasCompleted = goal.completed;
-        goal.completed = this.checked;
-        if (goal.subgoals && goal.subgoals.length) goal.subgoals.forEach(sg => sg.completed = this.checked);
-        if (!wasCompleted && goal.completed) {
-          const _today = new Date(); _today.setHours(0, 0, 0, 0);
-          const isLate = goal.deadline && new Date(goal.deadline + 'T00:00:00') < _today;
-          const overdueStreak = typeof XPModule !== 'undefined' ? XPModule.getOverdueStreak() : 0;
-          if (typeof XPModule !== 'undefined') XPModule.onGoalComplete(goal, isLate, overdueStreak);
-          if (typeof StatsModule !== 'undefined') StatsModule.recordGoalComplete();
-          if (goal.completed && goal.deadline) flashDeadlineCard(goal.id);
-        }
+        applyGoalCompletion(goal, this.checked);
         saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab();
       });
 
@@ -472,13 +478,6 @@ const GoalsModule = (function() {
     }, 80);
   }
 
-  function flashDeadlineCard(goalId) {
-    setTimeout(() => {
-      const card = document.querySelector(`.deadline-card[data-goal-id="${goalId}"]`);
-      if (card) { card.classList.add('completing'); setTimeout(() => card.classList.remove('completing'), 900); }
-    }, 100);
-  }
-
   function openInlineDeadlinePicker(goal, badgeEl) {
     document.querySelectorAll('.floating-deadline-picker').forEach(el => el.remove());
     const picker = document.createElement('div');
@@ -652,40 +651,40 @@ const GoalsModule = (function() {
   }
 
   // ================================================================
-  // LIST VIEW — deadlines sorted closest to furthest
+  // LIST VIEW — compact rows, sorted closest to furthest
+  // Completed goals are never shown here — once done, manage them on
+  // the Goals tab. This keeps the Deadlines tab focused on what's left.
   // ================================================================
   function renderDeadlinesList() {
     const container = document.getElementById('deadlinesList');
     if (!container) return;
     container.innerHTML = '';
 
-    const withDeadline = goals.filter(g => g.deadline);
+    const withDeadline = goals.filter(g => g.deadline && !g.completed);
     const emptyEl = document.getElementById('deadlinesEmpty');
     if (!withDeadline.length) {
-      container.innerHTML = '';
       if (emptyEl) emptyEl.classList.remove('hidden');
       return;
     }
     if (emptyEl) emptyEl.classList.add('hidden');
 
-    const sorted = [...withDeadline].sort((a, b) => {
-      if (a.completed !== b.completed) return a.completed ? 1 : -1;
-      const da = getDisplayDeadline(a), db = getDisplayDeadline(b);
-      return new Date(da) - new Date(db);
-    });
+    const sorted = [...withDeadline].sort((a, b) =>
+      new Date(getDisplayDeadline(a)) - new Date(getDisplayDeadline(b)));
 
-    sorted.forEach(goal => buildDeadlineCard(goal, container));
+    sorted.forEach(goal => buildDeadlineRow(goal, container));
   }
 
   // ================================================================
-  // COLUMN VIEW — 4 urgency columns
+  // COLUMN VIEW — 4 urgency columns (no Done column — completed
+  // goals simply drop off the board; each column body scrolls
+  // independently so the board never has to grow to fit everything)
   // ================================================================
   function renderDeadlinesColumn() {
     const container = document.getElementById('deadlinesList');
     if (!container) return;
     container.innerHTML = '';
 
-    const withDeadline = goals.filter(g => g.deadline);
+    const withDeadline = goals.filter(g => g.deadline && !g.completed);
     const emptyEl = document.getElementById('deadlinesEmpty');
     if (!withDeadline.length) {
       if (emptyEl) emptyEl.classList.remove('hidden');
@@ -693,23 +692,19 @@ const GoalsModule = (function() {
     }
     if (emptyEl) emptyEl.classList.add('hidden');
 
-    // Sort each column closest to furthest
     const cols = {
-      overdue:   { label: '🔴 Overdue',   goals: [], class: 'col-overdue'  },
-      urgent:    { label: '🟠 Urgent',     goals: [], class: 'col-urgent'   },
-      soon:      { label: '🟡 Soon',       goals: [], class: 'col-soon'     },
-      safe:      { label: '🟢 On Track',   goals: [], class: 'col-safe'     },
-      completed: { label: '✅ Done',       goals: [], class: 'col-done'     },
+      overdue: { label: '🔴 Overdue',   goals: [], class: 'col-overdue' },
+      urgent:  { label: '🟠 Urgent',    goals: [], class: 'col-urgent'  },
+      soon:    { label: '🟡 Soon',      goals: [], class: 'col-soon'    },
+      safe:    { label: '🟢 On Track',  goals: [], class: 'col-safe'    },
     };
 
     withDeadline.forEach(goal => {
-      if (goal.completed) { cols.completed.goals.push(goal); return; }
       const dl = getDisplayDeadline(goal);
       const u = getDeadlineUrgency(dl) || 'safe';
       cols[u].goals.push(goal);
     });
 
-    // Sort each column by display deadline
     Object.values(cols).forEach(col => {
       col.goals.sort((a, b) => new Date(getDisplayDeadline(a)) - new Date(getDisplayDeadline(b)));
     });
@@ -731,7 +726,7 @@ const GoalsModule = (function() {
       if (!col.goals.length) {
         body.innerHTML = `<div class="dl-column-empty">Nothing here ☕</div>`;
       } else {
-        col.goals.forEach(goal => buildDeadlineCard(goal, body, true));
+        col.goals.forEach(goal => buildDeadlineChip(goal, body));
       }
       wrapper.appendChild(colEl);
     });
@@ -740,71 +735,150 @@ const GoalsModule = (function() {
   }
 
   // ================================================================
-  // DEADLINE CARD BUILDER (shared by list + column)
+  // COMPACT LIST ROW — click anywhere on the row to open the popover
   // ================================================================
-  function buildDeadlineCard(goal, container, compact = false) {
+  function buildDeadlineRow(goal, container) {
     const displayDl = getDisplayDeadline(goal);
-    const urgency = goal.completed ? 'done' : (getDeadlineUrgency(displayDl) || 'safe');
-    const isShifted = displayDl && displayDl !== goal.deadline;
-
-    const card = document.createElement('div');
-    card.className = `deadline-card-v2 ${goal.completed ? 'dl-completed' : 'dl-' + urgency}${compact ? ' dl-compact' : ''}`;
-    card.dataset.goalId = goal.id;
-
-    if (goal.priority && !goal.completed) card.classList.add('dl-priority-' + goal.priority);
-
+    const urgency = getDeadlineUrgency(displayDl) || 'safe';
     const overdueStreak = typeof XPModule !== 'undefined' ? XPModule.getOverdueStreak() : 0;
-    const overduePill = (urgency === 'overdue' && overdueStreak > 0) ? `
-      <div class="overdue-streak-pill" title="Overdue streak — reduces XP gain">
-        🔥 ${overdueStreak} overdue
-        <span class="overdue-streak-xp">−${overdueStreak >= 7 ? 35 : overdueStreak >= 4 ? 20 : overdueStreak >= 2 ? 10 : 5} XP</span>
-      </div>` : '';
 
+    const row = document.createElement('div');
+    row.className = `dl-row dl-${urgency}`;
+    row.dataset.goalId = goal.id;
+
+    const prioDot = goal.priority
+      ? `<span class="dl-prio-dot" style="background:${PRIORITIES[goal.priority].color}" title="${PRIORITIES[goal.priority].label} priority"></span>`
+      : '';
+    const catColor = getCategoryColor(goal.category);
+    const catChip = goal.category
+      ? `<span class="dl-row-cat" style="background:${catColor}22;color:${catColor};border-color:${catColor}55">${goal.category}</span>`
+      : '';
     const subCount = goal.subgoals ? goal.subgoals.length : 0;
     const subDone  = goal.subgoals ? goal.subgoals.filter(s => s.completed).length : 0;
-    const priorityBadge = goal.priority ? `<span class="dl-priority-badge priority-${goal.priority}">${PRIORITIES[goal.priority]?.label}</span>` : '';
+    const subMini  = subCount ? `<span class="dl-row-subcount">${subDone}/${subCount}</span>` : '';
+    const isShifted = displayDl && displayDl !== goal.deadline;
+    const shiftMini = isShifted ? `<span class="dl-shifted-mini" title="Deadline shifted earlier to help you finish on time">⚡</span>` : '';
+    const streakBadge = (urgency === 'overdue' && overdueStreak > 0)
+      ? `<span class="dl-streak-mini" title="Overdue streak reduces XP gain">🔥${overdueStreak}</span>` : '';
 
-    // Category badge
+    row.innerHTML = `
+      <div class="dl-row-accent"></div>
+      <div class="dl-row-main">
+        ${prioDot}
+        <span class="dl-row-title">${goal.text}</span>
+        ${catChip}
+        ${subMini}
+        ${shiftMini}
+        ${streakBadge}
+      </div>
+      <div class="dl-row-days dl-days-${urgency}">${displayDl ? getDeadlineDaysLabel(displayDl) : ''}</div>
+    `;
+    row.addEventListener('click', () => showDeadlinePopover(goal, row));
+    container.appendChild(row);
+  }
+
+  // ================================================================
+  // COMPACT COLUMN CHIP — click to open the popover
+  // ================================================================
+  function buildDeadlineChip(goal, container) {
+    const displayDl = getDisplayDeadline(goal);
+    const urgency = getDeadlineUrgency(displayDl) || 'safe';
+
+    const chip = document.createElement('div');
+    chip.className = `dl-chip dl-${urgency}`;
+    chip.dataset.goalId = goal.id;
+
+    const prioDot = goal.priority
+      ? `<span class="dl-prio-dot" style="background:${PRIORITIES[goal.priority].color}" title="${PRIORITIES[goal.priority].label} priority"></span>`
+      : '';
+
+    chip.innerHTML = `
+      ${prioDot}
+      <span class="dl-chip-title">${goal.text}</span>
+      <span class="dl-chip-days">${displayDl ? getDeadlineDaysLabel(displayDl) : ''}</span>
+    `;
+    chip.addEventListener('click', () => showDeadlinePopover(goal, chip));
+    container.appendChild(chip);
+  }
+
+  // ================================================================
+  // SHARED POPOVER — expands a row/chip into full detail on click
+  // (mirrors the Order-Board bill-popover interaction pattern)
+  // ================================================================
+  function showDeadlinePopover(goal, anchorEl) {
+    document.getElementById('dlPopover')?.remove();
+
+    const displayDl = getDisplayDeadline(goal);
+    const urgency = getDeadlineUrgency(displayDl) || 'safe';
+    const isShifted = displayDl && displayDl !== goal.deadline;
+    const overdueStreak = typeof XPModule !== 'undefined' ? XPModule.getOverdueStreak() : 0;
     const catColor = getCategoryColor(goal.category);
-    const catBadge = goal.category ? `<span class="goal-category" data-cat="${goal.category}" style="background:${catColor}22;color:${catColor};border-color:${catColor}55">${goal.category}</span>` : '';
+    const subTotal = goal.subgoals ? goal.subgoals.length : 0;
 
-    // Shifted indicator
-    const shiftBadge = isShifted ? `<span class="dl-shifted-badge" title="Deadline shifted 1–2 days earlier to help you finish on time">⚡ Early shift</span>` : '';
-
-    card.innerHTML = `
-      <div class="dl-card-accent"></div>
-      <div class="dl-card-body">
-        <div class="dl-card-top">
-          <div class="dl-card-title-row">
-            <span class="dl-card-title ${goal.completed ? 'completed' : ''}">${goal.text}</span>
-            ${priorityBadge}
-          </div>
-          <div class="dl-card-meta">
-            ${catBadge}
-            ${subCount ? `<span class="dl-card-sub">${subDone}/${subCount} subtasks</span>` : ''}
-            ${shiftBadge}
-          </div>
-          ${overduePill}
-        </div>
-        <div class="dl-card-right">
-          <div class="dl-card-date-block">
-            <div class="dl-card-month">${displayDl ? formatDeadlineDisplay(displayDl).split(' ')[0] : '—'}</div>
-            <div class="dl-card-day">${displayDl ? new Date(displayDl + 'T00:00:00').getDate() : ''}</div>
-          </div>
-          <div class="dl-card-days-label dl-days-${urgency}">${goal.completed ? '✓ Done' : (displayDl ? getDeadlineDaysLabel(displayDl) : '')}</div>
-          ${!goal.completed && displayDl ? `<button class="dl-card-edit-btn">✏️</button>` : ''}
-        </div>
+    const pop = document.createElement('div');
+    pop.id = 'dlPopover';
+    pop.className = 'dl-popover';
+    pop.innerHTML = `
+      <button class="dl-pop-close">✕</button>
+      <div class="dl-pop-title">${goal.text}</div>
+      <div class="dl-pop-row">
+        ${goal.category ? `<span class="dl-pop-cat" style="background:${catColor}22;color:${catColor};border-color:${catColor}55">${goal.category}</span>` : ''}
+        ${goal.priority ? `<span class="goal-priority-pill priority-${goal.priority}">${PRIORITIES[goal.priority].label}</span>` : ''}
+      </div>
+      <div class="dl-pop-date">📅 Due ${displayDl ? formatDeadlineDisplay(displayDl) : '—'} · <strong class="dl-days-${urgency}" style="padding:2px 8px;border-radius:10px;">${displayDl ? getDeadlineDaysLabel(displayDl) : ''}</strong></div>
+      ${isShifted ? `<div class="dl-pop-shift-note">⚡ Shifted earlier from ${formatDeadlineDisplay(goal.deadline)} to help you finish on time</div>` : ''}
+      ${(urgency === 'overdue' && overdueStreak > 0) ? `
+        <div class="dl-pop-streak overdue-streak-pill" title="Overdue streak reduces XP gain">
+          🔥 ${overdueStreak} overdue streak
+          <span class="overdue-streak-xp">−${overdueStreak >= 7 ? 35 : overdueStreak >= 4 ? 20 : overdueStreak >= 2 ? 10 : 5} XP/goal</span>
+        </div>` : ''}
+      ${subTotal ? `
+        <div class="dl-pop-sub">${goal.subgoals.filter(s => s.completed).length}/${subTotal} subtasks done</div>
+        <div class="dl-pop-sublist">${goal.subgoals.map(sg =>
+          `<div class="dl-pop-subitem${sg.completed ? ' done' : ''}">${sg.completed ? '✓' : '○'} ${sg.text}</div>`
+        ).join('')}</div>` : ''}
+      <div class="dl-pop-actions">
+        <button class="dl-pop-edit-btn">✏️ Edit date</button>
+        <button class="dl-pop-done-btn">✓ Mark Done</button>
       </div>
     `;
+    document.body.appendChild(pop);
 
-    if (!goal.completed && displayDl) {
-      card.querySelector('.dl-card-edit-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        showDatePickerModal(goal, () => { renderGoals(); renderDeadlinesTab(); });
-      });
+    // Position as a fixed-position popover anchored to the clicked row/chip —
+    // avoids clipping inside the now-scrollable column bodies. Measured AFTER
+    // appending so we know its real rendered size before flipping above.
+    const r = anchorEl.getBoundingClientRect();
+    const popRect = pop.getBoundingClientRect();
+    const popW = popRect.width, popH = popRect.height;
+    let left = r.left;
+    if (left + popW > window.innerWidth - 12) left = window.innerWidth - popW - 12;
+    if (left < 12) left = 12;
+    let top = r.bottom + 8;
+    if (top + popH > window.innerHeight - 12) {
+      const aboveTop = r.top - popH - 8;
+      top = aboveTop > 12 ? aboveTop : Math.max(12, window.innerHeight - popH - 12);
     }
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
 
-    container.appendChild(card);
+    pop.querySelector('.dl-pop-close').addEventListener('click', (e) => { e.stopPropagation(); pop.remove(); });
+    pop.querySelector('.dl-pop-edit-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      pop.remove();
+      showDatePickerModal(goal, () => { renderGoals(); renderDeadlinesTab(); });
+    });
+    pop.querySelector('.dl-pop-done-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      applyGoalCompletion(goal, true);
+      saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab();
+      pop.remove();
+    });
+
+    setTimeout(() => {
+      document.addEventListener('click', function h(e) {
+        if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('click', h); }
+      });
+    }, 10);
   }
 
   // ================================================================

@@ -615,10 +615,12 @@ body { background: linear-gradient(160deg,#2a1a0e,#3d2410,#5c3620,#3d2410,#1e110
 .po-sounds-body { overflow:hidden; max-height:0; transition:max-height 0.35s ease, opacity 0.25s ease, margin-top 0.25s ease; opacity:0; margin-top:0; }
 .po-sounds-body.expanded { max-height:600px; opacity:1; margin-top:10px; }
 .po-sound-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-.po-sound-btn { background:rgba(212,165,116,0.1); border:1px solid rgba(212,165,116,0.25); color:#d4a574; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:0.82rem; min-width:100px; text-align:left; transition:all 0.2s; text-transform:capitalize; }
+.po-sound-btn { background:rgba(212,165,116,0.1); border:1px solid rgba(212,165,116,0.25); color:#d4a574; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:0.82rem; min-width:100px; text-align:left; transition:all 0.2s; text-transform:capitalize; position:relative; overflow:hidden; }
 .po-sound-btn.active { background:rgba(212,165,116,0.3); border-color:rgba(212,165,116,0.6); }
 .po-vol-slider { flex:1; accent-color:#d4a574; }
 .po-sync-status { text-align:center; font-size:0.72rem; color:rgba(212,165,116,0.5); padding-bottom:8px; font-style:italic; }
+.po-cooldown-overlay { position:absolute; left:0; right:0; top:0; height:100%; background:rgba(200,200,200,0.55); transform-origin:bottom; transform:scaleY(0); pointer-events:none; border-radius:inherit; z-index:2; }
+@keyframes poCooldownDrain { from { transform:scaleY(1); } to { transform:scaleY(0); } }
 </style></head><body>
 <div class="po-header">
   <span class="po-title">☕ LetsFocus Timer</span>
@@ -651,6 +653,24 @@ let poRunning = ${state.running};
 let poRemaining = ${state.remaining};
 let poTotal = ${state.total};
 let poInterval = null;
+
+// ---- Sound-toggle cooldown guard ----
+// Prevents rapid clicking from racing play()/pause() on the same <audio>
+// element, which was causing spurious "Could not play" style failures
+// (an aborted play() promise looks identical to a real load failure).
+const SOUND_COOLDOWN_MS = 450;
+const busySounds = new Set();
+function triggerSoundCooldown(btn) {
+  let overlay = btn.querySelector('.po-cooldown-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'po-cooldown-overlay';
+    btn.appendChild(overlay);
+  }
+  overlay.style.animation = 'none';
+  void overlay.offsetWidth; // reflow — restarts the animation from scratch
+  overlay.style.animation = 'poCooldownDrain ' + SOUND_COOLDOWN_MS + 'ms linear forwards';
+}
 
 function pad(n) { return String(n).padStart(2,'0'); }
 function updateDisplay(rem) {
@@ -708,9 +728,23 @@ document.getElementById('poExpand').addEventListener('click', () => { window.res
 document.querySelectorAll('.po-sound-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const sound = btn.dataset.sound, url = btn.dataset.url;
+    if (busySounds.has(sound)) return; // still cooling down from the last click — ignore
+    busySounds.add(sound);
+    triggerSoundCooldown(btn);
+    setTimeout(() => busySounds.delete(sound), SOUND_COOLDOWN_MS);
+
     if (!audios[sound]) { audios[sound] = new Audio(url); audios[sound].loop = true; }
-    if (!audios[sound].paused) { audios[sound].pause(); btn.classList.remove('active'); }
-    else { audios[sound].play(); btn.classList.add('active'); }
+    if (!audios[sound].paused) {
+      audios[sound].pause();
+      btn.classList.remove('active');
+    } else {
+      audios[sound].play().catch((err) => {
+        // AbortError just means a pause() interrupted this play() a moment
+        // later — not a real failure, so stay quiet instead of erroring.
+        if (err && err.name === 'AbortError') return;
+      });
+      btn.classList.add('active');
+    }
   });
 });
 document.querySelectorAll('.po-vol-slider').forEach(slider => {
