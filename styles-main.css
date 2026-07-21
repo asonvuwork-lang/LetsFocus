@@ -1105,27 +1105,6 @@ aside.right {
   transition: all 0.2s ease;
   flex: 0 0 calc(20% - 7px); min-width: 64px;
   font-family: 'Playfair Display', serif;
-  position: relative;
-  overflow: hidden;
-}
-/* ---- Sound-toggle cooldown wipe ----
-   Covers the button in light grey right after a click, then drains
-   downward (anchored at the bottom) to reveal it's ready again —
-   a quick visual cue instead of the click silently doing nothing. */
-.ntb-cooldown-overlay {
-  position: absolute;
-  left: 0; right: 0; top: 0;
-  height: 100%;
-  background: rgba(190,190,190,0.55);
-  transform-origin: bottom;
-  transform: scaleY(0);
-  pointer-events: none;
-  border-radius: inherit;
-  z-index: 2;
-}
-@keyframes ntbCooldownDrain {
-  from { transform: scaleY(1); }
-  to   { transform: scaleY(0); }
 }
 .noise-toggle-btn:hover {
   background: rgba(245,241,235,0.9); border-color: rgba(139,111,71,0.4);
@@ -1153,6 +1132,7 @@ aside.right {
 .ntb-wrap {
   flex: 0 0 calc(20% - 7px); min-width: 64px;
   display: flex; flex-direction: column; align-items: stretch;
+  overflow: hidden; /* belt-and-suspenders: nothing inside can ever spill past this grid cell */
 }
 .ntb-wrap .noise-toggle-btn { width: 100%; }
 
@@ -1161,6 +1141,10 @@ aside.right {
   display: flex; align-items: center; gap: 3px;
   padding: 0 2px;
   max-height: 0; overflow: hidden; opacity: 0;
+  min-width: 0; /* the actual fix — without this, the row's own two flex-shrink:0
+                   icons give it a content-based auto min-width that wins over
+                   align-items:stretch, rendering it wider than its grid cell
+                   the moment max-height reveals it (invisible while collapsed) */
   transition: max-height 0.25s ease, opacity 0.25s ease, margin 0.25s ease;
   margin-top: 0;
 }

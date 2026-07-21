@@ -615,12 +615,10 @@ body { background: linear-gradient(160deg,#2a1a0e,#3d2410,#5c3620,#3d2410,#1e110
 .po-sounds-body { overflow:hidden; max-height:0; transition:max-height 0.35s ease, opacity 0.25s ease, margin-top 0.25s ease; opacity:0; margin-top:0; }
 .po-sounds-body.expanded { max-height:600px; opacity:1; margin-top:10px; }
 .po-sound-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-.po-sound-btn { background:rgba(212,165,116,0.1); border:1px solid rgba(212,165,116,0.25); color:#d4a574; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:0.82rem; min-width:100px; text-align:left; transition:all 0.2s; text-transform:capitalize; position:relative; overflow:hidden; }
+.po-sound-btn { background:rgba(212,165,116,0.1); border:1px solid rgba(212,165,116,0.25); color:#d4a574; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:0.82rem; min-width:100px; text-align:left; transition:all 0.2s; text-transform:capitalize; }
 .po-sound-btn.active { background:rgba(212,165,116,0.3); border-color:rgba(212,165,116,0.6); }
 .po-vol-slider { flex:1; accent-color:#d4a574; }
 .po-sync-status { text-align:center; font-size:0.72rem; color:rgba(212,165,116,0.5); padding-bottom:8px; font-style:italic; }
-.po-cooldown-overlay { position:absolute; left:0; right:0; top:0; height:100%; background:rgba(200,200,200,0.55); transform-origin:bottom; transform:scaleY(0); pointer-events:none; border-radius:inherit; z-index:2; }
-@keyframes poCooldownDrain { from { transform:scaleY(1); } to { transform:scaleY(0); } }
 </style></head><body>
 <div class="po-header">
   <span class="po-title">☕ LetsFocus Timer</span>
@@ -658,13 +656,31 @@ let poInterval = null;
 // Prevents rapid clicking from racing play()/pause() on the same <audio>
 // element, which was causing spurious "Could not play" style failures
 // (an aborted play() promise looks identical to a real load failure).
+// Positioning + the keyframe are applied here in JS rather than relying
+// on rules in the <style> block above, so the button's own size is
+// never at risk even if this script and that stylesheet ever drift.
 const SOUND_COOLDOWN_MS = 450;
 const busySounds = new Set();
+let _cooldownKeyframeInjected = false;
+function ensureCooldownKeyframe() {
+  if (_cooldownKeyframeInjected) return;
+  _cooldownKeyframeInjected = true;
+  const s = document.createElement('style');
+  s.textContent = '@keyframes poCooldownDrain { from { transform: scaleY(1); } to { transform: scaleY(0); } }';
+  document.head.appendChild(s);
+}
 function triggerSoundCooldown(btn) {
+  ensureCooldownKeyframe();
+  btn.style.position = btn.style.position || 'relative';
+  btn.style.overflow = 'hidden';
   let overlay = btn.querySelector('.po-cooldown-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.className = 'po-cooldown-overlay';
+    overlay.style.cssText =
+      'position:absolute; left:0; right:0; top:0; bottom:0;' +
+      'background:rgba(200,200,200,0.55); transform-origin:bottom;' +
+      'pointer-events:none; border-radius:inherit; z-index:2;';
     btn.appendChild(overlay);
   }
   overlay.style.animation = 'none';

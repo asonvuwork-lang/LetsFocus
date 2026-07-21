@@ -24,20 +24,44 @@ const MusicModule = (function () {
   // Rapid clicking was racing play()/pause() on the same <audio> element:
   // pause() would abort an in-flight play() promise, which rejected and
   // looked identical to a real network/load failure, triggering the
-  // "Could not play... Check your internet connection" alert for no reason.
+  // "Could not play... Check your internet connection." alert for no reason.
   // This guard ignores repeat clicks on a sound until the previous
   // play/pause transition has settled, and shows a small cooldown wipe
   // animation on the button so the pause is visible instead of silent.
+  //
+  // Everything the overlay needs (positioning + the keyframe) is applied
+  // here in JS rather than relying on rules in styles-main.css — the
+  // button's own size/layout in the stylesheet is untouched, and the
+  // overlay can never accidentally squash it even if the two files ever
+  // drift out of sync again.
   const SOUND_COOLDOWN_MS = 450;
   const busySounds = new Set();
 
+  let _cooldownKeyframeInjected = false;
+  function ensureCooldownKeyframe() {
+    if (_cooldownKeyframeInjected) return;
+    _cooldownKeyframeInjected = true;
+    const style = document.createElement('style');
+    style.textContent = '@keyframes ntbCooldownDrain { from { transform: scaleY(1); } to { transform: scaleY(0); } }';
+    document.head.appendChild(style);
+  }
+
   function triggerSoundCooldown(sound) {
+    ensureCooldownKeyframe();
     document.querySelectorAll('.noise-toggle-btn[data-sound="' + sound + '"], .setup-noise-btn[data-sound="' + sound + '"]')
       .forEach(btn => {
+        // Host the overlay without ever changing the button's own box size.
+        btn.style.position = btn.style.position || 'relative';
+        btn.style.overflow = 'hidden';
+
         let overlay = btn.querySelector('.ntb-cooldown-overlay');
         if (!overlay) {
           overlay = document.createElement('div');
           overlay.className = 'ntb-cooldown-overlay';
+          overlay.style.cssText =
+            'position:absolute; left:0; right:0; top:0; bottom:0;' +
+            'background:rgba(190,190,190,0.55); transform-origin:bottom;' +
+            'pointer-events:none; border-radius:inherit; z-index:2;';
           btn.appendChild(overlay);
         }
         overlay.style.animation = 'none';
