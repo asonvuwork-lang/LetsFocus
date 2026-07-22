@@ -51,8 +51,12 @@ const MusicModule = (function () {
     document.querySelectorAll('.noise-toggle-btn[data-sound="' + sound + '"], .setup-noise-btn[data-sound="' + sound + '"]')
       .forEach(btn => {
         // Host the overlay without ever changing the button's own box size.
+        // IMPORTANT: do NOT set overflow:hidden here — verified in a real
+        // browser that it collapses this flex-column button's auto-computed
+        // height (~64px -> ~24px), clipping the label. Not needed anyway:
+        // the overlay covers the button exactly and has its own
+        // border-radius, so corners look right without clipping the parent.
         btn.style.position = btn.style.position || 'relative';
-        btn.style.overflow = 'hidden';
 
         let overlay = btn.querySelector('.ntb-cooldown-overlay');
         if (!overlay) {

@@ -671,8 +671,10 @@ function ensureCooldownKeyframe() {
 }
 function triggerSoundCooldown(btn) {
   ensureCooldownKeyframe();
+  // IMPORTANT: no overflow:hidden here — verified in a real browser that it
+  // collapses this flex-column button's auto-computed height, clipping the
+  // label. The overlay's own border-radius already gives rounded corners.
   btn.style.position = btn.style.position || 'relative';
-  btn.style.overflow = 'hidden';
   let overlay = btn.querySelector('.po-cooldown-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
