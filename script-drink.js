@@ -333,6 +333,11 @@ const DrinkModule = (function () {
   let isFinished    = false;
   let _currentCategoryName = null;  // passed from onSessionStart, used for category pill
 
+  // localStorage channel used to mirror the active drink's visual data out to
+  // the pop-out timer window (which is a separate document with no access to
+  // this module — see script-timer.js buildPopOutHTML).
+  const DRINK_SYNC_KEY = 'letsfocus_drink_sync';
+
   // ---- Recipe tier resolution ----
   function getCurrentTierConfig(recipeKey) {
     if (!recipeKey || typeof DRINK_RECIPES === 'undefined') return null;
@@ -420,6 +425,40 @@ const DrinkModule = (function () {
 
     // Render recipe bill beside the cup
     renderRecipeBill(drinkKey, currentDrink, tierCfg);
+
+    // Mirror this drink's visual data to the pop-out timer window (if open)
+    broadcastDrinkSync();
+  }
+
+  // ---- Pop-out sync: lightweight visual snapshot of the current drink ----
+  // Returns only what a simplified cup renderer needs (colors + flags),
+  // not the full recipe/tier/garnish system — see buildPoCupSVG in script-timer.js.
+  function getCurrentDrinkVisual() {
+    if (!currentDrink) return null;
+    const d = currentDrink;
+    const recipeKey = DRINK_KEY_TO_RECIPE[currentDrinkId] || null;
+    const tierCfg   = recipeKey ? getCurrentTierConfig(recipeKey) : null;
+    return {
+      drinkKey:     currentDrinkId,
+      label:        d.label,
+      type:         d.type || 'coffee',
+      rarity:       d.rarity || 'base',
+      tier:         tierCfg?.tier || 'house',
+      liquidColor:  d.liquidColor,
+      liquidColor2: d.liquidColor2 || d.liquidColor,
+      foamColor:    d.hasFoam ? (d.foamColor || null) : null,
+      cupTint:      d.cupTint,
+      hasIce:       !!d.hasIce,
+      bobas:        !!d.bobas,
+      bobaColor:    d.bobaColor || null,
+    };
+  }
+
+  function broadcastDrinkSync() {
+    try {
+      const visual = getCurrentDrinkVisual();
+      if (visual) localStorage.setItem(DRINK_SYNC_KEY, JSON.stringify({ ...visual, ts: Date.now() }));
+    } catch(e) {}
   }
 
   function updateProgress(pct) {
@@ -2607,6 +2646,6 @@ const DrinkModule = (function () {
   }
 
   return { init, onSessionStart, onProgressUpdate, renderBillBoard,
-           getCurrentDrinkInfo, generateShopCupSVG };
+           getCurrentDrinkInfo, getCurrentDrinkVisual, generateShopCupSVG };
 
 })();

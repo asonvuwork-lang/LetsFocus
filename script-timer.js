@@ -548,20 +548,81 @@ const TimerModule = (function() {
   // ============================================================
   // POP-OUT WINDOW
   // ============================================================
+
+  // Simplified live drink cup SVG for the pop-out window.
+  // IMPORTANT: this must stay a pure, self-contained function (only using its
+  // own params + Math/Array/JSON) — its source is reused verbatim inside the
+  // pop-out's own <script> via buildPoCupSVG.toString(), since the pop-out is
+  // a separate document with no access to this module or script-drink.js.
+  function buildPoCupSVG(dv, pct) {
+    function wavePath(fillY, x0, x1, amp) {
+      const mid = (x0 + x1) / 2;
+      return `M${x0},${fillY} Q${(x0+mid)/2},${fillY-amp} ${mid},${fillY} Q${(mid+x1)/2},${fillY+amp} ${x1},${fillY} L${x1},92 L${x0},92 Z`;
+    }
+    if (!dv) {
+      return `<svg width="90" height="106" viewBox="0 0 90 106" xmlns="http://www.w3.org/2000/svg">
+        <text x="45" y="55" text-anchor="middle" font-family="Source Sans Pro,sans-serif" font-size="9" fill="rgba(212,165,116,0.4)">No drink yet</text>
+      </svg>`;
+    }
+    const CX = 12, CW = 66, CTY = 14, CBY = 92;
+    const p = Math.max(0, Math.min(100, pct || 0));
+    const fillH = (p / 100) * (CBY - CTY);
+    const fillY = CBY - fillH;
+    const lc  = dv.liquidColor  || '#8b6f47';
+    const lc2 = dv.liquidColor2 || lc;
+    const waveTop = wavePath(fillY, CX + 3, CX + CW - 3, 2.5);
+
+    let ice = '';
+    if (dv.hasIce && p > 15) {
+      ice = `<rect x="${CX+14}" y="${fillY+4}" width="14" height="9" rx="2" fill="rgba(210,240,255,0.65)"/>
+             <rect x="${CX+34}" y="${fillY+7}" width="12" height="8" rx="2" fill="rgba(210,240,255,0.55)"/>`;
+    }
+    let bobas = '';
+    if (dv.bobas && p > 10) {
+      const bc = dv.bobaColor || '#2a1a0a';
+      bobas = [0,1,2,3].map(i => `<circle cx="${CX+16+i*12}" cy="${CBY-8-(i%2)*4}" r="3.6" fill="${bc}" opacity="0.9"/>`).join('');
+    }
+    let foam = '';
+    if (dv.foamColor && p >= 8) {
+      foam = `<ellipse cx="${CX+CW/2}" cy="${fillY+2}" rx="${CW*0.4}" ry="6" fill="${dv.foamColor}" opacity="0.9"/>`;
+    }
+
+    return `<svg width="90" height="106" viewBox="0 0 90 106" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <clipPath id="poCupClip"><polygon points="${CX},${CTY} ${CX+CW},${CTY} ${CX+CW-6},${CBY} ${CX+6},${CBY}"/></clipPath>
+        <linearGradient id="poLiqGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="${lc}"/><stop offset="100%" stop-color="${lc2}"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="${CX+CW/2}" cy="${CBY+4}" rx="30" ry="4" fill="rgba(0,0,0,0.25)"/>
+      <polygon points="${CX},${CTY} ${CX+CW},${CTY} ${CX+CW-6},${CBY} ${CX+6},${CBY}" fill="rgba(245,241,235,0.06)"/>
+      ${p > 0 ? `<g clip-path="url(#poCupClip)">
+        <rect x="${CX}" y="${fillY}" width="${CW}" height="${CBY-fillY+4}" fill="url(#poLiqGrad)" opacity="0.9"/>
+        <path d="${waveTop}" fill="${lc2}" opacity="0.5" class="po-wave"/>
+        ${ice}${bobas}${foam}
+      </g>` : ''}
+      <ellipse cx="${CX+CW/2}" cy="${CTY}" rx="${CW/2+3}" ry="4.5" fill="${dv.cupTint||'#8b6f47'}" opacity="0.85"/>
+      <ellipse cx="${CX+CW/2}" cy="${CTY+0.5}" rx="${CW/2-6}" ry="2.5" fill="rgba(0,0,0,0.2)"/>
+      <polygon points="${CX},${CTY} ${CX+CW},${CTY} ${CX+CW-6},${CBY} ${CX+6},${CBY}" fill="none" stroke="rgba(212,165,116,0.35)" stroke-width="1.5"/>
+    </svg>`;
+  }
+
   function openPopOut() {
     if (popOutWindow && !popOutWindow.closed) { popOutWindow.focus(); return; }
 
     const sounds = JSON.parse(localStorage.getItem('letsfocus_volumes') || '{}');
     const state = { remaining: remainingSeconds, total: totalSeconds, running: timerRunning, h: timerHours, m: timerMinutes, s: timerSeconds };
+    let drinkVisual = null;
+    try { drinkVisual = JSON.parse(localStorage.getItem('letsfocus_drink_sync') || 'null'); } catch(e) {}
 
-    const popHTML = buildPopOutHTML(sounds, state);
+    const popHTML = buildPopOutHTML(sounds, state, drinkVisual);
     popOutWindow = window.open('', 'LetsFocusTimer', 'width=400,height=600,resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no');
     if (!popOutWindow) { showCustomAlert('Pop-out blocked! Please allow pop-ups for this site.'); return; }
     popOutWindow.document.write(popHTML);
     popOutWindow.document.close();
   }
 
-  function buildPopOutHTML(sounds, state) {
+  function buildPopOutHTML(sounds, state, drinkVisual) {
     const SOUND_FILES = {
       rain:     'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996128/rain_otcmzn.mp3',
       thunder:  'https://res.cloudinary.com/diyqurzvq/video/upload/v1776996118/thunder_mz7jxe.mp3',
@@ -584,19 +645,25 @@ const TimerModule = (function() {
     }).join('');
 
     const h = String(state.h).padStart(2,'0'), m = String(state.m).padStart(2,'0'), s = String(state.s).padStart(2,'0');
+    const initialPct = state.total > 0 ? ((state.total - state.remaining) / state.total * 100) : 0;
+    const initialCupSVG = buildPoCupSVG(drinkVisual, initialPct);
+    const initialDrinkLabel = drinkVisual
+      ? (drinkVisual.label + (drinkVisual.tier === 'mastercraft' ? ' 👑' : drinkVisual.tier === 'signature' ? ' ✦' : ''))
+      : 'No drink yet — start a session';
 
     return `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>LetsFocus Timer</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=Source+Sans+Pro&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: linear-gradient(160deg,#2a1a0e,#3d2410,#5c3620,#3d2410,#1e1108); min-height:100vh; font-family:'Source Sans Pro',sans-serif; color:#f5f1eb; overflow-x:hidden; }
+body { background: linear-gradient(165deg,#1c0f06 0%,#2e1a0c 22%,#4a2c14 48%,#2e1a0c 74%,#140b04 100%); min-height:100vh; font-family:'Source Sans Pro',sans-serif; color:#f5f1eb; overflow-x:hidden; }
 .po-header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid rgba(212,165,116,0.2); }
-.po-title { font-family:'Playfair Display',serif; font-size:1rem; color:#d4a574; font-style:italic; }
+.po-title { font-family:'Playfair Display',serif; font-size:1rem; color:#e0b57e; font-style:italic; text-shadow:0 0 12px rgba(212,165,116,0.35); }
 .po-expand { background:rgba(212,165,116,0.15); border:1px solid rgba(212,165,116,0.3); color:#d4a574; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:0.82rem; }
 .po-expand:hover { background:rgba(212,165,116,0.25); }
-.po-timer { text-align:center; padding:24px 16px 16px; }
-.po-display { font-family:'Courier New',monospace; font-size:4rem; font-weight:bold; color:#fff; text-shadow:0 0 30px rgba(212,165,116,0.8); letter-spacing:4px; }
+.po-timer { text-align:center; padding:22px 16px 16px; }
+.po-clock-card { background:linear-gradient(170deg,rgba(252,248,242,0.95),rgba(238,230,218,0.92)); border-radius:16px; padding:14px 10px 10px; margin:0 0 16px; border:1px solid rgba(139,111,71,0.35); border-top:3px solid rgba(196,154,108,0.65); box-shadow:0 10px 28px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6); }
+.po-display { font-family:'Courier New',monospace; font-size:3.2rem; font-weight:bold; color:#5a3418; text-shadow:0 1px 0 rgba(255,255,255,0.5), 0 2px 6px rgba(90,52,20,0.25); letter-spacing:2px; }
 .po-controls { display:flex; gap:12px; justify-content:center; margin-top:16px; flex-wrap:wrap; }
 .po-btn { padding:10px 22px; border:none; border-radius:10px; font-family:'Playfair Display',serif; font-size:0.95rem; cursor:pointer; font-weight:600; transition:all 0.2s; }
 .po-start { background:linear-gradient(135deg,#10b981,#059669); color:#fff; }
@@ -604,7 +671,7 @@ body { background: linear-gradient(160deg,#2a1a0e,#3d2410,#5c3620,#3d2410,#1e110
 .po-reset { background:rgba(212,165,116,0.2); border:1px solid rgba(212,165,116,0.4); color:#d4a574; }
 .po-btn:hover { transform:translateY(-2px); opacity:0.9; }
 .po-progress { margin:0 16px 8px; background:rgba(255,255,255,0.1); border-radius:8px; height:6px; overflow:hidden; }
-.po-progress-fill { height:100%; background:linear-gradient(90deg,#8b6f47,#d4a574); border-radius:8px; transition:width 1s linear; width:0%; }
+.po-progress-fill { height:100%; background:linear-gradient(90deg,#6b4423,#d9a978); border-radius:8px; transition:width 1s linear; width:0%; }
 .po-pct { text-align:center; font-size:0.78rem; color:rgba(212,165,116,0.7); margin-bottom:8px; }
 .po-sounds { padding:0 16px 16px; }
 .po-sounds-toggle { display:flex; align-items:center; justify-content:space-between; cursor:pointer; padding:8px 12px; border-radius:10px; background:rgba(212,165,116,0.08); border:1px solid rgba(212,165,116,0.2); transition:all 0.2s; margin-bottom:0; user-select:none; }
@@ -619,20 +686,29 @@ body { background: linear-gradient(160deg,#2a1a0e,#3d2410,#5c3620,#3d2410,#1e110
 .po-sound-btn.active { background:rgba(212,165,116,0.3); border-color:rgba(212,165,116,0.6); }
 .po-vol-slider { flex:1; accent-color:#d4a574; }
 .po-sync-status { text-align:center; font-size:0.72rem; color:rgba(212,165,116,0.5); padding-bottom:8px; font-style:italic; }
+.po-drink { padding:4px 16px 22px; text-align:center; }
+.po-drink-divider { height:1px; background:linear-gradient(90deg,transparent,rgba(212,165,116,0.3),transparent); margin:4px 0 14px; }
+.po-drink-label { font-family:'Playfair Display',serif; font-size:0.85rem; color:#e0b57e; font-style:italic; margin-bottom:8px; letter-spacing:0.3px; }
+.po-drink-cup { display:flex; justify-content:center; }
+.po-drink-cup svg { filter:drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
+@keyframes poWaveMove { 0%,100%{transform:translateX(-2px);} 50%{transform:translateX(2px);} }
+.po-wave { animation:poWaveMove 3.4s ease-in-out infinite; transform-box:fill-box; }
 </style></head><body>
 <div class="po-header">
   <span class="po-title">☕ LetsFocus Timer</span>
   <button class="po-expand" id="poExpand">⤡ Expand</button>
 </div>
 <div class="po-timer">
-  <div class="po-display" id="poDisplay">${h}:${m}:${s}</div>
+  <div class="po-clock-card">
+    <div class="po-display" id="poDisplay">${h}:${m}:${s}</div>
+  </div>
   <div class="po-controls">
     <button class="po-btn po-start" id="poStartBtn">${state.running ? '⏸ Pause' : '▶ Start'}</button>
     <button class="po-btn po-reset" id="poResetBtn">↺ Reset</button>
   </div>
 </div>
-<div class="po-progress"><div class="po-progress-fill" id="poProgressFill" style="width:${state.total > 0 ? ((state.total - state.remaining) / state.total * 100) : 0}%"></div></div>
-<div class="po-pct" id="poPct">${state.total > 0 ? Math.round((state.total - state.remaining) / state.total * 100) : 0}%</div>
+<div class="po-progress"><div class="po-progress-fill" id="poProgressFill" style="width:${initialPct}%"></div></div>
+<div class="po-pct" id="poPct">${Math.round(initialPct)}%</div>
 <div class="po-sync-status" id="poSyncStatus">🔄 Synced with main window</div>
 <div class="po-sounds">
   <div class="po-sounds-toggle" id="poSoundsToggle">
@@ -643,64 +719,52 @@ body { background: linear-gradient(160deg,#2a1a0e,#3d2410,#5c3620,#3d2410,#1e110
     ${soundRows}
   </div>
 </div>
+<div class="po-drink">
+  <div class="po-drink-divider"></div>
+  <div class="po-drink-label" id="poDrinkLabel">${initialDrinkLabel}</div>
+  <div class="po-drink-cup" id="poDrinkCup">${initialCupSVG}</div>
+</div>
 <script>
 const SYNC_KEY = 'letsfocus_timer_sync';
 const CMD_KEY = 'letsfocus_timer_cmd';
+const DRINK_SYNC_KEY = 'letsfocus_drink_sync';
 const audios = {};
 let poRunning = ${state.running};
 let poRemaining = ${state.remaining};
 let poTotal = ${state.total};
 let poInterval = null;
+let poDrinkVisual = ${JSON.stringify(drinkVisual)};
 
-// ---- Sound-toggle cooldown guard ----
-// Prevents rapid clicking from racing play()/pause() on the same <audio>
-// element, which was causing spurious "Could not play" style failures
-// (an aborted play() promise looks identical to a real load failure).
-// Positioning + the keyframe are applied here in JS rather than relying
-// on rules in the <style> block above, so the button's own size is
-// never at risk even if this script and that stylesheet ever drift.
-const SOUND_COOLDOWN_MS = 450;
-const busySounds = new Set();
-let _cooldownKeyframeInjected = false;
-function ensureCooldownKeyframe() {
-  if (_cooldownKeyframeInjected) return;
-  _cooldownKeyframeInjected = true;
-  const s = document.createElement('style');
-  s.textContent = '@keyframes poCooldownDrain { from { transform: scaleY(1); } to { transform: scaleY(0); } }';
-  document.head.appendChild(s);
-}
-function triggerSoundCooldown(btn) {
-  ensureCooldownKeyframe();
-  // IMPORTANT: no overflow:hidden here — verified in a real browser that it
-  // collapses this flex-column button's auto-computed height, clipping the
-  // label. The overlay's own border-radius already gives rounded corners.
-  btn.style.position = btn.style.position || 'relative';
-  let overlay = btn.querySelector('.po-cooldown-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.className = 'po-cooldown-overlay';
-    overlay.style.cssText =
-      'position:absolute; left:0; right:0; top:0; bottom:0;' +
-      'background:rgba(200,200,200,0.55); transform-origin:bottom;' +
-      'pointer-events:none; border-radius:inherit; z-index:2;';
-    btn.appendChild(overlay);
-  }
-  overlay.style.animation = 'none';
-  void overlay.offsetWidth; // reflow — restarts the animation from scratch
-  overlay.style.animation = 'poCooldownDrain ' + SOUND_COOLDOWN_MS + 'ms linear forwards';
-}
+${buildPoCupSVG.toString()}
 
 function pad(n) { return String(n).padStart(2,'0'); }
+function updateDrinkCup(pct) {
+  const cupEl = document.getElementById('poDrinkCup');
+  const labelEl = document.getElementById('poDrinkLabel');
+  if (cupEl) cupEl.innerHTML = buildPoCupSVG(poDrinkVisual, pct);
+  if (labelEl) labelEl.textContent = poDrinkVisual
+    ? (poDrinkVisual.label + (poDrinkVisual.tier === 'mastercraft' ? ' 👑' : poDrinkVisual.tier === 'signature' ? ' ✦' : ''))
+    : 'No drink yet — start a session';
+}
 function updateDisplay(rem) {
   const h = Math.floor(rem/3600), m = Math.floor((rem%3600)/60), s = rem%60;
   document.getElementById('poDisplay').textContent = pad(h)+':'+pad(m)+':'+pad(s);
   const pct = poTotal > 0 ? (poTotal - rem) / poTotal * 100 : 0;
   document.getElementById('poProgressFill').style.width = pct + '%';
   document.getElementById('poPct').textContent = Math.round(pct) + '%';
+  updateDrinkCup(pct);
 }
 
 // Listen for main window sync
 window.addEventListener('storage', (e) => {
+  if (e.key === DRINK_SYNC_KEY) {
+    try {
+      poDrinkVisual = JSON.parse(e.newValue);
+      const pct = poTotal > 0 ? (poTotal - poRemaining) / poTotal * 100 : 0;
+      updateDrinkCup(pct);
+    } catch(err) {}
+    return;
+  }
   if (e.key !== SYNC_KEY) return;
   try {
     const data = JSON.parse(e.newValue);
@@ -746,23 +810,9 @@ document.getElementById('poExpand').addEventListener('click', () => { window.res
 document.querySelectorAll('.po-sound-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const sound = btn.dataset.sound, url = btn.dataset.url;
-    if (busySounds.has(sound)) return; // still cooling down from the last click — ignore
-    busySounds.add(sound);
-    triggerSoundCooldown(btn);
-    setTimeout(() => busySounds.delete(sound), SOUND_COOLDOWN_MS);
-
     if (!audios[sound]) { audios[sound] = new Audio(url); audios[sound].loop = true; }
-    if (!audios[sound].paused) {
-      audios[sound].pause();
-      btn.classList.remove('active');
-    } else {
-      audios[sound].play().catch((err) => {
-        // AbortError just means a pause() interrupted this play() a moment
-        // later — not a real failure, so stay quiet instead of erroring.
-        if (err && err.name === 'AbortError') return;
-      });
-      btn.classList.add('active');
-    }
+    if (!audios[sound].paused) { audios[sound].pause(); btn.classList.remove('active'); }
+    else { audios[sound].play(); btn.classList.add('active'); }
   });
 });
 document.querySelectorAll('.po-vol-slider').forEach(slider => {
