@@ -338,6 +338,92 @@ const DrinkModule = (function () {
   // this module — see script-timer.js buildPopOutHTML).
   const DRINK_SYNC_KEY = 'letsfocus_drink_sync';
 
+  // ============================================================
+  // SESSION-SEEDED RANDOMNESS — boba positions + drizzle streams
+  // ============================================================
+  // Every session (each call to setDrink()) gets one seed. All boba/drizzle
+  // layout is computed ONCE from that seed and reused for every re-render
+  // (every progress tick) so nothing jitters — but a new session looks
+  // different from the last. The same precomputed layouts are broadcast to
+  // the pop-out (see getCurrentDrinkVisual) so both windows draw identically.
+
+  // Deterministic PRNG (mulberry32) — small, fast, seed → repeatable [0,1) stream.
+  function mulberry32(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  // Turns any string (e.g. a shop slot uid) into a seed int for mulberry32.
+  function hashSeed(str) {
+    let h = 2166136261;
+    for (let i = 0; i < String(str).length; i++) {
+      h ^= String(str).charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  const BOBA_BURST_MS = 1200; // how long the session-start "shake" plays before settling into idle float
+
+  // Jittered version of the 10 hand-placed boba anchor points — keeps the
+  // natural clustering/spacing of the original art but no two sessions match.
+  function makeBobaLayout(rng) {
+    const base = [
+      [15,4], [30,6], [50,3], [65,5], [80,4],
+      [22,14],[45,12],[68,15],[38,20],[58,18],
+    ];
+    return base.map(([dx, off]) => ({
+      dx: dx + (rng() - 0.5) * 8,
+      offsetFromBottom: Math.max(2, off + (rng() - 0.5) * 5),
+      dur: +(1.6 + rng() * 1.6).toFixed(2),
+      burstDur: +(0.9 + rng() * 0.4).toFixed(2),
+      burstDelay: +(rng() * 0.15).toFixed(2),
+    }));
+  }
+
+  // Seeded organic drizzle layout — count streams spread across roughly-even
+  // slots of the wall width, each jittered within its slot so streams never
+  // overlap but also never land in a perfectly even/mirrored pattern.
+  function makeDrizzleLayout(rng, count, wallWidth) {
+    const slotW = wallWidth / count;
+    const layout = [];
+    for (let i = 0; i < count; i++) {
+      const slotStart = i * slotW;
+      layout.push({
+        xFrac:   (slotStart + slotW * (0.15 + rng() * 0.7)) / wallWidth,
+        y0Jit:   +(rng() * 4).toFixed(1),
+        widthPx: +(1.3 + rng() * 2.2).toFixed(1),
+        lenFrac: +(0.45 + rng() * 0.45).toFixed(2),
+        wobX:    +((rng() - 0.5) * 16).toFixed(1),
+      });
+    }
+    return layout;
+  }
+
+  // Expands a seeded layout (from makeDrizzleLayout) into the same organic
+  // bezier streams buildOrgDrizzle already knows how to render.
+  function renderDrizzleLayout(layout, color, CX, CW, y0base, dropH, clipId, opacity) {
+    if (!layout || !layout.length) return '';
+    const streams = layout.map(({ xFrac, y0Jit, widthPx, lenFrac, wobX }) => ({
+      x0: CX + xFrac * CW,
+      y0: y0base + y0Jit,
+      color, width: widthPx, len: dropH * lenFrac, wobX,
+    }));
+    return buildOrgDrizzle(streams, clipId, opacity);
+  }
+
+  // Per-session layout state, (re)computed once in setDrink().
+  let _sessionRng          = mulberry32(Date.now());
+  let _sessionStartTs      = 0;
+  let _bobaLayout          = null;
+  let _wallDrizzleLayout   = null; // caramel_mac / dalgona (buildWallDrizzle)
+  let _chocDrizzleLayout   = null; // hot_choc / mocha (chocDrizzle flag)
+  let _recipeDrizzleLayout = null; // recipe-marker steps (boba/lavender mastercraft)
+
   // ---- Recipe tier resolution ----
   function getCurrentTierConfig(recipeKey) {
     if (!recipeKey || typeof DRINK_RECIPES === 'undefined') return null;
@@ -362,12 +448,23 @@ const DrinkModule = (function () {
 
   // Collects svgContent from ALL steps up to and including pct.
   // This keeps earlier step artwork (drizzle, pearls, ice) visible as pct rises.
-  function getCumulativeSvgContent(tierCfg, pct) {
+  // Steps can also carry a `randomDrizzle: {color}` marker instead of a fixed
+  // svgContent string — those are expanded here using the session-seeded
+  // _recipeDrizzleLayout so the streams look organic/randomized instead of
+  // the old fixed hardcoded pair.
+  function getCumulativeSvgContent(tierCfg, pct, CX, CW, CTY, CBY) {
     if (!tierCfg?.steps) return '';
     const thresholds = Object.keys(tierCfg.steps).map(Number).sort((a, b) => a - b);
     let combined = '';
     for (const t of thresholds) {
-      if (pct >= t && tierCfg.steps[t].svgContent) combined += tierCfg.steps[t].svgContent;
+      if (pct < t) continue;
+      const step = tierCfg.steps[t];
+      if (step.svgContent) combined += step.svgContent;
+      if (step.randomDrizzle) {
+        if (!_recipeDrizzleLayout) _recipeDrizzleLayout = makeDrizzleLayout(_sessionRng, 3, CW);
+        const dropH = (CBY - CTY) * 0.72;
+        combined += renderDrizzleLayout(_recipeDrizzleLayout, step.randomDrizzle.color, CX, CW, CTY + 2, dropH, 'lf_cupClip', 0.75);
+      }
     }
     return combined;
   }
@@ -389,6 +486,18 @@ const DrinkModule = (function () {
     currentDrink = DRINKS[visualKey] || DRINKS[DRINK_KEYS[Math.floor(Math.random() * DRINK_KEYS.length)]];
     currentPct = 0;
     isFinished = false;
+
+    // New session → reseed once. Every re-render for the rest of this session
+    // reuses these exact layouts (no jitter tick-to-tick), and a fresh session
+    // gets a different-looking one. CUP_WALL_W matches renderCup's CW constant.
+    const CUP_WALL_W = 100;
+    _sessionRng          = mulberry32((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0);
+    _sessionStartTs      = Date.now();
+    _bobaLayout          = makeBobaLayout(_sessionRng);
+    _wallDrizzleLayout   = makeDrizzleLayout(_sessionRng, 5 + Math.floor(_sessionRng() * 2), CUP_WALL_W); // 5-6 streams
+    _chocDrizzleLayout   = makeDrizzleLayout(_sessionRng, 5 + Math.floor(_sessionRng() * 2), CUP_WALL_W); // 5-6 streams
+    _recipeDrizzleLayout = makeDrizzleLayout(_sessionRng, 3 + Math.floor(_sessionRng() * 3), CUP_WALL_W); // 3-5 streams
+
     renderCup(0);
     updateLabel(0);
 
@@ -430,14 +539,32 @@ const DrinkModule = (function () {
     broadcastDrinkSync();
   }
 
-  // ---- Pop-out sync: lightweight visual snapshot of the current drink ----
-  // Returns only what a simplified cup renderer needs (colors + flags),
-  // not the full recipe/tier/garnish system — see buildPoCupSVG in script-timer.js.
+  // ---- Pop-out sync: full visual snapshot of the current drink ----
+  // Broadcasts everything buildPoCupSVG (script-timer.js) needs to draw a
+  // faithful match of the main cup: colors, foam-shape flags, flourish flags,
+  // and the SAME session-seeded boba/drizzle layouts used here — so both
+  // windows render the identical randomized look, not just a similar one.
   function getCurrentDrinkVisual() {
     if (!currentDrink) return null;
     const d = currentDrink;
     const recipeKey = DRINK_KEY_TO_RECIPE[currentDrinkId] || null;
     const tierCfg   = recipeKey ? getCurrentTierConfig(recipeKey) : null;
+    const step100   = tierCfg?.steps?.[100] || null;
+
+    // Generic scan for a randomDrizzle marker anywhere in the active tier's
+    // steps (currently only boba/lavender mastercraft use this) — works for
+    // any future drink that adds one without needing pop-out-side updates.
+    let recipeDrizzle = null;
+    if (tierCfg?.steps) {
+      for (const key of Object.keys(tierCfg.steps)) {
+        const step = tierCfg.steps[key];
+        if (step.randomDrizzle) {
+          recipeDrizzle = { thresholdPct: Number(key), color: step.randomDrizzle.color };
+          break;
+        }
+      }
+    }
+
     return {
       drinkKey:     currentDrinkId,
       label:        d.label,
@@ -451,6 +578,22 @@ const DrinkModule = (function () {
       hasIce:       !!d.hasIce,
       bobas:        !!d.bobas,
       bobaColor:    d.bobaColor || null,
+      // Foam-shape + flourish flags (previously main-page-only)
+      thickFoam:    !!d.thickFoam,
+      spotFoam:     !!d.spotFoam,
+      whipCream:    !!d.whipCream,
+      cremaRing:    !!d.cremaRing,
+      chocDrizzle:  !!d.chocDrizzle,
+      petalFlecks:  !!d.petalFlecks,
+      // Session-seeded layouts — identical source of truth as the main cup
+      sessionStartTs:     _sessionStartTs,
+      bobaLayout:         _bobaLayout,
+      wallDrizzleLayout:  _wallDrizzleLayout,
+      chocDrizzleLayout:  _chocDrizzleLayout,
+      recipeDrizzle:      recipeDrizzle,
+      recipeDrizzleLayout: _recipeDrizzleLayout,
+      // 100%-completion garnish, passed through verbatim (same art as main cup)
+      garnishSvg100: (step100?.garnishSvg) || null,
     };
   }
 
@@ -556,6 +699,16 @@ const DrinkModule = (function () {
       @keyframes lfW1 { 0%,100%{transform:translateX(-${tx}px)} 50%{transform:translateX(${tx}px)} }
       @keyframes lfW2 { 0%,100%{transform:translateX(${tx}px)} 50%{transform:translateX(-${tx}px)} }
       @keyframes lfBoba { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+      @keyframes lfBobaBurst {
+        0%   { transform:translate(0,0) scale(1); }
+        14%  { transform:translate(-3px,-4px) scale(1.06); }
+        28%  { transform:translate(4px,3px) scale(0.95); }
+        42%  { transform:translate(-4px,2px) scale(1.05); }
+        56%  { transform:translate(3px,-3px) scale(0.97); }
+        70%  { transform:translate(-2px,2px) scale(1.03); }
+        84%  { transform:translate(1px,-1px) scale(1.01); }
+        100% { transform:translate(0,0) scale(1); }
+      }
       @keyframes lfSteam { 0%{opacity:0;transform:translateY(0) scaleX(1)} 40%{opacity:0.75} 100%{opacity:0;transform:translateY(-26px) scaleX(2)} }
       @keyframes lfBub { 0%{opacity:0.85;transform:translateY(0)} 85%{opacity:0.4} 100%{opacity:0;transform:translateY(-55px)} }
       @keyframes lfSwirl { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
@@ -932,21 +1085,15 @@ const DrinkModule = (function () {
   }
 
   // ---- Wall drizzle (caramel_mac / dalgona at 100%) ----
+  // Stream positions come from the session-seeded _wallDrizzleLayout (see setDrink).
   function buildWallDrizzle(type, CX, CW, CTY, CBY, pct) {
     if (pct < 100) return '';
     const drizzleMap = { caramel_mac: '#b45309', dalgona: '#8a4a10' };
     const clr = drizzleMap[type];
     if (!clr) return '';
-    const dropH = (CBY - CTY) * 0.72;
-    const streams = [
-      { x0: CX+10,      y0: CTY+4, color: clr, width: 3.2, len: dropH*0.85, wobX:  4 },
-      { x0: CX+20,      y0: CTY+2, color: clr, width: 1.8, len: dropH*0.60, wobX:  7 },
-      { x0: CX+CW/2-4,  y0: CTY+3, color: clr, width: 2.6, len: dropH*0.78, wobX: -5 },
-      { x0: CX+CW/2+8,  y0: CTY+1, color: clr, width: 1.4, len: dropH*0.50, wobX:  4 },
-      { x0: CX+CW-20,   y0: CTY+5, color: clr, width: 3.0, len: dropH*0.80, wobX: -5 },
-      { x0: CX+CW-10,   y0: CTY+2, color: clr, width: 1.6, len: dropH*0.55, wobX: -8 },
-    ];
-    return buildOrgDrizzle(streams, 'lf_cupClip', 0.78);
+    if (!_wallDrizzleLayout) _wallDrizzleLayout = makeDrizzleLayout(_sessionRng, 6, CW);
+    const dropH = (CBY - CTY) * 0.78;
+    return renderDrizzleLayout(_wallDrizzleLayout, clr, CX, CW, CTY + 2, dropH, 'lf_cupClip', 0.78);
   }
 
   // ---- Milestone surface ripple (plays once at 25 / 50 / 75%) ----
@@ -1031,22 +1178,27 @@ const DrinkModule = (function () {
   }
 
   // ---- Bobas — anchored at the bottom of the liquid fill ----
+  // Positions come from the session-seeded _bobaLayout (see setDrink) so every
+  // session looks a little different, but never jitters within one session.
+  // For the first BOBA_BURST_MS of a session they shake energetically (as if
+  // the cup were just shaken to distribute the pearls), then settle into the
+  // regular calm idle float for the rest of the session.
   function generateBobas(CX, fillY, CW, fillH, color) {
     if (fillH < 10) return '';
-    // Offset from the BOTTOM of the cup (CBY direction) — bobas sink and rest there
-    // Larger offset = closer to surface; small = hugging the bottom
-    const positions = [
-      [CX+15, 4], [CX+30, 6], [CX+50, 3], [CX+65, 5], [CX+80, 4],
-      [CX+22, 14],[CX+45, 12],[CX+68, 15],[CX+38, 20],[CX+58, 18],
-    ];
+    if (!_bobaLayout) _bobaLayout = makeBobaLayout(_sessionRng); // safety net if called before setDrink()
     const bottomY = fillY + fillH;   // y-coordinate of cup bottom at current fill
-    return positions.map(([bx, offsetFromBottom], i) => {
+    const elapsed = Date.now() - _sessionStartTs;
+    const inBurst  = elapsed >= 0 && elapsed < BOBA_BURST_MS;
+    return _bobaLayout.map(({ dx, offsetFromBottom, dur, burstDur, burstDelay }) => {
+      const bx = CX + dx;
       const by = bottomY - offsetFromBottom;   // anchor from the bottom up
       if (by <= fillY + 4) return '';           // don't let bobas escape above liquid surface
-      const dur = 1.8 + (i % 3) * 0.4;
-      return `<g style="animation:lfBoba ${dur}s ease-in-out infinite ${ao(dur)}">
-        <circle cx="${bx}" cy="${by}" r="5" fill="${color}" opacity="0.9"/>
-        <circle cx="${bx-1}" cy="${by-1}" r="1.5" fill="rgba(255,255,255,0.2)"/>
+      const anim = inBurst
+        ? `lfBobaBurst ${burstDur}s cubic-bezier(.36,.07,.19,.97) ${burstDelay}s 1 both`
+        : `lfBoba ${dur}s ease-in-out infinite ${ao(dur)}`;
+      return `<g style="animation:${anim};transform-origin:${bx.toFixed(1)}px ${by.toFixed(1)}px">
+        <circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="5" fill="${color}" opacity="0.9"/>
+        <circle cx="${(bx-1).toFixed(1)}" cy="${(by-1).toFixed(1)}" r="1.5" fill="rgba(255,255,255,0.2)"/>
       </g>`;
     }).join('');
   }
@@ -1676,6 +1828,10 @@ const DrinkModule = (function () {
     if (!scene || !currentDrink) return;
     const d = currentDrink;
 
+    // Cup geometry (moved up — needed by getCumulativeSvgContent below for
+    // expanding randomDrizzle markers, before the rest of the recipe block)
+    const CX = 20, CW = 100, CTY = 30, CBY = 155;
+
     // Recipe integration
     const recipeKey  = DRINK_KEY_TO_RECIPE[currentDrinkId] || null;
     const tierCfg    = recipeKey ? getCurrentTierConfig(recipeKey) : null;
@@ -1688,7 +1844,7 @@ const DrinkModule = (function () {
       ? foamFill100 : (d.hasFoam ? d.foamColor : null);
     const garnishSvg = (pct >= 100 && step100?.garnishSvg) ? step100.garnishSvg : '';
     // Cumulative: collect svgContent from ALL steps ≤ pct so earlier artwork persists
-    const svgContentCumul  = tierCfg ? getCumulativeSvgContent(tierCfg, pct) : '';
+    const svgContentCumul  = tierCfg ? getCumulativeSvgContent(tierCfg, pct, CX, CW, CTY, CBY) : '';
     // stepCfg still used to check if the CURRENT step's content should be outside-cup
     const svgContentIsOut  = stepCfg?.svgContentOutside || false;
     const svgContentIn     = svgContentCumul && !svgContentIsOut ? svgContentCumul : '';
@@ -1696,8 +1852,6 @@ const DrinkModule = (function () {
     const bgGlow     = tierCfg?.bgGlow || 'transparent';
     scene.style.filter = (bgGlow && bgGlow !== 'transparent') ? `drop-shadow(0 0 20px ${bgGlow})` : '';
 
-    // Cup geometry
-    const CX = 20, CW = 100, CTY = 30, CBY = 155;
     const fillH = Math.max(0, (pct / 100) * (CBY - CTY - 20));
     const fillY = CBY - fillH;
 
@@ -1761,17 +1915,9 @@ const DrinkModule = (function () {
       <ellipse cx="${CX+CW/2}" cy="${fillY+2}" rx="${CW*0.22}" ry="3"
         fill="rgba(185,130,50,0.35)"/>` : '';
     const chocDrizzleSVG = (d.chocDrizzle && pct >= 90) ? (() => {
-      const clr = '#2a0d00';
-      const dropH = Math.min((CBY - fillY) * 0.85, 90);
-      const streams = [
-        { x0: CX+10,      y0: fillY-2, color: clr, width: 3.2, len: dropH*0.90, wobX:  5 },
-        { x0: CX+24,      y0: fillY-1, color: clr, width: 1.8, len: dropH*0.65, wobX:  8 },
-        { x0: CX+CW/2-4,  y0: fillY-3, color: clr, width: 2.8, len: dropH*0.80, wobX: -5 },
-        { x0: CX+CW/2+12, y0: fillY-1, color: clr, width: 1.5, len: dropH*0.55, wobX:  5 },
-        { x0: CX+CW-22,   y0: fillY-2, color: clr, width: 3.0, len: dropH*0.85, wobX: -6 },
-        { x0: CX+CW-8,    y0: fillY,   color: clr, width: 1.4, len: dropH*0.50, wobX: -9 },
-      ];
-      return buildOrgDrizzle(streams, 'lf_cupClip', 0.82);
+      if (!_chocDrizzleLayout) _chocDrizzleLayout = makeDrizzleLayout(_sessionRng, 6, CW);
+      const dropH = Math.min((CBY - fillY) * 0.90, 90);
+      return renderDrizzleLayout(_chocDrizzleLayout, '#2a0d00', CX, CW, fillY - 2, dropH, 'lf_cupClip', 0.82);
     })() : '';
     const petalFlecksSVG = (d.petalFlecks && pct >= 90) ? `
       <ellipse cx="${CX+22}" cy="${fillY-1}" rx="3.5" ry="1.5" fill="rgba(255,160,200,0.65)" transform="rotate(-20,${CX+22},${fillY-1})"/>
@@ -2549,11 +2695,17 @@ const DrinkModule = (function () {
       <rect x="${CX+60}" y="${fillY+5}"  width="15" height="11" rx="2.5" fill="rgba(210,240,255,0.65)" stroke="rgba(180,220,255,0.45)" stroke-width="0.8"/>` : '';
 
     // ---- Bobas (static — no keyframe animation in shop) ----
-    const bobasSVG = (d.bobas && p > 0) ? `
-      <circle cx="${CX+18}" cy="${CBY-8}"  r="4.5" fill="${d.bobaColor||'#2a1a0a'}" opacity="0.88"/>
-      <circle cx="${CX+36}" cy="${CBY-6}"  r="4.5" fill="${d.bobaColor||'#2a1a0a'}" opacity="0.88"/>
-      <circle cx="${CX+54}" cy="${CBY-9}"  r="4.5" fill="${d.bobaColor||'#2a1a0a'}" opacity="0.88"/>
-      <circle cx="${CX+70}" cy="${CBY-7}"  r="4.5" fill="${d.bobaColor||'#2a1a0a'}" opacity="0.85"/>` : '';
+    // Seeded by uid so the layout is stable across the hover-fill animation
+    // (many renders per second) but still varies from slot to slot / day to day.
+    const bobasSVG = (d.bobas && p > 0) ? (() => {
+      const shopRng = mulberry32(hashSeed(uid + '_boba'));
+      const anchors = [[18,8],[36,6],[54,9],[70,7]];
+      return anchors.map(([ax, offBottom]) => {
+        const bx = CX + ax + (shopRng() - 0.5) * 6;
+        const by = CBY - Math.max(3, offBottom + (shopRng() - 0.5) * 4);
+        return `<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="4.5" fill="${d.bobaColor||'#2a1a0a'}" opacity="0.87"/>`;
+      }).join('');
+    })() : '';
 
     // ---- Foam ----
     // Trigger on hasFoam OR special flags (whipCream, thickFoam, spotFoam)
@@ -2594,17 +2746,10 @@ const DrinkModule = (function () {
     const shopClipId  = `sc_clip_${uid}`;
     const shopClipDef = `<clipPath id="${shopClipId}"><path d="M ${CX},${CTY} L ${CX+CW},${CTY} L ${CX+CW-8},${CBY} L ${CX+8},${CBY} Z"/></clipPath>`;
     const drizzleSVG = (d.chocDrizzle && p >= 90) ? (() => {
-      const clr = '#2a0d00';
-      const dropH = Math.min((CBY - fillY) * 0.85, 70);
-      const streams = [
-        { x0: CX+8,       y0: fillY-2, color: clr, width: 3.0, len: dropH*0.88, wobX:  4 },
-        { x0: CX+20,      y0: fillY-1, color: clr, width: 1.8, len: dropH*0.62, wobX:  7 },
-        { x0: CX+CW/2-4,  y0: fillY-3, color: clr, width: 2.6, len: dropH*0.78, wobX: -4 },
-        { x0: CX+CW/2+10, y0: fillY-1, color: clr, width: 1.5, len: dropH*0.52, wobX:  5 },
-        { x0: CX+CW-18,   y0: fillY-2, color: clr, width: 2.8, len: dropH*0.82, wobX: -5 },
-        { x0: CX+CW-6,    y0: fillY,   color: clr, width: 1.3, len: dropH*0.48, wobX: -8 },
-      ];
-      return buildOrgDrizzle(streams, shopClipId, 0.80);
+      const shopRng = mulberry32(hashSeed(uid + '_drizzle'));
+      const layout = makeDrizzleLayout(shopRng, 5 + Math.floor(shopRng() * 2), CW);
+      const dropH = Math.min((CBY - fillY) * 0.90, 70);
+      return renderDrizzleLayout(layout, '#2a0d00', CX, CW, fillY - 2, dropH, shopClipId, 0.80);
     })() : '';
 
     // ---- Petal flecks (cherry blossom) ----
