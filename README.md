@@ -183,18 +183,6 @@ LetsFocus uses a warm **coffee-shop palette**:
 | Background | `#e8dcc8` |
 
 Font stack: **Playfair Display** (headings/display) · **Source Sans Pro** (body)
-
----
-
-## 🗺️ Roadmap
-
-- [ ] **Supabase sync** — cloud save across devices with Google OAuth
-- [ ] **Login streak** — daily login bonus XP (requires Supabase)
-- [ ] **More achievements** — login streaks, social sharing milestones
-- [ ] **Mobile app** — PWA wrapper for iOS/Android home screen
-- [ ] **Theme variants** — Midnight, Forest, Ocean colour schemes
-- [ ] **Goal sharing** — share a goal list via a link
-
 ---
 
 ## 📄 License
