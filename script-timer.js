@@ -566,14 +566,7 @@ const TimerModule = (function() {
         <text x="75" y="90" text-anchor="middle" font-family="Source Sans Pro,sans-serif" font-size="11" fill="rgba(212,165,116,0.4)">No drink yet</text>
       </svg>`;
     }
-    const CX = 20, CW = 100, CTY = 30, CBY = 155;
     const p = Math.max(0, Math.min(100, pct || 0));
-    const fillH = Math.max(0, (p / 100) * (CBY - CTY - 20));
-    const fillY = CBY - fillH;
-    const lc  = dv.liquidColor  || '#8b6f47';
-    const lc2 = dv.liquidColor2 || lc;
-    const cupTint = dv.cupTint || '#8b6f47';
-    const isCold = !!(dv.hasIce || dv.bobas);
 
     // Same "looks continuous across re-renders" trick as the main cup's ao():
     // offsets an infinite animation's start point by current real time so it
@@ -581,9 +574,88 @@ const TimerModule = (function() {
     // fresh every second).
     function ao(dur) { return `-${((Date.now() / 1000) % dur).toFixed(2)}s`; }
 
-    function wavePath(y, amp) {
+    // ---- Birthday Cake bypasses the normal cup entirely — same as the main
+    // page's buildBirthdayCakeLiveSVG. Ported verbatim (same tier geometry,
+    // same fixed drizzle drops — intentionally NOT randomized, this one stays
+    // exactly as designed). Only needs (pct, tier); nothing else from dv.
+    if (dv.type === 'birthday_cake') {
+      const cx = 75, eH = 8;
+      const t1 = { cx, by: 155, h: 35, w: 92 };
+      const t2 = { cx, by: 120, h: 32, w: 70 };
+      const t3 = { cx, by: 88,  h: 30, w: 50 };
+      function pf(start, end) { if (p < start) return 0; return Math.min(1, (p - start) / (end - start)); }
+      const f1 = pf(0, 20), f2 = pf(20, 50), f3 = pf(50, 70);
+      const drizzPh = pf(70, 85);
+      const showFrost = p >= 85 && f3 > 0.80, showSprink = p >= 94 && f3 > 0.90, showCandle = p >= 98;
+      const bodyC = ['#2c1005','#321208','#2a0e04'], topC = ['#3d1808','#421a0a','#3a1608'], rimC = '#8b4020', drizzC = '#1a0600';
+      function buildTier(t, frac, bodyFill, topFill) {
+        if (frac <= 0) return '';
+        const h = t.h * frac, hw = t.w / 2, topY = t.by - h, op = Math.min(1, frac * 3).toFixed(2);
+        const b1Y = topY + h * 0.35, b2Y = topY + h * 0.68;
+        const bands = frac > 0.50 ? `<line x1="${(t.cx-hw+2).toFixed(1)}" y1="${b1Y.toFixed(1)}" x2="${(t.cx+hw-2).toFixed(1)}" y2="${b1Y.toFixed(1)}" stroke="rgba(255,220,180,0.16)" stroke-width="1.2"/><line x1="${(t.cx-hw+2).toFixed(1)}" y1="${b2Y.toFixed(1)}" x2="${(t.cx+hw-2).toFixed(1)}" y2="${b2Y.toFixed(1)}" stroke="rgba(255,220,180,0.11)" stroke-width="0.9"/>` : '';
+        return `<ellipse cx="${t.cx}" cy="${t.by}" rx="${(hw+4).toFixed(1)}" ry="${(eH*0.55).toFixed(1)}" fill="rgba(0,0,0,0.20)" opacity="${op}"/>
+          <rect x="${(t.cx-hw).toFixed(1)}" y="${topY.toFixed(1)}" width="${t.w}" height="${h.toFixed(1)}" fill="${bodyFill}" opacity="${op}"/>
+          ${bands}
+          <rect x="${(t.cx-hw).toFixed(1)}" y="${topY.toFixed(1)}" width="6" height="${h.toFixed(1)}" fill="rgba(255,255,255,0.07)" opacity="${op}"/>
+          <rect x="${(t.cx+hw-6).toFixed(1)}" y="${topY.toFixed(1)}" width="6" height="${h.toFixed(1)}" fill="rgba(0,0,0,0.18)" opacity="${op}"/>
+          <ellipse cx="${t.cx}" cy="${topY.toFixed(1)}" rx="${hw}" ry="${eH}" fill="${topFill}" opacity="${op}"/>
+          <ellipse cx="${t.cx}" cy="${topY.toFixed(1)}" rx="${hw}" ry="${eH}" fill="none" stroke="${rimC}" stroke-width="1.3" opacity="${(Math.min(1, parseFloat(op))*0.55).toFixed(2)}"/>`;
+      }
+      function buildDrizzle(t, frac, phase) {
+        if (frac < 0.90 || phase <= 0) return '';
+        const hw = t.w / 2, topY = t.by - t.h * frac, op = phase.toFixed(2);
+        const drops = [{dx:-hw*0.76,len:16,wob:2},{dx:-hw*0.42,len:11,wob:-2},{dx:-hw*0.10,len:18,wob:3},{dx:hw*0.22,len:12,wob:-2},{dx:hw*0.56,len:16,wob:3},{dx:hw*0.82,len:10,wob:-3}];
+        return drops.map(({dx,len,wob}) => {
+          const x = t.cx + dx, y0 = topY + eH - 1;
+          const cp1x=(x+wob*0.3).toFixed(1), cp1y=(y0+len*0.3).toFixed(1), cp2x=(x+wob*0.7).toFixed(1), cp2y=(y0+len*0.7).toFixed(1), ex=(x+wob).toFixed(1), ey=(y0+len).toFixed(1);
+          return `<path d="M${x.toFixed(1)},${y0.toFixed(1)} C${cp1x},${cp1y} ${cp2x},${cp2y} ${ex},${ey}" stroke="${drizzC}" stroke-width="3.8" fill="none" stroke-linecap="round" opacity="${(parseFloat(op)*0.88).toFixed(2)}"/><circle cx="${ex}" cy="${(parseFloat(ey)+2.2).toFixed(1)}" r="2.4" fill="${drizzC}" opacity="${(parseFloat(op)*0.75).toFixed(2)}"/>`;
+        }).join('');
+      }
+      const tier1SVG = buildTier(t1, f1, bodyC[0], topC[0]), tier2SVG = buildTier(t2, f2, bodyC[1], topC[1]), tier3SVG = buildTier(t3, f3, bodyC[2], topC[2]);
+      const drizzle1 = buildDrizzle(t1, f1, drizzPh), drizzle2 = buildDrizzle(t2, f2, drizzPh), drizzle3 = buildDrizzle(t3, f3, drizzPh);
+      const frostSVG = showFrost ? `<ellipse cx="${t3.cx}" cy="${(t3.by-t3.h).toFixed(1)}" rx="${(t3.w/2-2).toFixed(1)}" ry="${eH-1}" fill="#f8f2ec" opacity="0.93"/><ellipse cx="${t3.cx}" cy="${(t3.by-t3.h).toFixed(1)}" rx="${(t3.w/2-6).toFixed(1)}" ry="${(eH-2.5).toFixed(1)}" fill="rgba(255,255,255,0.30)"/>` : '';
+      const curlSVG = showFrost ? (() => {
+        const ty = t3.by - t3.h - eH + 1;
+        function curl(ox, oy, dir) { return `<path d="M${(cx+ox).toFixed(1)},${(ty+oy).toFixed(1)} C${(cx+ox+dir*5).toFixed(1)},${(ty+oy-7).toFixed(1)} ${(cx+ox+dir*11).toFixed(1)},${(ty+oy-5).toFixed(1)} ${(cx+ox+dir*8).toFixed(1)},${(ty+oy+2).toFixed(1)}" stroke="#3d1808" stroke-width="2.8" fill="none" stroke-linecap="round" opacity="0.86"/>`; }
+        return curl(-11,0,1)+curl(0,-4,-1)+curl(11,1,1)+curl(-5,-8,1)+curl(6,-7,-1);
+      })() : '';
+      const spCols = ['#ff3b3b','#ff9900','#ffe033','#33cc44','#3399ff','#cc44ff','#ff66aa'];
+      const sprSVG = showSprink ? (() => {
+        const ty = t3.by - t3.h - eH + 3, hw2 = t3.w / 2 - 6;
+        return [[-hw2*0.8,0,30,spCols[0]],[-hw2*0.4,-2,-20,spCols[1]],[0,1,55,spCols[2]],[hw2*0.4,-1,-40,spCols[3]],[hw2*0.8,0,25,spCols[4]],[-hw2*0.6,3,70,spCols[5]],[hw2*0.2,-3,-60,spCols[6]]]
+          .map(([dx,dy,a,c]) => { const x=cx+dx, y=ty+dy; return `<rect x="${(x-4.5).toFixed(1)}" y="${(y-1.2).toFixed(1)}" width="9" height="2.4" rx="1.2" fill="${c}" transform="rotate(${a},${x.toFixed(1)},${y.toFixed(1)})" opacity="0.90"/>`; }).join('');
+      })() : '';
+      const candleSVG = showCandle ? (() => {
+        const cy3 = t3.by - t3.h - eH - 2;
+        return `<rect x="${(cx-3).toFixed(1)}" y="${(cy3-20).toFixed(1)}" width="6" height="17" rx="3" fill="#f8b4d9"/>
+          <path d="M${(cx-3).toFixed(1)},${(cy3-13).toFixed(1)} Q${(cx-4).toFixed(1)},${(cy3-9).toFixed(1)} ${(cx-2).toFixed(1)},${(cy3-6).toFixed(1)}" stroke="#f8d7ea" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.65"/>
+          <ellipse cx="${cx}" cy="${(cy3-26).toFixed(1)}" rx="4.5" ry="7" fill="#ffb700" opacity="0.92"/>
+          <ellipse cx="${cx}" cy="${(cy3-25).toFixed(1)}" rx="2.8" ry="4.5" fill="#fff0a0" opacity="0.88"/>
+          <ellipse cx="${cx}" cy="${(cy3-25.5).toFixed(1)}" rx="1.4" ry="2.5" fill="#ffffff" opacity="0.72"/>`;
+      })() : '';
+      const plateSVG = f1 > 0 ? `<ellipse cx="${cx}" cy="${(t1.by+7).toFixed(1)}" rx="${(t1.w/2+9).toFixed(1)}" ry="8" fill="#e8ddd0" opacity="${Math.min(0.90,f1*4).toFixed(2)}"/><ellipse cx="${cx}" cy="${(t1.by+7).toFixed(1)}" rx="${(t1.w/2+9).toFixed(1)}" ry="8" fill="none" stroke="#c4a882" stroke-width="1.1" opacity="${Math.min(0.60,f1*2.5).toFixed(2)}"/>` : '';
+      const tierBadge = dv.tier && dv.tier !== 'house' ? `<text x="145" y="16" text-anchor="end" font-family="Source Sans Pro,sans-serif" font-size="7.5" font-weight="700" fill="${dv.tier === 'mastercraft' ? '#fbbf24' : 'rgba(212,165,116,0.9)'}">${dv.tier === 'mastercraft' ? '👑 MASTER' : '✦ SIG'}</text>` : '';
+      const pctText = p > 15 ? `<text x="${cx}" y="${(t1.by-9).toFixed(1)}" text-anchor="middle" font-family="Playfair Display,serif" font-size="13" font-weight="600" fill="rgba(255,255,255,0.88)">${Math.round(p)}%</text>` : '';
+      const cakeSparkles = p >= 100 ? `<text x="18" y="20" font-size="12" style="animation:poSparkle 1.6s ease-in-out infinite ${ao(1.6)}">✨</text><text x="118" y="16" font-size="10" style="animation:poSparkle 2.0s ease-in-out infinite ${ao(2.0)}">⭐</text><text x="70" y="10" font-size="9" style="animation:poSparkle 1.3s ease-in-out infinite ${ao(1.3)}">✦</text>` : '';
+      return `<svg width="96" height="112" viewBox="0 0 150 175" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+        ${tierBadge}
+        <ellipse cx="${cx}" cy="${(t1.by+10).toFixed(1)}" rx="56" ry="8" fill="rgba(0,0,0,0.15)"/>
+        ${plateSVG}${tier1SVG}${drizzle1}${tier2SVG}${drizzle2}${tier3SVG}${drizzle3}${frostSVG}${curlSVG}${sprSVG}${candleSVG}${pctText}${cakeSparkles}
+      </svg>`;
+    }
+
+    const CX = 20, CW = 100, CTY = 30, CBY = 155;
+    const fillH = Math.max(0, (p / 100) * (CBY - CTY - 20));
+    const fillY = CBY - fillH;
+    const lc  = dv.liquidColor  || '#8b6f47';
+    const lc2 = dv.liquidColor2 || lc;
+    const cupTint = dv.cupTint || '#8b6f47';
+    const isCold = !!(dv.hasIce || dv.bobas);
+
+    function wavePath(y, amp, flipPhase) {
       const x0 = CX + 4, x1 = CX + CW - 4, mid = (x0 + x1) / 2;
-      return `M${x0},${y} Q${(x0+mid)/2},${y-amp} ${mid},${y} Q${(mid+x1)/2},${y+amp} ${x1},${y} L${x1},${CBY} L${x0},${CBY} Z`;
+      const a = flipPhase ? -amp : amp;
+      return `M${x0},${y} Q${(x0+mid)/2},${y-a} ${mid},${y} Q${(mid+x1)/2},${y+a} ${x1},${y} L${x1},${CBY} L${x0},${CBY} Z`;
     }
 
     // ---- organic bezier drizzle (same math as buildOrgDrizzle on the main page) ----
@@ -622,6 +694,18 @@ const TimerModule = (function() {
       }).join('');
     }
 
+    // ---- floating ice cubes (idle bob, same visual language as boba) ----
+    function iceFloatSVG() {
+      const cubes = [
+        { x: CX+12, y: fillY+5, w:18, h:12, anim:'poIce1', dur:3.0 },
+        { x: CX+42, y: fillY+9, w:15, h:10, anim:'poIce2', dur:3.8 },
+        { x: CX+68, y: fillY+4, w:18, h:12, anim:'poIce3', dur:3.2 },
+      ];
+      return cubes.map(({x,y,w,h,anim,dur}) => `<g style="animation:${anim} ${dur}s ease-in-out infinite ${ao(dur)}">
+        <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w}" height="${h}" rx="3" fill="rgba(210,240,255,0.70)" stroke="rgba(180,220,255,0.5)" stroke-width="1"/>
+      </g>`).join('');
+    }
+
     // ---- 3D walls (generic light/dark overlay — works across every drink
     // without needing the full per-type color table the main page uses) ----
     function wallsSVG() {
@@ -657,9 +741,11 @@ const TimerModule = (function() {
     }
 
     // ---- foam — by explicit shape flag first, generic fallback otherwise ----
-    function foamSVG() {
-      if (!dv.foamColor || p < 5) return '';
-      const cx = CX + CW / 2, fc = dv.foamColor;
+    // (accepts an override color so recipe-driven foamFill100 can take precedence)
+    function foamSVG(colorOverride) {
+      const fc = colorOverride || dv.foamColor;
+      if (!fc || p < 5) return '';
+      const cx = CX + CW / 2;
       if (dv.thickFoam) return `<ellipse cx="${cx}" cy="${fillY}" rx="${CW*0.44}" ry="10" fill="${fc}" opacity="0.95"/><ellipse cx="${cx-12}" cy="${fillY-2}" rx="9" ry="6" fill="${fc}" opacity="0.75"/><ellipse cx="${cx+13}" cy="${fillY-1}" rx="8" ry="5.5" fill="${fc}" opacity="0.78"/>`;
       if (dv.spotFoam)  return `<ellipse cx="${cx}" cy="${fillY+1}" rx="${CW*0.22}" ry="5" fill="${fc}" opacity="0.82"/>`;
       if (dv.whipCream) return `<ellipse cx="${cx}" cy="${fillY-2}" rx="${CW*0.38}" ry="9" fill="${fc}" opacity="0.95"/><ellipse cx="${cx}" cy="${fillY-6}" rx="${CW*0.26}" ry="6" fill="${fc}" opacity="0.90"/>`;
@@ -682,11 +768,49 @@ const TimerModule = (function() {
         <ellipse cx="${rx}" cy="${(CTY+90).toFixed(1)}" rx="1.1" ry="2.6" fill="rgba(200,228,248,0.5)" style="animation:poDropR 3.9s ease-in-out infinite ${ao(3.9)}"/>`;
     }
 
-    // ---- ice ----
-    const iceSVG = (dv.hasIce && p >= 20)
-      ? `<rect x="${CX+12}" y="${(fillY+5).toFixed(1)}" width="18" height="12" rx="3" fill="rgba(210,240,255,0.70)" stroke="rgba(180,220,255,0.5)" stroke-width="1"/>
-         <rect x="${CX+42}" y="${(fillY+9).toFixed(1)}" width="15" height="10" rx="3" fill="rgba(210,240,255,0.65)" stroke="rgba(180,220,255,0.5)" stroke-width="1"/>
-         <rect x="${CX+68}" y="${(fillY+4).toFixed(1)}" width="18" height="12" rx="3" fill="rgba(210,240,255,0.70)" stroke="rgba(180,220,255,0.5)" stroke-width="1"/>` : '';
+    // ---- Void — cosmic star field + orbit rings (ported from buildLiquid's
+    // dedicated `type === 'void'` branch; pure pct-driven, no recipe data needed) ----
+    function voidLiquidSVG() {
+      const wSpd = 10, wOff1 = ao(wSpd), wP1 = wavePath(fillY, 1, false);
+      const starSeeds = [
+        [36,135,1.2,1.5],[62,88,0.9,2.2],[78,148,1.5,1.8],[44,72,1.0,2.5],
+        [97,118,1.2,1.2],[112,84,0.9,2.0],[54,140,1.4,1.6],[88,96,1.1,1.9],
+        [72,62,0.8,2.3],[104,143,1.5,1.4],[32,104,1.0,2.1],[118,112,1.2,1.7],
+        [58,76,0.9,2.4],[92,132,1.3,1.5],[48,118,1.1,2.0],[108,68,0.8,1.9],
+        [68,148,1.4,1.3],[82,78,1.0,2.2],[114,98,0.9,2.6],[40,90,1.1,1.4],
+      ];
+      const starCount = Math.floor(3 + (p / 100) * 17);
+      const stars = starSeeds.slice(0, Math.min(starCount, starSeeds.length)).map(([sx,sy,sr,sdur]) => {
+        const sy2 = Math.max(fillY + 6, Math.min(CBY - 6, sy));
+        return `<circle cx="${sx}" cy="${sy2}" r="${sr}" fill="rgba(255,255,255,${(0.2 + Math.min(0.6, p/150)).toFixed(2)})" style="animation:voidStar ${sdur}s ease-in-out infinite ${ao(sdur)}"/>`;
+      }).join('');
+      const orbitY = fillY + 7, orbitRx = CW * 0.42, ocx = CX + CW / 2;
+      return `<rect x="${CX-1}" y="${fillY.toFixed(1)}" width="${CW+2}" height="${(CBY-fillY+5).toFixed(1)}" fill="url(#poLiqGrad)" opacity="0.96"/>
+        <rect x="${CX-1}" y="${fillY.toFixed(1)}" width="${CW+2}" height="${(CBY-fillY+5).toFixed(1)}" fill="rgba(50,15,90,0.18)"/>
+        <path d="${wP1}" fill="rgba(70,25,110,0.50)" style="animation:poWaveMove 10s ease-in-out infinite ${wOff1}"/>
+        ${stars}
+        ${p > 25 ? `<ellipse cx="${ocx.toFixed(1)}" cy="${orbitY.toFixed(1)}" rx="${orbitRx.toFixed(1)}" ry="5" fill="none" stroke="rgba(212,165,8,0.65)" stroke-width="1.8" stroke-dasharray="32 200" style="animation:voidOrbitOuter 7s linear infinite ${ao(7)}"/>` : ''}
+        ${p > 60 ? `<ellipse cx="${ocx.toFixed(1)}" cy="${(orbitY+4).toFixed(1)}" rx="${(orbitRx*0.62).toFixed(1)}" ry="3.5" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="20 125" style="animation:voidOrbitInner 11s linear infinite ${ao(11)}"/>` : ''}`;
+    }
+
+    // ---- Aurora — northern-lights color bands (ported from buildLiquid's
+    // dedicated `type === 'aurora'` branch) ----
+    function auroraLiquidSVG() {
+      const wSpd = 5, wOff1 = ao(wSpd), wOff2 = ao(wSpd*1.3);
+      const wP1 = wavePath(fillY, 2, false), wP2 = wavePath(fillY, 2, true);
+      const band1Ph = Math.min(1, p/40), band2Ph = Math.min(1, Math.max(0,(p-28)/42)), band3Ph = Math.min(1, Math.max(0,(p-55)/38));
+      const aCX = CX + CW/2, y1 = fillY+fillH*0.45, y2 = fillY+fillH*0.62, y3 = fillY+fillH*0.28;
+      return `<rect x="${CX-1}" y="${fillY.toFixed(1)}" width="${CW+2}" height="${(CBY-fillY+5).toFixed(1)}" fill="url(#poLiqGrad)" opacity="0.92"/>
+        <path d="${wP2}" fill="${lc2}" opacity="0.35" style="animation:poWaveMove ${(wSpd*1.3).toFixed(1)}s ease-in-out infinite ${wOff2};transform-box:fill-box"/>
+        <path d="${wP1}" fill="rgba(30,40,100,0.55)" style="animation:poWaveMove ${wSpd}s ease-in-out infinite ${wOff1};transform-box:fill-box"/>
+        ${band1Ph > 0.03 ? `<ellipse cx="${aCX.toFixed(1)}" cy="${y1.toFixed(1)}" rx="${(CW*0.42).toFixed(1)}" ry="${Math.max(5,fillH*0.16).toFixed(1)}" fill="rgba(167,139,250,${(band1Ph*0.32).toFixed(2)})" style="animation:auroraFlow 9s ease-in-out infinite ${ao(9)}"/>` : ''}
+        ${band2Ph > 0.03 ? `<ellipse cx="${aCX.toFixed(1)}" cy="${y2.toFixed(1)}" rx="${(CW*0.40).toFixed(1)}" ry="${Math.max(4,fillH*0.14).toFixed(1)}" fill="rgba(34,211,238,${(band2Ph*0.30).toFixed(2)})" style="animation:auroraFlow 12s ease-in-out infinite reverse ${ao(12)}"/>` : ''}
+        ${band3Ph > 0.03 ? `<ellipse cx="${aCX.toFixed(1)}" cy="${y3.toFixed(1)}" rx="${(CW*0.38).toFixed(1)}" ry="${Math.max(4,fillH*0.13).toFixed(1)}" fill="rgba(52,211,153,${(band3Ph*0.26).toFixed(2)})" style="animation:auroraFlow 7s ease-in-out infinite ${ao(7)}"/>` : ''}
+        ${p > 55 ? iceFloatSVG() : ''}`;
+    }
+
+    // ---- ice (generic, non-void/aurora drinks) ----
+    const iceSVG = (dv.hasIce && p >= 20 && dv.type !== 'aurora') ? iceFloatSVG() : '';
 
     // ---- boba (session-seeded, shake-burst then idle float — see bobaSVG) ----
     const bottomY = fillY + fillH;
@@ -700,6 +824,23 @@ const TimerModule = (function() {
       ? drizzleFromLayout(dv.chocDrizzleLayout, '#2a0d00', fillY - 2, Math.min((CBY - fillY) * 0.90, 90), 0.82) : '';
     const recipeDrizzleSVG = (dv.recipeDrizzle && p >= dv.recipeDrizzle.thresholdPct)
       ? drizzleFromLayout(dv.recipeDrizzleLayout, dv.recipeDrizzle.color, CTY + 2, (CBY - CTY) * 0.72, 0.75) : '';
+
+    // ---- recipe tier-step data — fill/foam overrides + cumulative mid-fill
+    // artwork (Galaxy Cold Brew's nebula, Void's singularity rings, espresso's
+    // crema evolution, etc.), generically for ANY drink that has a recipe tier ----
+    function resolveStep() {
+      let chosen = null;
+      (dv.tierSteps || []).forEach(s => { if (p >= s.threshold) chosen = s; });
+      return chosen;
+    }
+    const stepCfg = resolveStep();
+    const liquidFillOverride = (stepCfg && stepCfg.fill && stepCfg.fill !== 'transparent') ? stepCfg.fill : null;
+    const foamOverride = (p >= 100 && dv.foamFill100 && dv.foamFill100 !== 'transparent') ? dv.foamFill100 : null;
+    let recipeContentIn = '', recipeContentOut = '';
+    (dv.tierSteps || []).forEach(s => {
+      if (p < s.threshold || !s.svgContent) return;
+      if (s.svgContentOutside) recipeContentOut += s.svgContent; else recipeContentIn += s.svgContent;
+    });
 
     // ---- crema ring / petal flecks / 100%-garnish passthrough (verbatim main-page art) ----
     const cremaSVG = (dv.cremaRing && p >= 90)
@@ -716,23 +857,30 @@ const TimerModule = (function() {
       ? `<rect x="88" y="${(CTY - 18 - strawYOff).toFixed(1)}" width="4" height="${(CBY-CTY+22).toFixed(1)}" rx="2" fill="#c4a882" opacity="${strawOp.toFixed(2)}"/>` : '';
 
     const liquidGrad = `<linearGradient id="poLiqGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="${lc}"/><stop offset="100%" stop-color="${lc2}"/></linearGradient>`;
-    const waveTop = p > 0 ? wavePath(fillY, isCold ? 1.5 : 2.5) : '';
+    const waveTop = p > 0 ? wavePath(fillY, isCold ? 1.5 : 2.5, false) : '';
+
+    // ---- main liquid-fill block: dedicated renderer for void/aurora, generic
+    // wave-fill (with recipe fill override) for everything else ----
+    const liquidBlock = p <= 0 ? '' : (
+      dv.type === 'void'   ? voidLiquidSVG() :
+      dv.type === 'aurora' ? auroraLiquidSVG() :
+      `<rect x="${CX}" y="${(fillY+3).toFixed(1)}" width="${CW}" height="${(CBY-fillY+5).toFixed(1)}" fill="${liquidFillOverride || 'url(#poLiqGrad)'}" opacity="0.85"/>
+       <path d="${waveTop}" fill="${lc2}" opacity="0.55" style="animation:poWaveMove 3.4s ease-in-out infinite;transform-box:fill-box"/>
+       ${iceSVG}
+       ${bobasSVG}
+       ${foamSVG(foamOverride)}`
+    );
 
     return `<svg width="96" height="112" viewBox="0 0 150 175" xmlns="http://www.w3.org/2000/svg" overflow="visible">
       <defs>
         <clipPath id="poCupClip"><polygon points="${CX},${CTY} ${CX+CW},${CTY} ${CX+CW-8},${CBY} ${CX+8},${CBY}"/></clipPath>
         ${liquidGrad}
+        ${dv.tierDefs || ''}
       </defs>
       <ellipse cx="${CX+CW/2}" cy="${CBY+8}" rx="42" ry="6" fill="rgba(0,0,0,0.14)"/>
       <polygon points="${CX},${CTY} ${CX+CW},${CTY} ${CX+CW-8},${CBY} ${CX+8},${CBY}" fill="rgba(245,241,235,0.08)"/>
       ${showStraw && p > 88 ? strawSVG : ''}
-      ${p > 0 ? `<g clip-path="url(#poCupClip)">
-        <rect x="${CX}" y="${(fillY+3).toFixed(1)}" width="${CW}" height="${(CBY-fillY+5).toFixed(1)}" fill="url(#poLiqGrad)" opacity="0.85"/>
-        <path d="${waveTop}" fill="${lc2}" opacity="0.55" style="animation:poWaveMove 3.4s ease-in-out infinite;transform-box:fill-box"/>
-        ${iceSVG}
-        ${bobasSVG}
-        ${foamSVG()}
-      </g>` : ''}
+      ${p > 0 ? `<g clip-path="url(#poCupClip)">${liquidBlock}${recipeContentIn}</g>` : ''}
       ${wallsSVG()}
       ${decorSVG()}
       ${rimSVG()}
@@ -741,6 +889,7 @@ const TimerModule = (function() {
       <g clip-path="url(#poCupClip)">${wallDrizzleSVG}${chocDrizzleSVG}${recipeDrizzleSVG}</g>
       ${cremaSVG}${petalSVG}
       ${garnishSVG ? `<g clip-path="url(#poCupClip)">${garnishSVG}</g>` : ''}
+      ${recipeContentOut}
       ${condensationSVG()}
       ${p >= 100 ? `<text x="18" y="20" font-size="12" style="animation:poSparkle 1.6s ease-in-out infinite ${ao(1.6)}">✨</text><text x="118" y="16" font-size="10" style="animation:poSparkle 2.0s ease-in-out infinite ${ao(2.0)}">⭐</text><text x="70" y="10" font-size="9" style="animation:poSparkle 1.3s ease-in-out infinite ${ao(1.3)}">✦</text>` : ''}
       ${p > 15 ? `<text x="${CX+CW/2}" y="${Math.max(fillY+18, CBY-10).toFixed(1)}" text-anchor="middle" font-family="Playfair Display,serif" font-size="13" font-weight="600" fill="rgba(255,255,255,0.85)">${Math.round(p)}%</text>` : ''}
@@ -849,6 +998,20 @@ body { background: linear-gradient(165deg,#1c0f06 0%,#2e1a0c 22%,#4a2c14 48%,#2e
 @keyframes poDropL { 0%{transform:translate(0,0);opacity:0} 10%{opacity:0.5} 78%{transform:translate(0.4px,6px);opacity:0.48} 100%{transform:translate(0.5px,8px);opacity:0} }
 @keyframes poDropR { 0%{transform:translate(0,0);opacity:0} 10%{opacity:0.5} 78%{transform:translate(-0.4px,6px);opacity:0.48} 100%{transform:translate(-0.5px,8px);opacity:0} }
 @keyframes poSparkle { 0%,100%{opacity:0.2;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.2)} }
+@keyframes voidStar { 0%,100%{opacity:0.08;transform:scale(0.6)} 50%{opacity:1;transform:scale(1.4)} }
+@keyframes voidOrbitOuter { from{stroke-dashoffset:0} to{stroke-dashoffset:-232} }
+@keyframes voidOrbitInner { from{stroke-dashoffset:0} to{stroke-dashoffset:143} }
+@keyframes auroraFlow { 0%,100%{transform:translateX(-10px) scaleY(0.85);opacity:0.55} 40%{transform:translateX(8px) scaleY(1.18);opacity:1} 70%{transform:translateX(-5px) scaleY(0.92);opacity:0.75} }
+@keyframes poIce1 { 0%,100%{transform:rotate(-8deg) translateY(0)} 50%{transform:rotate(-8deg) translateY(-2.5px)} }
+@keyframes poIce2 { 0%,100%{transform:rotate(5deg) translateY(0)} 50%{transform:rotate(5deg) translateY(-3px)} }
+@keyframes poIce3 { 0%,100%{transform:rotate(-5deg) translateY(0)} 50%{transform:rotate(-5deg) translateY(-1.5px)} }
+/* These two names are referenced directly inside DRINK_RECIPES svgContent/
+   garnishSvg strings (rose gold flakes, the Void's mastercraft singularity
+   ring, etc.), which now get broadcast and rendered verbatim in the pop-out
+   — so the same keyframe names need to exist here too. "sparkle" matches the
+   one already injected on the main page (script-drink.js injectDrinkStyles). */
+@keyframes sparkle { 0%,100%{opacity:0.2;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.2)} }
+@keyframes voidOrbit { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 /* Subtle highlight — soft breathing glow + an occasional light sweep, kept
    gentle on purpose (low opacity, slow period) so it accents rather than
    distracts. Pop-out only; the main timer page is untouched. */

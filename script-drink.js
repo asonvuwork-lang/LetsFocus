@@ -565,6 +565,23 @@ const DrinkModule = (function () {
       }
     }
 
+    // Full per-step recipe data (fill override + mid-fill svgContent), so the
+    // pop-out can reconstruct the exact same cumulative artwork/fill progression
+    // the main cup shows (Galaxy Cold Brew's nebula swirl, Void's singularity
+    // rings, espresso's crema evolution, etc.) instead of only the final
+    // garnish. randomDrizzle steps are excluded here since they're already
+    // covered by recipeDrizzle/recipeDrizzleLayout above.
+    const tierSteps = tierCfg?.steps
+      ? Object.keys(tierCfg.steps).map(Number).sort((a, b) => a - b)
+          .filter(t => !tierCfg.steps[t].randomDrizzle)
+          .map(t => ({
+            threshold: t,
+            fill: tierCfg.steps[t].fill || null,
+            svgContent: tierCfg.steps[t].svgContent || null,
+            svgContentOutside: !!tierCfg.steps[t].svgContentOutside,
+          }))
+      : [];
+
     return {
       drinkKey:     currentDrinkId,
       label:        d.label,
@@ -594,6 +611,9 @@ const DrinkModule = (function () {
       recipeDrizzleLayout: _recipeDrizzleLayout,
       // 100%-completion garnish, passed through verbatim (same art as main cup)
       garnishSvg100: (step100?.garnishSvg) || null,
+      foamFill100:   (step100?.foamFill) || null,
+      tierSteps:     tierSteps,
+      tierDefs:      tierCfg?.defs || '',
     };
   }
 
