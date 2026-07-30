@@ -273,10 +273,12 @@ const DRINK_RECIPES = {
       bgGlow: "rgba(217, 180, 143, 0.2)",
       defs: `<linearGradient id="sigBobaFluid" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c9a070"/><stop offset="100%" stop-color="#8a5838"/></linearGradient>`,
       steps: {
-        // Pearl circles intentionally omitted here — generateBobas() already renders
-        // animated, session-seeded boba for this drink type on every tier; a second
-        // set of fixed pearls baked into this step doubled up and never moved.
-        20: { label: "Injecting slow-cooked Indigo Boba Pearls", fill: "transparent" },
+        20: { label: "Injecting slow-cooked Indigo Boba Pearls", fill: "transparent", svgContent: `
+          <circle cx="38" cy="140" r="7" fill="#111827"/><circle cx="58" cy="145" r="7" fill="#1f2937"/>
+          <circle cx="78" cy="141" r="7" fill="#111827"/><circle cx="98" cy="146" r="7" fill="#374151"/>
+          <circle cx="116" cy="142" r="7" fill="#1f2937"/><circle cx="50" cy="132" r="6" fill="#1f2937"/>
+          <circle cx="88" cy="134" r="6" fill="#111827"/>
+        `},
         40: { label: "Settling structural assets inside glass boundaries", fill: "transparent" },
         60: { label: "Streaming standard emulsion tea liquid", fill: "url(#sigBobaFluid)" },
         80: { label: "Fluid level rising over pearl clusters", fill: "url(#sigBobaFluid)" },
@@ -291,11 +293,13 @@ const DRINK_RECIPES = {
         <linearGradient id="masterBobaFluid" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d4a880"/><stop offset="60%" stop-color="#a06040"/><stop offset="100%" stop-color="#7a4020"/></linearGradient>
       `,
       steps: {
-        // randomDrizzle: expanded at render time by script-drink.js into 3-5 seeded,
-        // session-stable organic streams (replaces the old fixed mirrored pair).
-        20: { label: "Painting walls with caramelized Brown Sugar drizzle", fill: "url(#bsDrizzle)", randomDrizzle: { color: "#4a2005", minStreams: 3, maxStreams: 5 } },
-        // Pearl circles omitted — see note on the signature tier above.
-        40: { label: "Dropping warm signature honey boba pearls", fill: "url(#bsDrizzle)" },
+        20: { label: "Painting walls with caramelized Brown Sugar drizzle", fill: "url(#bsDrizzle)" },
+        40: { label: "Dropping warm signature honey boba pearls", fill: "url(#bsDrizzle)", svgContent: `
+          <circle cx="36" cy="138" r="7" fill="#1c0a00"/><circle cx="56" cy="143" r="7" fill="#2d1305"/>
+          <circle cx="76" cy="140" r="7" fill="#1c0a00"/><circle cx="96" cy="145" r="7" fill="#451a03"/>
+          <circle cx="114" cy="139" r="7" fill="#1c0a00"/><circle cx="48" cy="130" r="6.5" fill="#2d1305"/>
+          <circle cx="68" cy="133" r="6.5" fill="#1c0a00"/><circle cx="88" cy="128" r="6.5" fill="#451a03"/>
+        `},
         60: { label: "Dropping premium hard-frozen square ice block arrays", fill: "url(#masterBobaFluid)", svgContent: `
           <rect x="68" y="145" width="24" height="24" rx="4" fill="#e0f2fe" opacity="0.45" transform="rotate(18 80 157)"/>
           <rect x="108" y="135" width="26" height="26" rx="4" fill="#e0f2fe" opacity="0.55" transform="rotate(-12 121 148)"/>
@@ -437,9 +441,7 @@ const DRINK_RECIPES = {
       defs: `<linearGradient id="masterLavender" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d8b4fe"/><stop offset="40%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#4c1d95"/></linearGradient>`,
       steps: {
         20: { label: "Infusing slow-simmered organic French lavender flower syrup", fill: "transparent" },
-        // randomDrizzle: expanded at render time by script-drink.js into 2-4 seeded,
-        // session-stable organic streams (replaces the old fixed mirrored pair).
-        40: { label: "Drizzling raw local wildflower honey along internal glass walls", fill: "transparent", randomDrizzle: { color: "#d4922a", minStreams: 2, maxStreams: 4 } },
+        40: { label: "Drizzling raw local wildflower honey along internal glass walls", fill: "transparent" },
         60: { label: "Steaming rich alternative milk to optimal silky microfoam weight", fill: "#4c1d95" },
         80: { label: "Pouring precision espresso layers to produce distinct herbal banding profiles", fill: "url(#masterLavender)" },
         100: { label: "Suspending dried culinary lavender botanical blossoms on foam", fill: "url(#masterLavender)", foamFill: "#ffffff", garnishSvg: `
@@ -907,10 +909,7 @@ const DRINK_RECIPES = {
           <path d="M20 75 Q44 50 70 75 Q96 100 120 75 L120 180 L20 180 Z" fill="url(#auroraWave)" opacity="0.75"/>
           <circle cx="48" cy="95" r="2.5" fill="#ffffff" opacity="0.9"/><circle cx="92" cy="112" r="2" fill="#ffffff" opacity="0.85"/>
         `, svgContentOutside: true },
-        100: { label: "Dynamic active color wave system established successfully", fill: "url(#animeAurora)", foamFill: "transparent", garnishSvg: `
-          <path d="M 52 54 C 75 30, 115 70, 140 45" fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
-          <path d="M 56 58 C 80 38, 110 62, 136 49" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
-        `}
+        100: { label: "Dynamic active color wave system established successfully", fill: "url(#animeAurora)", foamFill: "transparent" }
       }
     }
   },

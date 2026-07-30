@@ -62,7 +62,7 @@ const DrinkShelfModule = (function () {
     oj: '#e8820a', chamomile: '#c8a840', smoothie: '#b050a0', lemonade: '#d4d820',
     espresso: '#1c0a04', americano: '#1e1008', flat_white: '#9a7868',
     hot_choc: '#2e1508', matcha_latte: '#3a7040', egg_coffee: '#4a3020',
-    boba: '#7a4820', caramel_mac: '#8a5030', latte: '#c0a080',
+    boba: '#3a1a08', caramel_mac: '#8a5030', latte: '#c0a080',
     cappuccino: '#905840', macchiato: '#2a1208', ca_phe_sua_da: '#200a04',
     lavender_latte: '#6840a0', dalgona: '#d09020', iced_matcha: '#4a7040',
     mocha: '#200808', irish_coffee: '#1a0c06', vienna_coffee: '#1c0e08',

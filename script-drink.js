@@ -24,7 +24,7 @@ const DrinkModule = (function () {
   const DRINK_KEY_TO_RECIPE = {
     '☕ Coffee':        'espresso',
     '🍵 Matcha':        'matchaLatte',
-    '🧋 Milk Tea':      'brownSugarBoba',
+    '🧋 Milk Tea':      null,
     '🍊 Orange Juice':  null,
     '🫖 Chamomile Tea': null,
     '🥤 Smoothie':      null,
@@ -74,7 +74,7 @@ const DrinkModule = (function () {
     lavender_latte: '_lavender_latte',
     iced_matcha:    '_iced_matcha',
     // Boba / milk tea
-    boba:           '🧋 Milk Tea',
+    boba:           '_boba',
     // Layered shop specials
     egg_coffee:     '_egg_coffee',
     caramel_mac:    '_caramel_mac',
@@ -154,6 +154,14 @@ const DrinkModule = (function () {
       bobas: false, hasFoam: true, hasIce: false, rarity: 'base',
     },
     // ---- Shop drink visual entries ----
+    _boba: {
+      label: 'Brown Sugar Boba', type: 'milktea',
+      liquidColor: '#3a1a08', liquidColor2: '#a5742e',
+      foamColor: '#f0e0c0', cupTint: '#8a5020',
+      bobas: true, bobaColor: '#160a02',
+      hasFoam: true, hasIce: false, rarity: 'uncommon',
+      dripDrizzle: { color: '#4a2005', tierGate: 'mastercraft' },
+    },
     _ca_phe_sua_da: {
       label: 'Cà Phê Sữa Đá', type: 'ca_phe_sua_da',
       liquidColor: '#140904', liquidColor2: '#fce8b3',
@@ -165,6 +173,7 @@ const DrinkModule = (function () {
       liquidColor: '#f8f4ee', liquidColor2: '#c87d2a',
       foamColor: '#d4922a', cupTint: '#8b6030',
       bobas: false, hasFoam: false, hasIce: true, rarity: 'rare',
+      dripDrizzle: { color: '#8a4a10' },
     },
     _egg_coffee: {
       label: 'Egg Coffee', type: 'egg_coffee',
@@ -183,6 +192,7 @@ const DrinkModule = (function () {
       liquidColor: '#2a1208', liquidColor2: '#f5ede0',
       foamColor: '#f0e6d0', cupTint: '#b89060',
       bobas: false, hasFoam: true, hasIce: false, rarity: 'uncommon',
+      dripDrizzle: { color: '#b45309' },
     },
     _irish_coffee: {
       label: 'Irish Coffee', type: 'irish_coffee',
@@ -215,7 +225,7 @@ const DrinkModule = (function () {
       liquidColor: '#3e1c08', liquidColor2: '#6a3010',
       foamColor: 'rgba(255,255,255,0.95)', cupTint: '#5a2010',
       bobas: false, hasFoam: true, hasIce: false, rarity: 'common',
-      chocDrizzle: true,  // chocolate drizzle over white foam
+      dripDrizzle: { color: '#2a0d00' },  // chocolate drizzle over white foam
     },
     _latte: {
       label: 'Latte', type: 'coffee',
@@ -236,7 +246,7 @@ const DrinkModule = (function () {
       liquidColor: '#2a1010', liquidColor2: '#4a1818',
       foamColor: 'rgba(255,255,255,0.90)', cupTint: '#601818',
       bobas: false, hasFoam: true, hasIce: false, rarity: 'uncommon',
-      chocDrizzle: true,  // chocolate drizzle — unique to mocha + hot choc
+      dripDrizzle: { color: '#2a0d00' },  // chocolate drizzle — unique to mocha + hot choc
     },
     _macchiato: {
       label: 'Macchiato', type: 'coffee',
@@ -270,30 +280,31 @@ const DrinkModule = (function () {
       liquidColor: '#3c2850', liquidColor2: '#9070b8',
       foamColor: 'rgba(200,170,240,0.80)', cupTint: '#7050a0',
       bobas: false, hasFoam: true, hasIce: false, rarity: 'rare',
+      dripDrizzle: { color: '#d4922a', tierGate: 'mastercraft' },
     },
     // ---- Epic drinks (unique vibrant visuals) ----
     _rose_gold: {
-      label: 'Rose Gold Latte', type: 'smoothie',
+      label: 'Rose Gold Latte', type: 'rosegold',
       liquidColor: '#9a3858', liquidColor2: '#e8a878',
       foamColor: 'rgba(255,200,160,0.85)', cupTint: '#c07848',
       bobas: false, hasFoam: true, hasIce: false, rarity: 'epic',
       // Deep rose-to-peach gradient — warm tones, gold shimmer foam
     },
     _cherry_blossom: {
-      label: 'Cherry Blossom', type: 'smoothie',
+      label: 'Cherry Blossom', type: 'sakura',
       liquidColor: '#5a2848', liquidColor2: '#e8c0d8',
       foamColor: 'rgba(255,220,240,0.90)', cupTint: '#c090b0',
       bobas: false, hasFoam: true, hasIce: false, rarity: 'epic',
       petalFlecks: true,  // pink petal flecks on foam surface — unique identifier
     },
     _galaxy_brew: {
-      label: 'Galaxy Cold Brew', type: 'coffee',
+      label: 'Galaxy Cold Brew', type: 'galaxy',
       liquidColor: '#1a0840', liquidColor2: '#3020a0',
       foamColor: 'rgba(160,120,240,0.72)', cupTint: '#2010a0',
       bobas: false, hasFoam: false, hasIce: true, rarity: 'epic',
     },
     _midnight_esp: {
-      label: 'Midnight Espresso', type: 'coffee',
+      label: 'Midnight Espresso', type: 'midnight',
       liquidColor: '#040208', liquidColor2: '#282038',
       foamColor: 'rgba(80,60,120,0.72)', cupTint: '#180e30',
       bobas: false, hasFoam: true, hasIce: false, rarity: 'epic',
@@ -310,15 +321,16 @@ const DrinkModule = (function () {
       liquidColor: '#1e1b4b', liquidColor2: '#0c1840',
       foamColor: 'rgba(100,220,255,0.55)', cupTint: '#181060',
       bobas: false, hasFoam: false, hasIce: true, rarity: 'legendary',
+      auroraRibbon: true,
     },
     _golden_hour: {
-      label: 'Golden Hour', type: 'coffee',
+      label: 'Golden Hour', type: 'goldenhour',
       liquidColor: '#451a03', liquidColor2: '#e0a030',
       foamColor: 'rgba(252,195,60,0.80)', cupTint: '#c08010',
       bobas: false, hasFoam: false, hasIce: false, rarity: 'legendary',
     },
     _barista_secret: {
-      label: "Barista's Secret", type: 'lemonade',
+      label: "Barista's Secret", type: 'secret',
       liquidColor: '#042f2e', liquidColor2: '#0f766e',
       foamColor: 'rgba(45,212,191,0.72)', cupTint: '#0a6060',
       bobas: false, hasFoam: true, hasIce: true, rarity: 'legendary',
@@ -333,96 +345,25 @@ const DrinkModule = (function () {
   let isFinished    = false;
   let _currentCategoryName = null;  // passed from onSessionStart, used for category pill
 
-  // localStorage channel used to mirror the active drink's visual data out to
-  // the pop-out timer window (which is a separate document with no access to
-  // this module — see script-timer.js buildPopOutHTML).
-  const DRINK_SYNC_KEY = 'letsfocus_drink_sync';
-
-  // ============================================================
-  // SESSION-SEEDED RANDOMNESS — boba positions + drizzle streams
-  // ============================================================
-  // Every session (each call to setDrink()) gets one seed. All boba/drizzle
-  // layout is computed ONCE from that seed and reused for every re-render
-  // (every progress tick) so nothing jitters — but a new session looks
-  // different from the last. The same precomputed layouts are broadcast to
-  // the pop-out (see getCurrentDrinkVisual) so both windows draw identically.
-
-  // Deterministic PRNG (mulberry32) — small, fast, seed → repeatable [0,1) stream.
-  function mulberry32(seed) {
-    let a = seed >>> 0;
+  // ---- Session-seeded RNG (used for themed drizzle jitter) ----
+  // Deterministic per-session/drink-swap so animation doesn't jitter frame to frame,
+  // but varies session-to-session and drink-to-drink so streams don't look copy-pasted.
+  function seededRng(seed) {
+    let s = seed >>> 0;
     return function () {
-      a |= 0; a = (a + 0x6D2B79F5) | 0;
-      let t = Math.imul(a ^ (a >>> 15), 1 | a);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      s = (s + 0x6D2B79F5) >>> 0;
+      let t = s;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
   }
-  // Turns any string (e.g. a shop slot uid) into a seed int for mulberry32.
-  function hashSeed(str) {
+  function hashStr(str) {
     let h = 2166136261;
-    for (let i = 0; i < String(str).length; i++) {
-      h ^= String(str).charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
     return h >>> 0;
   }
-
-  const BOBA_BURST_MS = 1200; // how long the session-start "shake" plays before settling into idle float
-
-  // Jittered version of the 10 hand-placed boba anchor points — keeps the
-  // natural clustering/spacing of the original art but no two sessions match.
-  function makeBobaLayout(rng) {
-    const base = [
-      [15,4], [30,6], [50,3], [65,5], [80,4],
-      [22,14],[45,12],[68,15],[38,20],[58,18],
-    ];
-    return base.map(([dx, off]) => ({
-      dx: dx + (rng() - 0.5) * 8,
-      offsetFromBottom: Math.max(2, off + (rng() - 0.5) * 5),
-      dur: +(1.6 + rng() * 1.6).toFixed(2),
-      burstDur: +(0.9 + rng() * 0.4).toFixed(2),
-      burstDelay: +(rng() * 0.15).toFixed(2),
-    }));
-  }
-
-  // Seeded organic drizzle layout — count streams spread across roughly-even
-  // slots of the wall width, each jittered within its slot so streams never
-  // overlap but also never land in a perfectly even/mirrored pattern.
-  function makeDrizzleLayout(rng, count, wallWidth) {
-    const slotW = wallWidth / count;
-    const layout = [];
-    for (let i = 0; i < count; i++) {
-      const slotStart = i * slotW;
-      layout.push({
-        xFrac:   (slotStart + slotW * (0.15 + rng() * 0.7)) / wallWidth,
-        y0Jit:   +(rng() * 4).toFixed(1),
-        widthPx: +(1.3 + rng() * 2.2).toFixed(1),
-        lenFrac: +(0.45 + rng() * 0.45).toFixed(2),
-        wobX:    +((rng() - 0.5) * 16).toFixed(1),
-      });
-    }
-    return layout;
-  }
-
-  // Expands a seeded layout (from makeDrizzleLayout) into the same organic
-  // bezier streams buildOrgDrizzle already knows how to render.
-  function renderDrizzleLayout(layout, color, CX, CW, y0base, dropH, clipId, opacity) {
-    if (!layout || !layout.length) return '';
-    const streams = layout.map(({ xFrac, y0Jit, widthPx, lenFrac, wobX }) => ({
-      x0: CX + xFrac * CW,
-      y0: y0base + y0Jit,
-      color, width: widthPx, len: dropH * lenFrac, wobX,
-    }));
-    return buildOrgDrizzle(streams, clipId, opacity);
-  }
-
-  // Per-session layout state, (re)computed once in setDrink().
-  let _sessionRng          = mulberry32(Date.now());
-  let _sessionStartTs      = 0;
-  let _bobaLayout          = null;
-  let _wallDrizzleLayout   = null; // caramel_mac / dalgona (buildWallDrizzle)
-  let _chocDrizzleLayout   = null; // hot_choc / mocha (chocDrizzle flag)
-  let _recipeDrizzleLayout = null; // recipe-marker steps (boba/lavender mastercraft)
+  let _drizzleRng = seededRng(1);
 
   // ---- Recipe tier resolution ----
   function getCurrentTierConfig(recipeKey) {
@@ -437,6 +378,10 @@ const DrinkModule = (function () {
     return { tier: 'house', ...recipe.house };
   }
 
+  function tierRank(tier) {
+    return tier === 'mastercraft' ? 2 : tier === 'signature' ? 1 : 0;
+  }
+
   // Returns the highest step config whose threshold ≤ pct
   function getStepConfig(tierCfg, pct) {
     if (!tierCfg?.steps) return null;
@@ -448,23 +393,12 @@ const DrinkModule = (function () {
 
   // Collects svgContent from ALL steps up to and including pct.
   // This keeps earlier step artwork (drizzle, pearls, ice) visible as pct rises.
-  // Steps can also carry a `randomDrizzle: {color}` marker instead of a fixed
-  // svgContent string — those are expanded here using the session-seeded
-  // _recipeDrizzleLayout so the streams look organic/randomized instead of
-  // the old fixed hardcoded pair.
-  function getCumulativeSvgContent(tierCfg, pct, CX, CW, CTY, CBY) {
+  function getCumulativeSvgContent(tierCfg, pct) {
     if (!tierCfg?.steps) return '';
     const thresholds = Object.keys(tierCfg.steps).map(Number).sort((a, b) => a - b);
     let combined = '';
     for (const t of thresholds) {
-      if (pct < t) continue;
-      const step = tierCfg.steps[t];
-      if (step.svgContent) combined += step.svgContent;
-      if (step.randomDrizzle) {
-        if (!_recipeDrizzleLayout) _recipeDrizzleLayout = makeDrizzleLayout(_sessionRng, 3, CW);
-        const dropH = (CBY - CTY) * 0.72;
-        combined += renderDrizzleLayout(_recipeDrizzleLayout, step.randomDrizzle.color, CX, CW, CTY + 2, dropH, 'lf_cupClip', 0.75);
-      }
+      if (pct >= t && tierCfg.steps[t].svgContent) combined += tierCfg.steps[t].svgContent;
     }
     return combined;
   }
@@ -486,18 +420,9 @@ const DrinkModule = (function () {
     currentDrink = DRINKS[visualKey] || DRINKS[DRINK_KEYS[Math.floor(Math.random() * DRINK_KEYS.length)]];
     currentPct = 0;
     isFinished = false;
-
-    // New session → reseed once. Every re-render for the rest of this session
-    // reuses these exact layouts (no jitter tick-to-tick), and a fresh session
-    // gets a different-looking one. CUP_WALL_W matches renderCup's CW constant.
-    const CUP_WALL_W = 100;
-    _sessionRng          = mulberry32((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0);
-    _sessionStartTs      = Date.now();
-    _bobaLayout          = makeBobaLayout(_sessionRng);
-    _wallDrizzleLayout   = makeDrizzleLayout(_sessionRng, 5 + Math.floor(_sessionRng() * 2), CUP_WALL_W); // 5-6 streams
-    _chocDrizzleLayout   = makeDrizzleLayout(_sessionRng, 5 + Math.floor(_sessionRng() * 2), CUP_WALL_W); // 5-6 streams
-    _recipeDrizzleLayout = makeDrizzleLayout(_sessionRng, 3 + Math.floor(_sessionRng() * 3), CUP_WALL_W); // 3-5 streams
-
+    // Fresh session-seeded RNG for this drink/session — stable for the whole session,
+    // varies session-to-session so drizzle/sparkle streams don't look copy-pasted.
+    _drizzleRng = seededRng((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0);
     renderCup(0);
     updateLabel(0);
 
@@ -534,94 +459,6 @@ const DrinkModule = (function () {
 
     // Render recipe bill beside the cup
     renderRecipeBill(drinkKey, currentDrink, tierCfg);
-
-    // Mirror this drink's visual data to the pop-out timer window (if open)
-    broadcastDrinkSync();
-  }
-
-  // ---- Pop-out sync: full visual snapshot of the current drink ----
-  // Broadcasts everything buildPoCupSVG (script-timer.js) needs to draw a
-  // faithful match of the main cup: colors, foam-shape flags, flourish flags,
-  // and the SAME session-seeded boba/drizzle layouts used here — so both
-  // windows render the identical randomized look, not just a similar one.
-  function getCurrentDrinkVisual() {
-    if (!currentDrink) return null;
-    const d = currentDrink;
-    const recipeKey = DRINK_KEY_TO_RECIPE[currentDrinkId] || null;
-    const tierCfg   = recipeKey ? getCurrentTierConfig(recipeKey) : null;
-    const step100   = tierCfg?.steps?.[100] || null;
-
-    // Generic scan for a randomDrizzle marker anywhere in the active tier's
-    // steps (currently only boba/lavender mastercraft use this) — works for
-    // any future drink that adds one without needing pop-out-side updates.
-    let recipeDrizzle = null;
-    if (tierCfg?.steps) {
-      for (const key of Object.keys(tierCfg.steps)) {
-        const step = tierCfg.steps[key];
-        if (step.randomDrizzle) {
-          recipeDrizzle = { thresholdPct: Number(key), color: step.randomDrizzle.color };
-          break;
-        }
-      }
-    }
-
-    // Full per-step recipe data (fill override + mid-fill svgContent), so the
-    // pop-out can reconstruct the exact same cumulative artwork/fill progression
-    // the main cup shows (Galaxy Cold Brew's nebula swirl, Void's singularity
-    // rings, espresso's crema evolution, etc.) instead of only the final
-    // garnish. randomDrizzle steps are excluded here since they're already
-    // covered by recipeDrizzle/recipeDrizzleLayout above.
-    const tierSteps = tierCfg?.steps
-      ? Object.keys(tierCfg.steps).map(Number).sort((a, b) => a - b)
-          .filter(t => !tierCfg.steps[t].randomDrizzle)
-          .map(t => ({
-            threshold: t,
-            fill: tierCfg.steps[t].fill || null,
-            svgContent: tierCfg.steps[t].svgContent || null,
-            svgContentOutside: !!tierCfg.steps[t].svgContentOutside,
-          }))
-      : [];
-
-    return {
-      drinkKey:     currentDrinkId,
-      label:        d.label,
-      type:         d.type || 'coffee',
-      rarity:       d.rarity || 'base',
-      tier:         tierCfg?.tier || 'house',
-      liquidColor:  d.liquidColor,
-      liquidColor2: d.liquidColor2 || d.liquidColor,
-      foamColor:    d.hasFoam ? (d.foamColor || null) : null,
-      cupTint:      d.cupTint,
-      hasIce:       !!d.hasIce,
-      bobas:        !!d.bobas,
-      bobaColor:    d.bobaColor || null,
-      // Foam-shape + flourish flags (previously main-page-only)
-      thickFoam:    !!d.thickFoam,
-      spotFoam:     !!d.spotFoam,
-      whipCream:    !!d.whipCream,
-      cremaRing:    !!d.cremaRing,
-      chocDrizzle:  !!d.chocDrizzle,
-      petalFlecks:  !!d.petalFlecks,
-      // Session-seeded layouts — identical source of truth as the main cup
-      sessionStartTs:     _sessionStartTs,
-      bobaLayout:         _bobaLayout,
-      wallDrizzleLayout:  _wallDrizzleLayout,
-      chocDrizzleLayout:  _chocDrizzleLayout,
-      recipeDrizzle:      recipeDrizzle,
-      recipeDrizzleLayout: _recipeDrizzleLayout,
-      // 100%-completion garnish, passed through verbatim (same art as main cup)
-      garnishSvg100: (step100?.garnishSvg) || null,
-      foamFill100:   (step100?.foamFill) || null,
-      tierSteps:     tierSteps,
-      tierDefs:      tierCfg?.defs || '',
-    };
-  }
-
-  function broadcastDrinkSync() {
-    try {
-      const visual = getCurrentDrinkVisual();
-      if (visual) localStorage.setItem(DRINK_SYNC_KEY, JSON.stringify({ ...visual, ts: Date.now() }));
-    } catch(e) {}
   }
 
   function updateProgress(pct) {
@@ -695,6 +532,13 @@ const DrinkModule = (function () {
     iced_matcha:   { waveAmp: 2, waveSpeed: 5.0, steam: false },
     caramel_mac:   { waveAmp: 2, waveSpeed: 4.5, steam: true  },
     irish_coffee:  { waveAmp: 2, waveSpeed: 4.0, steam: true  },
+    // Bespoke premium types (previously borrowed coffee/smoothie/lemonade)
+    galaxy:        { waveAmp: 1.5, waveSpeed: 6.0, steam: false },
+    midnight:      { waveAmp: 2,   waveSpeed: 4.5, steam: true  },
+    rosegold:      { waveAmp: 2,   waveSpeed: 4.5, steam: false },
+    sakura:        { waveAmp: 2,   waveSpeed: 5.0, steam: false },
+    secret:        { waveAmp: 2,   waveSpeed: 4.0, steam: false },
+    goldenhour:    { waveAmp: 2.5, waveSpeed: 4.0, steam: true  },
   };
 
   // ---- CSS keyframes embedded per SVG ----
@@ -719,16 +563,6 @@ const DrinkModule = (function () {
       @keyframes lfW1 { 0%,100%{transform:translateX(-${tx}px)} 50%{transform:translateX(${tx}px)} }
       @keyframes lfW2 { 0%,100%{transform:translateX(${tx}px)} 50%{transform:translateX(-${tx}px)} }
       @keyframes lfBoba { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
-      @keyframes lfBobaBurst {
-        0%   { transform:translate(0,0) scale(1); }
-        14%  { transform:translate(-3px,-4px) scale(1.06); }
-        28%  { transform:translate(4px,3px) scale(0.95); }
-        42%  { transform:translate(-4px,2px) scale(1.05); }
-        56%  { transform:translate(3px,-3px) scale(0.97); }
-        70%  { transform:translate(-2px,2px) scale(1.03); }
-        84%  { transform:translate(1px,-1px) scale(1.01); }
-        100% { transform:translate(0,0) scale(1); }
-      }
       @keyframes lfSteam { 0%{opacity:0;transform:translateY(0) scaleX(1)} 40%{opacity:0.75} 100%{opacity:0;transform:translateY(-26px) scaleX(2)} }
       @keyframes lfBub { 0%{opacity:0.85;transform:translateY(0)} 85%{opacity:0.4} 100%{opacity:0;transform:translateY(-55px)} }
       @keyframes lfSwirl { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
@@ -851,7 +685,7 @@ const DrinkModule = (function () {
     rose_gold:'smoothie', galaxy_brew:'smoothie', midnight_esp:'coffee',
     the_void:'void', aurora_brew:'aurora',
     cherry_blossom:'chamomile', barista_secret:'coffee',
-    golden_hour:'lemonade', aurora_brew:'smoothie', the_void:'coffee',
+    golden_hour:'lemonade',
     birthday_cake:'birthday_cake', _birthday_cake:'birthday_cake',
   };
 
@@ -881,6 +715,7 @@ const DrinkModule = (function () {
     _macchiato:       ['espresso', 'foam dollop'],
     _egg_coffee:      ['espresso', 'egg yolk', 'condensed milk'],
     _caramel_mac:     ['espresso', 'vanilla milk', 'caramel drizzle'],
+    _boba:            ['black tea', 'brown sugar syrup', 'tapioca pearls', 'oat milk'],
     // Rare
     _iced_matcha:     ['matcha powder', 'oat milk', 'ice'],
     _lavender_latte:  ['espresso', 'lavender syrup', 'steamed milk'],
@@ -966,7 +801,13 @@ const DrinkModule = (function () {
     irish_coffee:  { lt: 'rgba(175,128,72,0.90)',  dk: 'rgba(50,18,5,0.92)'  },
     void:          { lt: 'rgba(110,55,180,0.75)',  dk: 'rgba(12,4,28,0.96)'  },
     aurora:        { lt: 'rgba(80,200,240,0.55)',  dk: 'rgba(8,10,60,0.90)'  },
-    lemonade:      { lt: 'rgba(255,255,255,0.30)', dk: 'rgba(0,0,0,0.12)'    },
+    // Bespoke premium palette (previously fell back to CUP_WALL_COLORS.coffee)
+    galaxy:        { lt: 'rgba(150,105,225,0.85)', dk: 'rgba(14,5,42,0.94)'  },
+    midnight:      { lt: 'rgba(120,90,180,0.85)',  dk: 'rgba(10,5,25,0.95)'  },
+    rosegold:      { lt: 'rgba(255,190,160,0.90)', dk: 'rgba(120,40,70,0.90)'},
+    sakura:        { lt: 'rgba(255,200,220,0.90)', dk: 'rgba(90,40,70,0.90)' },
+    secret:        { lt: 'rgba(60,220,200,0.75)',  dk: 'rgba(5,40,35,0.95)'  },
+    goldenhour:    { lt: 'rgba(255,210,130,0.95)', dk: 'rgba(90,50,10,0.92)' },
   };
 
   function buildCupWalls(d, type, CX, CW, CTY, CBY) {
@@ -1099,21 +940,70 @@ const DrinkModule = (function () {
       const cp2x = (x0 + wobX * 0.75).toFixed(1), cp2y = (y0 + len * 0.68).toFixed(1);
       const ex   = (x0 + wobX).toFixed(1),          ey   = (y0 + len).toFixed(1);
       return `<path d="M${x0.toFixed(1)},${y0.toFixed(1)} C${cp1x},${cp1y} ${cp2x},${cp2y} ${ex},${ey}"
-        stroke="${color}" stroke-width="${width}" fill="none" stroke-linecap="round" opacity="${opacity}"/>`;
+        stroke="${color}" stroke-width="${width}" fill="none" stroke-linecap="round" opacity="${opacity}"/>
+        <circle cx="${ex}" cy="${(parseFloat(ey)+1.6).toFixed(1)}" r="${(width*0.6).toFixed(1)}" fill="${color}" opacity="${(opacity*0.85).toFixed(2)}"/>`;
     }).join('');
     return `<g clip-path="url(#${clipId})">${paths}</g>`;
   }
 
-  // ---- Wall drizzle (caramel_mac / dalgona at 100%) ----
-  // Stream positions come from the session-seeded _wallDrizzleLayout (see setDrink).
-  function buildWallDrizzle(type, CX, CW, CTY, CBY, pct) {
-    if (pct < 100) return '';
-    const drizzleMap = { caramel_mac: '#b45309', dalgona: '#8a4a10' };
-    const clr = drizzleMap[type];
-    if (!clr) return '';
-    if (!_wallDrizzleLayout) _wallDrizzleLayout = makeDrizzleLayout(_sessionRng, 6, CW);
-    const dropH = (CBY - CTY) * 0.78;
-    return renderDrizzleLayout(_wallDrizzleLayout, clr, CX, CW, CTY + 2, dropH, 'lf_cupClip', 0.78);
+  // ---- Unified themed drizzle (wall streams) ----
+  // Replaces the old hardcoded per-type drizzleMap AND the static hand-drawn
+  // recipe-baked drizzle paths (boba, lavender). Every drizzled drink now
+  // shares one natural, session-seeded-random rendering path so the streams
+  // never look copy-pasted between drinks, and fade in smoothly instead of
+  // popping in at a hard threshold.
+  //   d.dripDrizzle = { color, tierGate? }  — set on a DRINKS entry
+  //   tierGate: 'signature' | 'mastercraft' — gates on resolved recipe tier (live cup only)
+  function buildThemedDrizzle(d, CX, CW, CTY, CBY, pct, rng, currentTierRank, clipId) {
+    const cfg = d && d.dripDrizzle;
+    if (!cfg) return '';
+    if (pct < 75) return '';
+    if (cfg.tierGate) {
+      const gateRank = cfg.tierGate === 'mastercraft' ? 2 : 1;
+      if ((currentTierRank ?? Infinity) < gateRank) return '';
+    }
+    const fadeOpacity = Math.min(1, (pct - 75) / 20);
+    const clr   = cfg.color;
+    const dropH = (CBY - CTY) * 0.72;
+    const anchors = [0.10, 0.24, 0.46, 0.60, 0.84, 0.96];
+    const streams = anchors.map((frac) => {
+      const jitterX  = (rng() - 0.5) * 8;
+      const jitterY0 = rng() * 3;
+      const lenMul   = 0.78 + rng() * 0.42;
+      const wob      = (rng() - 0.5) * 9;
+      const width    = 1.6 + rng() * 2.1;
+      return {
+        x0: CX + frac * CW + jitterX,
+        y0: CTY + 2 + jitterY0,
+        color: clr,
+        width,
+        len: dropH * (0.46 + rng() * 0.40) * lenMul,
+        wobX: wob,
+      };
+    });
+    return buildOrgDrizzle(streams, clipId || 'lf_cupClip', +(0.80 * fadeOpacity).toFixed(2));
+  }
+
+  // ---- Aurora ribbon — replaces the old flat two-line "drizzle-looking" garnish ----
+  function buildAuroraRibbon(CX, CW, CTY, pct, rng) {
+    if (pct < 88) return '';
+    const opacity = Math.min(1, (pct - 88) / 10);
+    const cx = CX + CW / 2;
+    const y1 = CTY + 18 + rng() * 6;
+    const y2 = CTY + 28 + rng() * 8;
+    const sparkles = Array.from({ length: 5 }, () => {
+      const sx = CX + 10 + rng() * (CW - 20);
+      const sy = CTY + 12 + rng() * 22;
+      const dur = 1.3 + rng() * 1.3;
+      return `<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="${(1 + rng() * 1.3).toFixed(1)}"
+        fill="rgba(210,225,255,0.88)" style="animation:sparkle ${dur.toFixed(1)}s ease-in-out infinite ${ao(dur)}"/>`;
+    }).join('');
+    return `
+      <path d="M${CX+8},${y1.toFixed(1)} C${(cx-20).toFixed(1)},${(y1-14).toFixed(1)} ${(cx+20).toFixed(1)},${(y1+16).toFixed(1)} ${CX+CW-8},${(y1-6).toFixed(1)}"
+        fill="none" stroke="#22d3ee" stroke-width="3.5" stroke-linecap="round" opacity="${(opacity*0.80).toFixed(2)}"/>
+      <path d="M${CX+10},${y2.toFixed(1)} C${(cx-16).toFixed(1)},${(y2+12).toFixed(1)} ${(cx+18).toFixed(1)},${(y2-10).toFixed(1)} ${CX+CW-10},${(y2+8).toFixed(1)}"
+        fill="none" stroke="#a78bfa" stroke-width="2.5" stroke-linecap="round" opacity="${(opacity*0.65).toFixed(2)}"/>
+      ${sparkles}`;
   }
 
   // ---- Milestone surface ripple (plays once at 25 / 50 / 75%) ----
@@ -1198,27 +1088,22 @@ const DrinkModule = (function () {
   }
 
   // ---- Bobas — anchored at the bottom of the liquid fill ----
-  // Positions come from the session-seeded _bobaLayout (see setDrink) so every
-  // session looks a little different, but never jitters within one session.
-  // For the first BOBA_BURST_MS of a session they shake energetically (as if
-  // the cup were just shaken to distribute the pearls), then settle into the
-  // regular calm idle float for the rest of the session.
   function generateBobas(CX, fillY, CW, fillH, color) {
     if (fillH < 10) return '';
-    if (!_bobaLayout) _bobaLayout = makeBobaLayout(_sessionRng); // safety net if called before setDrink()
+    // Offset from the BOTTOM of the cup (CBY direction) — bobas sink and rest there
+    // Larger offset = closer to surface; small = hugging the bottom
+    const positions = [
+      [CX+15, 4], [CX+30, 6], [CX+50, 3], [CX+65, 5], [CX+80, 4],
+      [CX+22, 14],[CX+45, 12],[CX+68, 15],[CX+38, 20],[CX+58, 18],
+    ];
     const bottomY = fillY + fillH;   // y-coordinate of cup bottom at current fill
-    const elapsed = Date.now() - _sessionStartTs;
-    const inBurst  = elapsed >= 0 && elapsed < BOBA_BURST_MS;
-    return _bobaLayout.map(({ dx, offsetFromBottom, dur, burstDur, burstDelay }) => {
-      const bx = CX + dx;
+    return positions.map(([bx, offsetFromBottom], i) => {
       const by = bottomY - offsetFromBottom;   // anchor from the bottom up
       if (by <= fillY + 4) return '';           // don't let bobas escape above liquid surface
-      const anim = inBurst
-        ? `lfBobaBurst ${burstDur}s cubic-bezier(.36,.07,.19,.97) ${burstDelay}s 1 both`
-        : `lfBoba ${dur}s ease-in-out infinite ${ao(dur)}`;
-      return `<g style="animation:${anim};transform-origin:${bx.toFixed(1)}px ${by.toFixed(1)}px">
-        <circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="5" fill="${color}" opacity="0.9"/>
-        <circle cx="${(bx-1).toFixed(1)}" cy="${(by-1).toFixed(1)}" r="1.5" fill="rgba(255,255,255,0.2)"/>
+      const dur = 1.8 + (i % 3) * 0.4;
+      return `<g style="animation:lfBoba ${dur}s ease-in-out infinite ${ao(dur)}">
+        <circle cx="${bx}" cy="${by}" r="5" fill="${color}" opacity="0.9"/>
+        <circle cx="${bx-1}" cy="${by-1}" r="1.5" fill="rgba(255,255,255,0.2)"/>
       </g>`;
     }).join('');
   }
@@ -1296,6 +1181,10 @@ const DrinkModule = (function () {
     const wP1 = wavePath(fillY, wAmp, false);
     const wP2 = wavePath(fillY, wAmp, true);
     const BUBBLE_SIZES = [2, 2.5, 2, 1.8, 2.5, 1.5, 2.2];
+    // Declared up front (not down near the standard-flow section) because the
+    // bespoke premium-type branches below (galaxy/midnight/rosegold/sakura/
+    // secret/goldenhour) assign to it before the standard flow runs.
+    let inner = '';
 
     // --- Layered drinks — smooth per-percent transitions, dynamic proportions, blend zones ---
     if (type === 'ca_phe_sua_da') {
@@ -1537,6 +1426,66 @@ const DrinkModule = (function () {
       `;
     }
 
+    // ─── GALAXY — Nebula swirl + growing starfield (distinct from Void & Aurora) ───
+    if (type === 'galaxy') {
+      const starSeeds = [
+        [34,130,1.3,2.0],[58,92,1.0,2.6],[82,145,1.6,1.7],[46,70,1.1,2.3],
+        [100,115,1.3,1.9],[70,60,1.0,2.5],[110,138,1.4,1.6],[54,105,1.2,2.1],
+      ];
+      const starCount = Math.max(2, Math.floor(2 + (pct / 100) * (starSeeds.length - 2)));
+      const stars = starSeeds.slice(0, starCount).map(([sx,sy,sr,sdur]) => {
+        const sy2 = Math.max(fillY + 6, Math.min(CBY - 6, sy));
+        return `<circle cx="${sx}" cy="${sy2}" r="${sr}" fill="rgba(230,220,255,${(0.25 + Math.min(0.55, pct/160)).toFixed(2)})"
+          style="animation:voidStar ${sdur}s ease-in-out infinite ${ao(sdur)}"/>`;
+      }).join('');
+      const swirlY = fillY + fillH * 0.45;
+      const nebula = pct > 25 ? `
+        <ellipse cx="${CX+CW/2}" cy="${swirlY}" rx="${CW*0.30}" ry="${Math.max(6, fillH*0.14)}"
+          fill="rgba(140,80,220,0.30)" style="animation:lfSwirl 12s linear infinite ${ao(12)};transform-origin:${CX+CW/2}px ${swirlY}px"/>
+        <ellipse cx="${CX+CW/2}" cy="${swirlY}" rx="${CW*0.16}" ry="${Math.max(3, fillH*0.08)}"
+          fill="rgba(80,190,220,0.24)" style="animation:lfSwirl 8s linear infinite reverse ${ao(8)};transform-origin:${CX+CW/2}px ${swirlY}px"/>` : '';
+      inner = stars + nebula;
+      if (pct > 55) inner += generateIce(CX, fillY);
+    }
+
+    // ─── MIDNIGHT — Deep near-black with faint twinkling star-flecks ───────────────
+    if (type === 'midnight' && pct > 10) {
+      inner = `<ellipse cx="70" cy="${fillY+4}" rx="${CW*0.36}" ry="4" fill="rgba(60,30,100,0.35)" opacity="0.85"/>`;
+      [{x:40,d:2.4},{x:60,d:3.0},{x:80,d:2.1},{x:100,d:2.7}].forEach(({x,d:dur}) => {
+        inner += `<circle cx="${x}" cy="${fillY+3}" r="1.1" fill="rgba(220,200,255,0.55)"
+          style="animation:lfBub ${dur}s ease-in infinite ${ao(dur)}"/>`;
+      });
+    }
+
+    // ─── ROSE GOLD — Rose/gold shimmer flecks only (no clashing fruit colors) ──────
+    if (type === 'rosegold' && fillH > 15) {
+      [[CX+20,0.42,'rgba(255,205,170,0.65)'],[CX+50,0.30,'rgba(240,200,150,0.55)'],
+       [CX+80,0.55,'rgba(255,220,190,0.60)'],[CX+65,0.68,'rgba(230,180,140,0.50)']]
+        .forEach(([px,py,fc]) => { inner += `<circle cx="${px}" cy="${fillY+fillH*py}" r="1.8" fill="${fc}"/>`; });
+    }
+
+    // ─── SAKURA (Cherry Blossom) — kept minimal; petal flecks handle the decoration ─
+    if (type === 'sakura') {
+      // intentionally no generic fleck decoration here
+    }
+
+    // ─── SECRET (Barista's Secret) — mysterious teal bubbles, no citrus wheel ──────
+    if (type === 'secret' && fillH > 10) {
+      [{x:CX+20,d:2.0},{x:CX+45,d:2.6},{x:CX+70,d:1.8},{x:CX+90,d:2.4}].forEach(({x,d:dur}) => {
+        inner += `<circle cx="${x}" cy="${fillY+fillH*0.8}" r="2" fill="rgba(45,212,191,0.5)"
+          style="animation:lfBub ${dur}s ease-in infinite ${ao(dur)}"/>`;
+      });
+    }
+
+    // ─── GOLDEN HOUR — Warm gold-dust twinkle instead of orange crema bubbles ──────
+    if (type === 'goldenhour' && pct > 10) {
+      inner = `<ellipse cx="70" cy="${fillY+4}" rx="${CW*0.36}" ry="4" fill="rgba(240,180,60,0.28)" opacity="0.85"/>`;
+      [{x:42,d:2.2},{x:62,d:2.8},{x:82,d:1.9},{x:100,d:2.5}].forEach(({x,d:dur}) => {
+        inner += `<circle cx="${x}" cy="${fillY+3}" r="1.2" fill="rgba(255,220,120,0.7)"
+          style="animation:lfBub ${dur}s ease-in infinite ${ao(dur)}"/>`;
+      });
+    }
+
     // --- Standard wave-fill system for all other drink types ---
     // Depth gradient: lighter at surface (light hits it), denser at depth
     const base = `
@@ -1556,8 +1505,6 @@ const DrinkModule = (function () {
 
     // Pour stream during active fill — width/wobble vary by drink viscosity
     const pour = (pct > 4 && pct < 92) ? buildPourStream(d.liquidColor, fillY, CTY, type) : '';
-
-    let inner = '';
 
     if (type === 'coffee' && pct > 10) {
       inner = `<ellipse cx="70" cy="${fillY+4}" rx="${CW*0.38}" ry="4.5" fill="rgba(140,65,12,0.30)" opacity="0.88"/>`;
@@ -1848,10 +1795,6 @@ const DrinkModule = (function () {
     if (!scene || !currentDrink) return;
     const d = currentDrink;
 
-    // Cup geometry (moved up — needed by getCumulativeSvgContent below for
-    // expanding randomDrizzle markers, before the rest of the recipe block)
-    const CX = 20, CW = 100, CTY = 30, CBY = 155;
-
     // Recipe integration
     const recipeKey  = DRINK_KEY_TO_RECIPE[currentDrinkId] || null;
     const tierCfg    = recipeKey ? getCurrentTierConfig(recipeKey) : null;
@@ -1864,7 +1807,7 @@ const DrinkModule = (function () {
       ? foamFill100 : (d.hasFoam ? d.foamColor : null);
     const garnishSvg = (pct >= 100 && step100?.garnishSvg) ? step100.garnishSvg : '';
     // Cumulative: collect svgContent from ALL steps ≤ pct so earlier artwork persists
-    const svgContentCumul  = tierCfg ? getCumulativeSvgContent(tierCfg, pct, CX, CW, CTY, CBY) : '';
+    const svgContentCumul  = tierCfg ? getCumulativeSvgContent(tierCfg, pct) : '';
     // stepCfg still used to check if the CURRENT step's content should be outside-cup
     const svgContentIsOut  = stepCfg?.svgContentOutside || false;
     const svgContentIn     = svgContentCumul && !svgContentIsOut ? svgContentCumul : '';
@@ -1872,6 +1815,8 @@ const DrinkModule = (function () {
     const bgGlow     = tierCfg?.bgGlow || 'transparent';
     scene.style.filter = (bgGlow && bgGlow !== 'transparent') ? `drop-shadow(0 0 20px ${bgGlow})` : '';
 
+    // Cup geometry
+    const CX = 20, CW = 100, CTY = 30, CBY = 155;
     const fillH = Math.max(0, (pct / 100) * (CBY - CTY - 20));
     const fillY = CBY - fillH;
 
@@ -1927,22 +1872,22 @@ const DrinkModule = (function () {
     // Inject keyframes into <head> once — they survive SVG innerHTML replacement
     injectDrinkStyles(ac.waveAmp, ac.waveSpeed);
 
-    // ---- Special flourishes (crema ring, choc drizzle, petal flecks) ----
+    // ---- Special flourishes (crema ring, petal flecks, aurora ribbon) ----
     // These live outside buildLiquid so they render above foam/garnish layers
     const cremaSVG = (d.cremaRing && pct >= 90) ? `
       <ellipse cx="${CX+CW/2}" cy="${fillY+2}" rx="${CW*0.36}" ry="5"
         fill="none" stroke="rgba(200,145,60,0.75)" stroke-width="2.5"/>
       <ellipse cx="${CX+CW/2}" cy="${fillY+2}" rx="${CW*0.22}" ry="3"
         fill="rgba(185,130,50,0.35)"/>` : '';
-    const chocDrizzleSVG = (d.chocDrizzle && pct >= 90) ? (() => {
-      if (!_chocDrizzleLayout) _chocDrizzleLayout = makeDrizzleLayout(_sessionRng, 6, CW);
-      const dropH = Math.min((CBY - fillY) * 0.90, 90);
-      return renderDrizzleLayout(_chocDrizzleLayout, '#2a0d00', CX, CW, fillY - 2, dropH, 'lf_cupClip', 0.82);
-    })() : '';
     const petalFlecksSVG = (d.petalFlecks && pct >= 90) ? `
       <ellipse cx="${CX+22}" cy="${fillY-1}" rx="3.5" ry="1.5" fill="rgba(255,160,200,0.65)" transform="rotate(-20,${CX+22},${fillY-1})"/>
       <ellipse cx="${CX+46}" cy="${fillY+1}" rx="3"   ry="1.2" fill="rgba(255,180,210,0.60)" transform="rotate(15,${CX+46},${fillY+1})"/>
       <ellipse cx="${CX+66}" cy="${fillY-2}" rx="2.8" ry="1.1" fill="rgba(255,150,195,0.55)" transform="rotate(-10,${CX+66},${fillY-2})"/>` : '';
+    const auroraRibbonSVG = d.auroraRibbon ? buildAuroraRibbon(CX, CW, CTY, pct, _drizzleRng) : '';
+
+    // ---- Unified themed drizzle (boba, lavender, caramel mac, dalgona, mocha, hot choc) ----
+    const liveTierRank = tierRank(tierCfg?.tier);
+    const themedDrizzleSVG = buildThemedDrizzle(d, CX, CW, CTY, CBY, pct, _drizzleRng, liveTierRank, 'lf_cupClip');
 
     scene.innerHTML = `
     <svg viewBox="0 0 150 175" xmlns="http://www.w3.org/2000/svg"
@@ -2011,13 +1956,13 @@ const DrinkModule = (function () {
       <!-- Garnish at 100% -->
       ${garnishSvg ? `<g clip-path="url(#lf_cupClip)">${garnishSvg}</g>` : ''}
 
-      <!-- Special flourishes: crema ring (espresso), choc drizzle (mocha/hot choc), petals (cherry blossom) -->
+      <!-- Special flourishes: crema ring (espresso), petals (cherry blossom), aurora ribbon -->
       ${cremaSVG}
-      ${chocDrizzleSVG}
       ${petalFlecksSVG}
+      ${auroraRibbonSVG}
 
-      <!-- Wall drizzle (boba, caramel etc.) -->
-      ${buildWallDrizzle(type, CX, CW, CTY, CBY, pct)}
+      <!-- Themed wall drizzle (boba, lavender, caramel mac, dalgona, mocha, hot choc) -->
+      ${themedDrizzleSVG}
 
       <!-- svgContent outside cup (orbit rings, glow halos, aurora bands) -->
       ${svgContentOut}
@@ -2649,6 +2594,8 @@ const DrinkModule = (function () {
 
     // Unique SVG ID namespace — prevents cross-card gradient bleed
     const ns = `sc_${uid}_`;
+    // Per-card seeded RNG (stable across the hover-fill animation, unique per shop slot)
+    const cardRng = seededRng(hashStr(String(uid) + '_' + drinkId));
 
     // Wave path for liquid surface
     function wavePath(y, amplitude, freq) {
@@ -2715,17 +2662,11 @@ const DrinkModule = (function () {
       <rect x="${CX+60}" y="${fillY+5}"  width="15" height="11" rx="2.5" fill="rgba(210,240,255,0.65)" stroke="rgba(180,220,255,0.45)" stroke-width="0.8"/>` : '';
 
     // ---- Bobas (static — no keyframe animation in shop) ----
-    // Seeded by uid so the layout is stable across the hover-fill animation
-    // (many renders per second) but still varies from slot to slot / day to day.
-    const bobasSVG = (d.bobas && p > 0) ? (() => {
-      const shopRng = mulberry32(hashSeed(uid + '_boba'));
-      const anchors = [[18,8],[36,6],[54,9],[70,7]];
-      return anchors.map(([ax, offBottom]) => {
-        const bx = CX + ax + (shopRng() - 0.5) * 6;
-        const by = CBY - Math.max(3, offBottom + (shopRng() - 0.5) * 4);
-        return `<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="4.5" fill="${d.bobaColor||'#2a1a0a'}" opacity="0.87"/>`;
-      }).join('');
-    })() : '';
+    const bobasSVG = (d.bobas && p > 0) ? `
+      <circle cx="${CX+18}" cy="${CBY-8}"  r="4.5" fill="${d.bobaColor||'#2a1a0a'}" opacity="0.88"/>
+      <circle cx="${CX+36}" cy="${CBY-6}"  r="4.5" fill="${d.bobaColor||'#2a1a0a'}" opacity="0.88"/>
+      <circle cx="${CX+54}" cy="${CBY-9}"  r="4.5" fill="${d.bobaColor||'#2a1a0a'}" opacity="0.88"/>
+      <circle cx="${CX+70}" cy="${CBY-7}"  r="4.5" fill="${d.bobaColor||'#2a1a0a'}" opacity="0.85"/>` : '';
 
     // ---- Foam ----
     // Trigger on hasFoam OR special flags (whipCream, thickFoam, spotFoam)
@@ -2762,15 +2703,10 @@ const DrinkModule = (function () {
       }
     }
 
-    // ---- Chocolate drizzle — organic wall-running streams (mocha + hot choc) ----
+    // ---- Themed drizzle (unified system — walls, uid-seeded jitter, always shown for preview) ----
     const shopClipId  = `sc_clip_${uid}`;
     const shopClipDef = `<clipPath id="${shopClipId}"><path d="M ${CX},${CTY} L ${CX+CW},${CTY} L ${CX+CW-8},${CBY} L ${CX+8},${CBY} Z"/></clipPath>`;
-    const drizzleSVG = (d.chocDrizzle && p >= 90) ? (() => {
-      const shopRng = mulberry32(hashSeed(uid + '_drizzle'));
-      const layout = makeDrizzleLayout(shopRng, 5 + Math.floor(shopRng() * 2), CW);
-      const dropH = Math.min((CBY - fillY) * 0.90, 70);
-      return renderDrizzleLayout(layout, '#2a0d00', CX, CW, fillY - 2, dropH, shopClipId, 0.80);
-    })() : '';
+    const drizzleSVG = buildThemedDrizzle(d, CX, CW, CTY, CBY, p, cardRng, Infinity, shopClipId);
 
     // ---- Petal flecks (cherry blossom) ----
     const petalSVG = (d.petalFlecks && p >= 90) ? `
@@ -2811,6 +2747,6 @@ const DrinkModule = (function () {
   }
 
   return { init, onSessionStart, onProgressUpdate, renderBillBoard,
-           getCurrentDrinkInfo, getCurrentDrinkVisual, generateShopCupSVG };
+           getCurrentDrinkInfo, generateShopCupSVG };
 
 })();
