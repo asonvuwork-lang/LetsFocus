@@ -931,57 +931,62 @@ const DrinkModule = (function () {
     }
   }
 
-  // ---- Organic drizzle — cubic-bezier streams running DOWN cup walls ----
-  // Each stream: { x0, y0, color, width, len, wobX } — wobX is lateral drift at end point.
-  // All streams are clipped to the provided clipId.
-  function buildOrgDrizzle(streams, clipId, opacity) {
-    const paths = streams.map(({ x0, y0, color, width, len, wobX }) => {
-      const cp1x = (x0 + wobX * 0.3).toFixed(1), cp1y = (y0 + len * 0.28).toFixed(1);
-      const cp2x = (x0 + wobX * 0.75).toFixed(1), cp2y = (y0 + len * 0.68).toFixed(1);
-      const ex   = (x0 + wobX).toFixed(1),          ey   = (y0 + len).toFixed(1);
-      return `<path d="M${x0.toFixed(1)},${y0.toFixed(1)} C${cp1x},${cp1y} ${cp2x},${cp2y} ${ex},${ey}"
-        stroke="${color}" stroke-width="${width}" fill="none" stroke-linecap="round" opacity="${opacity}"/>
-        <circle cx="${ex}" cy="${(parseFloat(ey)+1.6).toFixed(1)}" r="${(width*0.6).toFixed(1)}" fill="${color}" opacity="${(opacity*0.85).toFixed(2)}"/>`;
-    }).join('');
-    return `<g clip-path="url(#${clipId})">${paths}</g>`;
+  // ---- Marble blob — one organic, wobbly closed shape (not a straight line) ----
+  // Built from N points scattered around an ellipse with randomized radius jitter,
+  // connected with smoothed quadratic curves through midpoints so the outline
+  // reads as an irregular cloudy patch rather than a geometric shape.
+  function buildMarbleBlob(cx, cy, rx, ry, rot, rng) {
+    const N = 6;
+    const pts = [];
+    for (let i = 0; i < N; i++) {
+      const angle = (i / N) * Math.PI * 2;
+      const jitter = 0.72 + rng() * 0.5;
+      pts.push([cx + Math.cos(angle) * rx * jitter, cy + Math.sin(angle) * ry * jitter]);
+    }
+    let d = `M ${((pts[0][0] + pts[N-1][0]) / 2).toFixed(1)},${((pts[0][1] + pts[N-1][1]) / 2).toFixed(1)}`;
+    for (let i = 0; i < N; i++) {
+      const p1 = pts[i], p2 = pts[(i + 1) % N];
+      d += ` Q ${p1[0].toFixed(1)},${p1[1].toFixed(1)} ${((p1[0]+p2[0])/2).toFixed(1)},${((p1[1]+p2[1])/2).toFixed(1)}`;
+    }
+    d += ' Z';
+    return rot
+      ? `<path d="${d}" transform="rotate(${rot.toFixed(1)},${cx.toFixed(1)},${cy.toFixed(1)})"/>`
+      : `<path d="${d}"/>`;
   }
 
-  // ---- Unified themed drizzle (wall streams) ----
-  // Replaces the old hardcoded per-type drizzleMap AND the static hand-drawn
-  // recipe-baked drizzle paths (boba, lavender). Every drizzled drink now
-  // shares one natural, session-seeded-random rendering path so the streams
-  // never look copy-pasted between drinks, and fade in smoothly instead of
-  // popping in at a hard threshold.
+  // ---- Syrup marbling — cloudy, blurred patches swirled INTO the liquid ----
+  // Replaces the old wall-drizzle streaks, which read as crossed sticks once
+  // several long streams landed close together. This instead mimics syrup
+  // that hasn't fully dissolved: uneven soft blobs diffusing through the drink,
+  // bounded to the current fill height (not floating above the liquid line),
+  // scattered across the cup width rather than lined up like ribs.
   //   d.dripDrizzle = { color, tierGate? }  — set on a DRINKS entry
   //   tierGate: 'signature' | 'mastercraft' — gates on resolved recipe tier (live cup only)
-  function buildThemedDrizzle(d, CX, CW, CTY, CBY, pct, rng, currentTierRank, clipId) {
+  function buildSyrupMarbling(d, CX, CW, fillY, CBY, pct, rng, currentTierRank, clipId, blurId) {
     const cfg = d && d.dripDrizzle;
     if (!cfg) return '';
-    if (pct < 75) return '';
+    if (pct < 15) return '';
     if (cfg.tierGate) {
       const gateRank = cfg.tierGate === 'mastercraft' ? 2 : 1;
       if ((currentTierRank ?? Infinity) < gateRank) return '';
     }
-    const fadeOpacity = Math.min(1, (pct - 75) / 20);
+    const fillH = CBY - fillY;
+    if (fillH < 18) return '';
     const clr   = cfg.color;
-    const dropH = (CBY - CTY) * 0.72;
-    const anchors = [0.10, 0.24, 0.46, 0.60, 0.84, 0.96];
-    const streams = anchors.map((frac) => {
-      const jitterX  = (rng() - 0.5) * 8;
-      const jitterY0 = rng() * 3;
-      const lenMul   = 0.78 + rng() * 0.42;
-      const wob      = (rng() - 0.5) * 9;
-      const width    = 1.6 + rng() * 2.1;
-      return {
-        x0: CX + frac * CW + jitterX,
-        y0: CTY + 2 + jitterY0,
-        color: clr,
-        width,
-        len: dropH * (0.46 + rng() * 0.40) * lenMul,
-        wobX: wob,
-      };
-    });
-    return buildOrgDrizzle(streams, clipId || 'lf_cupClip', +(0.80 * fadeOpacity).toFixed(2));
+    const count = Math.max(2, Math.round(2 + (pct / 100) * 5));
+    const top = fillY + 6, bottom = CBY - 8;
+    const blobs = [];
+    for (let i = 0; i < count; i++) {
+      const bx = CX + 10 + rng() * (CW - 20);
+      const by = top + rng() * Math.max(4, bottom - top);
+      const streaky = rng() < 0.5;
+      const rx  = streaky ? 4 + rng() * 4  : 8 + rng() * 8;
+      const ry  = streaky ? 14 + rng() * 20 : 9 + rng() * 10;
+      const rot = (rng() - 0.5) * 50;
+      const op  = 0.22 + rng() * 0.30;
+      blobs.push(`<g opacity="${op.toFixed(2)}" fill="${clr}">${buildMarbleBlob(bx, by, rx, ry, rot, rng)}</g>`);
+    }
+    return `<g clip-path="url(#${clipId || 'lf_cupClip'})" filter="url(#${blurId || 'lf_marbleBlur'})">${blobs.join('')}</g>`;
   }
 
   // ---- Aurora ribbon — replaces the old flat two-line "drizzle-looking" garnish ----
@@ -1887,7 +1892,7 @@ const DrinkModule = (function () {
 
     // ---- Unified themed drizzle (boba, lavender, caramel mac, dalgona, mocha, hot choc) ----
     const liveTierRank = tierRank(tierCfg?.tier);
-    const themedDrizzleSVG = buildThemedDrizzle(d, CX, CW, CTY, CBY, pct, _drizzleRng, liveTierRank, 'lf_cupClip');
+    const syrupMarblingSVG = buildSyrupMarbling(d, CX, CW, fillY, CBY, pct, _drizzleRng, liveTierRank, 'lf_cupClip', 'lf_marbleBlur');
 
     scene.innerHTML = `
     <svg viewBox="0 0 150 175" xmlns="http://www.w3.org/2000/svg"
@@ -1913,6 +1918,9 @@ const DrinkModule = (function () {
         <clipPath id="lf_equipClip">
           <polygon points="${CX},${CTY} ${CX+CW},${CTY} ${+(CX+CW-8*(fillY-CTY)/(CBY-CTY)).toFixed(1)},${fillY} ${+(CX+8*(fillY-CTY)/(CBY-CTY)).toFixed(1)},${fillY}"/>
         </clipPath>
+        <filter id="lf_marbleBlur" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.4"/>
+        </filter>
       </defs>
 
       ${tierBadge}
@@ -1928,6 +1936,9 @@ const DrinkModule = (function () {
 
       <!-- Liquid fill (masked to cup interior) -->
       ${pct > 0 ? `<g mask="url(#lf_cupMask)">${liquidSVG}</g>` : ''}
+
+      <!-- Syrup marbling — swirled INTO the liquid (boba, lavender, caramel mac, dalgona, mocha, hot choc) -->
+      ${syrupMarblingSVG}
 
       <!-- Subtle interior glass sheen over liquid -->
       <polygon points="${CX},${CTY} ${CX+CW},${CTY} ${CX+CW-8},${CBY} ${CX+8},${CBY}"
@@ -1960,9 +1971,6 @@ const DrinkModule = (function () {
       ${cremaSVG}
       ${petalFlecksSVG}
       ${auroraRibbonSVG}
-
-      <!-- Themed wall drizzle (boba, lavender, caramel mac, dalgona, mocha, hot choc) -->
-      ${themedDrizzleSVG}
 
       <!-- svgContent outside cup (orbit rings, glow halos, aurora bands) -->
       ${svgContentOut}
@@ -2703,10 +2711,12 @@ const DrinkModule = (function () {
       }
     }
 
-    // ---- Themed drizzle (unified system — walls, uid-seeded jitter, always shown for preview) ----
+    // ---- Syrup marbling (unified system — swirled into liquid, uid-seeded, always shown for preview) ----
     const shopClipId  = `sc_clip_${uid}`;
-    const shopClipDef = `<clipPath id="${shopClipId}"><path d="M ${CX},${CTY} L ${CX+CW},${CTY} L ${CX+CW-8},${CBY} L ${CX+8},${CBY} Z"/></clipPath>`;
-    const drizzleSVG = buildThemedDrizzle(d, CX, CW, CTY, CBY, p, cardRng, Infinity, shopClipId);
+    const shopBlurId  = `sc_blur_${uid}`;
+    const shopClipDef = `<clipPath id="${shopClipId}"><path d="M ${CX},${CTY} L ${CX+CW},${CTY} L ${CX+CW-8},${CBY} L ${CX+8},${CBY} Z"/></clipPath>
+      <filter id="${shopBlurId}" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2"/></filter>`;
+    const marbleSVG = buildSyrupMarbling(d, CX, CW, fillY, CBY, p, cardRng, Infinity, shopClipId, shopBlurId);
 
     // ---- Petal flecks (cherry blossom) ----
     const petalSVG = (d.petalFlecks && p >= 90) ? `
@@ -2734,11 +2744,11 @@ const DrinkModule = (function () {
     return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" overflow="visible">
       <defs>${shopClipDef}</defs>
       ${liquidSVG}
+      ${marbleSVG}
       ${iceSVG}
       ${bobasSVG}
       ${wallsSVG}
       ${foamSVG}
-      ${drizzleSVG}
       ${petalSVG}
       ${cremaSVG}
       ${rimSVG}
