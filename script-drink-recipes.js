@@ -305,9 +305,7 @@ const DRINK_RECIPES = {
           <rect x="108" y="135" width="26" height="26" rx="4" fill="#e0f2fe" opacity="0.55" transform="rotate(-12 121 148)"/>
         `},
         80: { label: "Infusing high-pressure micro-foamed milk tea matrix", fill: "url(#masterBobaFluid)" },
-        100: { label: "Final complex cross-hatch syrup presentation drizzle", fill: "url(#masterBobaFluid)", foamFill: "#ffffff", garnishSvg: `
-          <path d="M 55 54 Q 75 62 100 54 T 145 54 M 60 58 Q 80 66 110 56 M 70 45 L 130 65 M 80 45 L 140 65" fill="none" stroke="#2b1103" stroke-width="3" stroke-linecap="round"/>
-        `}
+        100: { label: "Brown sugar syrup fully marbled through the tea", fill: "url(#masterBobaFluid)", foamFill: "#ffffff" }
       }
     }
   },

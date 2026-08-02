@@ -173,7 +173,7 @@ const DrinkModule = (function () {
       liquidColor: '#f8f4ee', liquidColor2: '#c87d2a',
       foamColor: '#d4922a', cupTint: '#8b6030',
       bobas: false, hasFoam: false, hasIce: true, rarity: 'rare',
-      dripDrizzle: { color: '#8a4a10' },
+      dripDrizzle: { color: '#5c3d1f' },  // whipped coffee — muted coffee-brown, not caramel-orange
     },
     _egg_coffee: {
       label: 'Egg Coffee', type: 'egg_coffee',
@@ -954,12 +954,25 @@ const DrinkModule = (function () {
       : `<path d="${d}"/>`;
   }
 
+  // ---- Lighten a hex color toward white by a given amount (0-1) ----
+  function lightenHex(hex, amt) {
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    const lr = Math.round(r + (255 - r) * amt);
+    const lg = Math.round(g + (255 - g) * amt);
+    const lb = Math.round(b + (255 - b) * amt);
+    return `rgb(${lr},${lg},${lb})`;
+  }
+
   // ---- Syrup marbling — cloudy, blurred patches swirled INTO the liquid ----
   // Replaces the old wall-drizzle streaks, which read as crossed sticks once
   // several long streams landed close together. This instead mimics syrup
   // that hasn't fully dissolved: uneven soft blobs diffusing through the drink,
   // bounded to the current fill height (not floating above the liquid line),
   // scattered across the cup width rather than lined up like ribs.
+  // Uses TWO tones per drink — the syrup's own dark color for concentrated
+  // pockets, plus a lightened "diluted/creamy" tint for diffused patches — so
+  // the marbling reads as visible streaking even against an already-dark base
+  // liquid, instead of just adding flat murk on top of murk.
   //   d.dripDrizzle = { color, tierGate? }  — set on a DRINKS entry
   //   tierGate: 'signature' | 'mastercraft' — gates on resolved recipe tier (live cup only)
   function buildSyrupMarbling(d, CX, CW, fillY, CBY, pct, rng, currentTierRank, clipId, blurId) {
@@ -972,8 +985,9 @@ const DrinkModule = (function () {
     }
     const fillH = CBY - fillY;
     if (fillH < 18) return '';
-    const clr   = cfg.color;
-    const count = Math.max(2, Math.round(2 + (pct / 100) * 5));
+    const darkClr  = cfg.color;
+    const lightClr = lightenHex(cfg.color, 0.60);
+    const count = Math.max(3, Math.round(3 + (pct / 100) * 6));
     const top = fillY + 6, bottom = CBY - 8;
     const blobs = [];
     for (let i = 0; i < count; i++) {
@@ -983,7 +997,9 @@ const DrinkModule = (function () {
       const rx  = streaky ? 4 + rng() * 4  : 8 + rng() * 8;
       const ry  = streaky ? 14 + rng() * 20 : 9 + rng() * 10;
       const rot = (rng() - 0.5) * 50;
-      const op  = 0.22 + rng() * 0.30;
+      const useLight = rng() < 0.42;
+      const clr = useLight ? lightClr : darkClr;
+      const op  = useLight ? (0.30 + rng() * 0.24) : (0.34 + rng() * 0.36);
       blobs.push(`<g opacity="${op.toFixed(2)}" fill="${clr}">${buildMarbleBlob(bx, by, rx, ry, rot, rng)}</g>`);
     }
     return `<g clip-path="url(#${clipId || 'lf_cupClip'})" filter="url(#${blurId || 'lf_marbleBlur'})">${blobs.join('')}</g>`;
