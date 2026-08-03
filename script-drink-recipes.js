@@ -750,7 +750,7 @@ const DRINK_RECIPES = {
           <circle cx="128" cy="145" r="1.5" fill="#c4b5fd" opacity="0.65" style="animation:sparkle 1.8s ease-in-out infinite"/>
           <circle cx="100" cy="122" r="1.8" fill="#ddd6fe" opacity="0.6" style="animation:sparkle 2.5s ease-in-out infinite"/>
         `},
-        100: { label: "Topping with stardust shimmer milk foam — a cup of the cosmos", fill: "url(#masterGalaxy)", foamFill: "rgba(196,165,255,0.6)", garnishSvg: `
+        100: { label: "Topping with stardust shimmer milk foam — a cup of the cosmos", fill: "url(#masterGalaxy)", garnishSvg: `
           <circle cx="78" cy="50" r="1.8" fill="#e9d5ff" style="animation:sparkle 1.6s ease-in-out infinite"/>
           <circle cx="92" cy="47" r="2.5" fill="#ddd6fe" style="animation:sparkle 2.1s ease-in-out infinite"/>
           <circle cx="108" cy="52" r="2" fill="#c4b5fd" style="animation:sparkle 1.9s ease-in-out infinite"/>
@@ -824,7 +824,7 @@ const DRINK_RECIPES = {
         40: { label: "Pouring standard boiling industrial water channels", fill: "#fef9c3" },
         60: { label: "Mixing plain room temperature store milk volumes", fill: "url(#houseGold)" },
         80: { label: "Drink canvas matching alignment limits", fill: "url(#houseGold)" },
-        100: { label: "Amber golden drink execution complete", fill: "url(#houseGold)", foamFill: "rgba(252,210,60,0.55)" }
+        100: { label: "Amber golden drink execution complete", fill: "url(#houseGold)" }
       }
     },
     signature: {
@@ -836,7 +836,7 @@ const DRINK_RECIPES = {
         40: { label: "Locking high extraction espresso hardware structures", fill: "transparent" },
         60: { label: "Running extraction over dairy to combine elements smoothly", fill: "url(#sigGoldHour)" },
         80: { label: "Fluid layers shifting inside layout borders", fill: "url(#sigGoldHour)" },
-        100: { label: "Soft cream colored top foam head applied neatly", fill: "url(#sigGoldHour)", foamFill: "#fef9c3" }
+        100: { label: "A warm glow begins to settle over the cup", fill: "url(#sigGoldHour)" }
       }
     },
     mastercraft: {
@@ -849,18 +849,9 @@ const DRINK_RECIPES = {
       steps: {
         20: { label: "Layering real, organic raw amber maple honey reduction fields", fill: "transparent" },
         40: { label: "Infusing thick dark vanilla bean pod syrup paste down walls", fill: "transparent" },
-        60: { label: "Extracting high-fat blonde espresso crema down center targets", fill: "url(#goldLiquidBody)", svgContent: `
-          <path d="M28 115 Q70 92 112 115 Z" fill="url(#animeGold)" opacity="0.65"/>
-        `},
-        80: { label: "Pouring shimmering metallic golden-amber liquid configuration", fill: "url(#goldLiquidBody)", svgContent: `
-          <path d="M28 85 Q70 62 112 85 Z" fill="url(#animeGold)" opacity="0.85"/>
-          <circle cx="50" cy="105" r="2.5" fill="#ffffff" opacity="0.8"/><circle cx="92" cy="95" r="2" fill="#ffffff" opacity="0.8"/>
-        `},
-        100: { label: "Floating multiple sheets of pure, genuine 24k gold leaf flakes", fill: "url(#goldLiquidBody)", foamFill: "url(#animeGold)", garnishSvg: `
-          <polygon points="96,34 100,44 110,44 102,50 105,60 96,54 87,60 90,50 82,44 92,44" fill="#ffffff"/>
-          <polygon points="65,48 68,53 74,53 70,56 71,62 65,59 59,62 60,56 56,53 62,53" fill="#ffffff" opacity="0.7"/>
-          <polygon points="125,48 128,53 134,53 130,56 131,62 125,59 119,62 120,56 116,53 122,53" fill="#ffffff" opacity="0.7"/>
-        `}
+        60: { label: "Extracting high-fat blonde espresso crema down center targets", fill: "url(#goldLiquidBody)" },
+        80: { label: "Pouring shimmering metallic golden-amber liquid configuration", fill: "url(#goldLiquidBody)" },
+        100: { label: "The cup glows like captured sunset light", fill: "url(#goldLiquidBody)" }
       }
     }
   },

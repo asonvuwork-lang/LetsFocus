@@ -580,6 +580,8 @@ const DrinkModule = (function () {
       @keyframes voidOrbitOuter { from{stroke-dashoffset:0} to{stroke-dashoffset:-232} }
       @keyframes voidOrbitInner { from{stroke-dashoffset:0} to{stroke-dashoffset:143} }
       @keyframes auroraFlow { 0%,100%{transform:translateX(-10px) scaleY(0.85);opacity:0.55} 40%{transform:translateX(8px) scaleY(1.18);opacity:1} 70%{transform:translateX(-5px) scaleY(0.92);opacity:0.75} }
+      @keyframes lfGlowPulse { 0%,100%{opacity:0.35;transform:scale(0.88)} 50%{opacity:0.85;transform:scale(1.08)} }
+      @keyframes lfGlowPulseOpacity { 0%,100%{opacity:0.15} 50%{opacity:0.75} }
     `;
     document.head.appendChild(style);
   }
@@ -1498,11 +1500,36 @@ const DrinkModule = (function () {
       });
     }
 
-    // ─── GOLDEN HOUR — Warm gold-dust twinkle instead of orange crema bubbles ──────
+    // ─── GOLDEN HOUR — Pulsing sun-glow (appears/fades like sunlight breathing) ────
     if (type === 'goldenhour' && pct > 10) {
-      inner = `<ellipse cx="70" cy="${fillY+4}" rx="${CW*0.36}" ry="4" fill="rgba(240,180,60,0.28)" opacity="0.85"/>`;
-      [{x:42,d:2.2},{x:62,d:2.8},{x:82,d:1.9},{x:100,d:2.5}].forEach(({x,d:dur}) => {
-        inner += `<circle cx="${x}" cy="${fillY+3}" r="1.2" fill="rgba(255,220,120,0.7)"
+      const gcx = CX + CW / 2;
+      const gcy = fillY + fillH * 0.42;
+      const glowR = Math.max(14, Math.min(CW, fillH) * 0.42);
+      // Thin rays radiating outward — static SVG rotation on the wrapper (so it never
+      // fights the CSS scale animation), opacity-only pulse on the ray itself so each
+      // one shimmers independently rather than all flaring in unison.
+      let rays = '';
+      const rayCount = 7;
+      for (let i = 0; i < rayCount; i++) {
+        const angle = (i / rayCount) * 360 + 10;
+        const len = glowR * (1.35 + (i % 3) * 0.22);
+        const dur = 2.1 + (i % 4) * 0.5;
+        rays += `<g transform="rotate(${angle.toFixed(1)},${gcx.toFixed(1)},${gcy.toFixed(1)})">
+          <line x1="${gcx.toFixed(1)}" y1="${gcy.toFixed(1)}" x2="${gcx.toFixed(1)}" y2="${(gcy - len).toFixed(1)}"
+            stroke="rgba(255,214,120,0.4)" stroke-width="2" stroke-linecap="round"
+            style="animation:lfGlowPulseOpacity ${dur}s ease-in-out infinite ${ao(dur)}"/>
+        </g>`;
+      }
+      inner = `
+        <g style="animation:lfGlowPulse 3.6s ease-in-out infinite ${ao(3.6)};transform-origin:${gcx.toFixed(1)}px ${gcy.toFixed(1)}px">
+          <circle cx="${gcx.toFixed(1)}" cy="${gcy.toFixed(1)}" r="${glowR.toFixed(1)}" fill="url(#lf_sunGlow)"/>
+        </g>
+        ${rays}
+        <circle cx="${gcx.toFixed(1)}" cy="${gcy.toFixed(1)}" r="${(glowR * 0.22).toFixed(1)}" fill="#fff8e0"
+          style="animation:lfGlowPulse 2.8s ease-in-out infinite ${ao(2.8)};transform-origin:${gcx.toFixed(1)}px ${gcy.toFixed(1)}px"/>`;
+      // A couple of gentle twinkle flecks for texture — kept subtle, the glow carries the effect now
+      [{x: CX + CW*0.22, d: 2.2}, {x: CX + CW*0.78, d: 2.8}].forEach(({x, d: dur}) => {
+        inner += `<circle cx="${x.toFixed(1)}" cy="${(fillY + 7).toFixed(1)}" r="1.1" fill="rgba(255,240,190,0.75)"
           style="animation:lfBub ${dur}s ease-in infinite ${ao(dur)}"/>`;
       });
     }
@@ -1937,6 +1964,12 @@ const DrinkModule = (function () {
         <filter id="lf_marbleBlur" x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation="2.4"/>
         </filter>
+        <radialGradient id="lf_sunGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#fff8e0" stop-opacity="0.95"/>
+          <stop offset="35%" stop-color="#ffd980" stop-opacity="0.65"/>
+          <stop offset="70%" stop-color="#f0a830" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="#f0a830" stop-opacity="0"/>
+        </radialGradient>
       </defs>
 
       ${tierBadge}
