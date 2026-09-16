@@ -363,7 +363,10 @@ const DrinkModule = (function () {
     for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
     return h >>> 0;
   }
-  let _drizzleRng = seededRng(1);
+  let _drinkVisualSeed = 1;
+  let _drinkSwapTimeout = null;
+  let _drinkSwapToken = 0;
+  let _finishAnimationTimeout = null;
 
   // ---- Recipe tier resolution ----
   function getCurrentTierConfig(recipeKey) {
@@ -413,18 +416,22 @@ const DrinkModule = (function () {
     return DRINK_KEYS[Math.floor(Math.random() * DRINK_KEYS.length)];
   }
 
-  function setDrink(drinkKey) {
+  function setDrink(drinkKey, initialPct = 0) {
     currentDrinkId = drinkKey;
     // If key is a shop ID rather than an emoji key, map to the visual DRINKS entry
     const visualKey = DRINKS[drinkKey] ? drinkKey : (SHOP_ID_TO_VISUAL[drinkKey] || DRINK_KEYS[Math.floor(Math.random() * DRINK_KEYS.length)]);
     currentDrink = DRINKS[visualKey] || DRINKS[DRINK_KEYS[Math.floor(Math.random() * DRINK_KEYS.length)]];
-    currentPct = 0;
-    isFinished = false;
-    // Fresh session-seeded RNG for this drink/session — stable for the whole session,
-    // varies session-to-session so drizzle/sparkle streams don't look copy-pasted.
-    _drizzleRng = seededRng((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0);
-    renderCup(0);
-    updateLabel(0);
+    currentPct = Math.max(0, Math.min(100, initialPct));
+    isFinished = currentPct >= 100;
+    // Store a raw session seed. Each render creates fresh feature-specific RNGs,
+    // keeping decorative geometry stable instead of advancing on every timer tick.
+    _drinkVisualSeed = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+    const scene = document.getElementById('drinkScene');
+    if (_finishAnimationTimeout !== null) clearTimeout(_finishAnimationTimeout);
+    _finishAnimationTimeout = null;
+    scene?.classList.remove('drink-finished', 'drink-milestone');
+    renderCup(currentPct);
+    updateLabel(currentPct);
 
     // Resolve tier for this drink
     const recipeKey = DRINK_KEY_TO_RECIPE[drinkKey];
@@ -463,7 +470,11 @@ const DrinkModule = (function () {
 
   function updateProgress(pct) {
     if (!currentDrink) return;
-    currentPct = Math.max(0, Math.min(100, pct));
+    const nextPct = Math.max(0, Math.min(100, pct));
+    // Pomodoro breaks and duplicate broadcasts can publish the same visual value.
+    // Avoid rebuilding the full SVG unless its progress actually changed.
+    if (Math.abs(nextPct - currentPct) < 0.001) return;
+    currentPct = nextPct;
     renderCup(currentPct);
     updateLabel(currentPct);
     if (currentPct >= 100 && !isFinished) {
@@ -1894,6 +1905,12 @@ const DrinkModule = (function () {
       }
     }
     if (pct < 20 && _lastRippleMilestone > 0) _lastRippleMilestone = 0; // reset on timer reset
+    if (showRipple) {
+      scene.classList.remove('drink-milestone');
+      void scene.offsetWidth;
+      scene.classList.add('drink-milestone');
+      setTimeout(() => scene.classList.remove('drink-milestone'), 850);
+    }
 
     // Straw: hidden until pct>88, slides in from above and fades in over the final ~12%
     const showStraw = !!(d.bobas || d.hasIce);
@@ -1931,11 +1948,13 @@ const DrinkModule = (function () {
       <ellipse cx="${CX+22}" cy="${fillY-1}" rx="3.5" ry="1.5" fill="rgba(255,160,200,0.65)" transform="rotate(-20,${CX+22},${fillY-1})"/>
       <ellipse cx="${CX+46}" cy="${fillY+1}" rx="3"   ry="1.2" fill="rgba(255,180,210,0.60)" transform="rotate(15,${CX+46},${fillY+1})"/>
       <ellipse cx="${CX+66}" cy="${fillY-2}" rx="2.8" ry="1.1" fill="rgba(255,150,195,0.55)" transform="rotate(-10,${CX+66},${fillY-2})"/>` : '';
-    const auroraRibbonSVG = d.auroraRibbon ? buildAuroraRibbon(CX, CW, CTY, pct, _drizzleRng) : '';
+    const auroraRng = seededRng((_drinkVisualSeed ^ hashStr(`${type}:aurora`)) >>> 0);
+    const marblingRng = seededRng((_drinkVisualSeed ^ hashStr(`${type}:marbling`)) >>> 0);
+    const auroraRibbonSVG = d.auroraRibbon ? buildAuroraRibbon(CX, CW, CTY, pct, auroraRng) : '';
 
     // ---- Unified themed drizzle (boba, lavender, caramel mac, dalgona, mocha, hot choc) ----
     const liveTierRank = tierRank(tierCfg?.tier);
-    const syrupMarblingSVG = buildSyrupMarbling(d, CX, CW, fillY, CBY, pct, _drizzleRng, liveTierRank, 'lf_cupClip', 'lf_marbleBlur');
+    const syrupMarblingSVG = buildSyrupMarbling(d, CX, CW, fillY, CBY, pct, marblingRng, liveTierRank, 'lf_cupClip', 'lf_marbleBlur');
 
     scene.innerHTML = `
     <svg viewBox="0 0 150 175" xmlns="http://www.w3.org/2000/svg"
@@ -2051,9 +2070,14 @@ const DrinkModule = (function () {
   function finishDrinkAnimation() {
     const scene = document.getElementById('drinkScene');
     if (!scene) return;
-    scene.style.filter = 'drop-shadow(0 0 12px rgba(212,165,116,0.6))';
-    scene.style.transition = 'filter 0.5s ease';
-    setTimeout(() => { if (scene) scene.style.filter = ''; }, 2000);
+    if (_finishAnimationTimeout !== null) clearTimeout(_finishAnimationTimeout);
+    scene.classList.remove('drink-finished');
+    void scene.offsetWidth;
+    scene.classList.add('drink-finished');
+    _finishAnimationTimeout = setTimeout(() => {
+      scene.classList.remove('drink-finished');
+      _finishAnimationTimeout = null;
+    }, 1800);
   }
 
   // ---- Swap drink picker ----
@@ -2142,11 +2166,15 @@ const DrinkModule = (function () {
              .forEach(b => b.classList.toggle('active', b.dataset.id === d.id));
           // Swirl-fade the current cup before switching
           const scene = document.getElementById('drinkScene');
+          const preservedPct = currentPct;
+          const swapToken = ++_drinkSwapToken;
+          if (_drinkSwapTimeout !== null) clearTimeout(_drinkSwapTimeout);
           if (scene) scene.style.animation = 'lfDrinkChange 0.38s ease-in forwards';
-          setTimeout(() => {
+          _drinkSwapTimeout = setTimeout(() => {
+            if (swapToken !== _drinkSwapToken) return;
+            _drinkSwapTimeout = null;
             if (scene) scene.style.animation = '';
-            setDrink(d.id);
-            renderCup(currentPct);
+            setDrink(d.id, preservedPct);
             modal.remove();
           }, 400);
         });
@@ -2156,8 +2184,16 @@ const DrinkModule = (function () {
       sectionsEl.appendChild(section);
     });
 
-    box.querySelector('#drinkPickCancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    const cancelPicker = () => {
+      _drinkSwapToken++;
+      if (_drinkSwapTimeout !== null) clearTimeout(_drinkSwapTimeout);
+      _drinkSwapTimeout = null;
+      const scene = document.getElementById('drinkScene');
+      if (scene) scene.style.animation = '';
+      modal.remove();
+    };
+    box.querySelector('#drinkPickCancel').addEventListener('click', cancelPicker);
+    modal.addEventListener('click', (e) => { if (e.target === modal) cancelPicker(); });
   }
 
   // ---- Bill Board ----

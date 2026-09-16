@@ -4,9 +4,12 @@
 const TimerModule = (function() {
 
   let timerHours = 0, timerMinutes = 25, timerSeconds = 0;
-  let totalSeconds = 0, remainingSeconds = 0;
+  let totalSeconds = 0, remainingSeconds = 0, remainingMs = 0;
   let timerRunning = false, timerInterval = null;
   let elapsedSeconds = 0;
+  let focusElapsedMs = 0;
+  let focusRunStartedAtMs = null;
+  let phaseEndsAtMs = 0;
   let sessionStatsRecorded = false;
   let configHours = 0, configMinutes = 25, configSeconds = 0;
   let selectedGoal = null;
@@ -19,9 +22,93 @@ const TimerModule = (function() {
   const POMO_CYCLES = 4;
   let pomoCurrentCycle = 1;     // 1-based
   let pomoIsWork = true;        // true = work phase
+  let pomoAutoStartTimeout = null;
+  let completionVisualTimeout = null;
 
   // ---- Sync key for pop-out ----
   const SYNC_KEY = 'letsfocus_timer_sync';
+
+  function isFocusPhase() {
+    return !pomodoroMode || pomoIsWork;
+  }
+
+  function getFocusedMs(now = Date.now()) {
+    if (focusRunStartedAtMs === null) return focusElapsedMs;
+    const runEnd = phaseEndsAtMs ? Math.min(now, phaseEndsAtMs) : now;
+    return focusElapsedMs + Math.max(0, runEnd - focusRunStartedAtMs);
+  }
+
+  function syncElapsedSeconds(now = Date.now()) {
+    elapsedSeconds = Math.floor(getFocusedMs(now) / 1000);
+    return elapsedSeconds;
+  }
+
+  function settleFocusRun(now = Date.now()) {
+    if (focusRunStartedAtMs !== null) {
+      const runEnd = phaseEndsAtMs ? Math.min(now, phaseEndsAtMs) : now;
+      focusElapsedMs += Math.max(0, runEnd - focusRunStartedAtMs);
+      focusRunStartedAtMs = null;
+    }
+    return syncElapsedSeconds(now);
+  }
+
+  function resetFocusTracking() {
+    focusElapsedMs = 0;
+    focusRunStartedAtMs = null;
+    phaseEndsAtMs = 0;
+    elapsedSeconds = 0;
+  }
+
+  function cancelPomoAutoStart() {
+    if (pomoAutoStartTimeout !== null) {
+      clearTimeout(pomoAutoStartTimeout);
+      pomoAutoStartTimeout = null;
+    }
+  }
+
+  function schedulePomoAutoStart() {
+    cancelPomoAutoStart();
+    pomoAutoStartTimeout = setTimeout(() => {
+      pomoAutoStartTimeout = null;
+      const timerPage = document.getElementById('timerPage');
+      if (!timerRunning && pomodoroMode && !timerPage?.classList.contains('hidden')) toggleTimer();
+    }, 1500);
+  }
+
+  function getDrinkProgressPct(phasePct) {
+    if (!pomodoroMode) return phasePct;
+    const completedWorkCycles = pomoIsWork ? pomoCurrentCycle - 1 : pomoCurrentCycle;
+    const activeWorkFraction = pomoIsWork ? phasePct / 100 : 0;
+    return Math.max(0, Math.min(100,
+      ((completedWorkCycles + activeWorkFraction) / POMO_CYCLES) * 100
+    ));
+  }
+
+  function clearTimerCompletionVisuals() {
+    if (completionVisualTimeout !== null) clearTimeout(completionVisualTimeout);
+    completionVisualTimeout = null;
+    document.getElementById('timerPage')?.classList.remove('timer-complete');
+  }
+
+  function syncTimerVisualState() {
+    const timerPage = document.getElementById('timerPage');
+    if (!timerPage) return;
+    timerPage.classList.toggle('timer-running', timerRunning);
+    timerPage.classList.toggle('timer-paused', !timerRunning && remainingMs > 0);
+    timerPage.classList.toggle('timer-break', pomodoroMode && !pomoIsWork);
+  }
+
+  function playTimerCompletionVisuals() {
+    const timerPage = document.getElementById('timerPage');
+    if (!timerPage) return;
+    clearTimerCompletionVisuals();
+    void timerPage.offsetWidth;
+    timerPage.classList.add('timer-complete');
+    completionVisualTimeout = setTimeout(() => {
+      timerPage.classList.remove('timer-complete');
+      completionVisualTimeout = null;
+    }, 1800);
+  }
 
   function broadcastState(extra) {
     try {
@@ -141,18 +228,30 @@ const TimerModule = (function() {
     if (selectedGoal.subgoals.every(s => s.done)) triggerGoalComplete();
   }
 
+  function recordSessionOnce(isFullPomodoro = false) {
+    const focusedSeconds = syncElapsedSeconds();
+    if (sessionStatsRecorded || focusedSeconds <= 0) return;
+    sessionStatsRecorded = true;
+    if (typeof StatsModule !== 'undefined') StatsModule.recordSession(focusedSeconds, selectedGoal?.text || '');
+    if (typeof XPModule !== 'undefined') XPModule.onSessionComplete(focusedSeconds, isFullPomodoro, selectedGoal?.text || '');
+    if (typeof DrinkShelfModule !== 'undefined') DrinkShelfModule.addCup(focusedSeconds);
+  }
+
   function triggerGoalComplete() {
+    cancelPomoAutoStart();
+    const now = Date.now();
+    settleFocusRun(now);
+    if (phaseEndsAtMs) {
+      remainingMs = Math.max(0, phaseEndsAtMs - now);
+      remainingSeconds = Math.ceil(remainingMs / 1000);
+    }
+    phaseEndsAtMs = 0;
     clearInterval(timerInterval); timerRunning = false;
     broadcastState({ action: 'complete' });
     const btn = document.getElementById('startPauseBtn');
     if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
     // Record stats if not already done (handles mid-session goal completion path)
-    if (!sessionStatsRecorded) {
-      sessionStatsRecorded = true;
-      if (typeof StatsModule !== 'undefined') StatsModule.recordSession(elapsedSeconds, selectedGoal?.text || '');
-      if (typeof XPModule !== 'undefined') XPModule.onSessionComplete(elapsedSeconds, false, selectedGoal?.text || '');
-      if (typeof DrinkShelfModule !== 'undefined') DrinkShelfModule.addCup(elapsedSeconds);
-    }
+    recordSessionOnce(false);
     if (selectedGoal?.index != null) GoalsModule.completeGoalByIndex(selectedGoal.index, selectedGoal.subgoals?.map(s => s.done) || []);
     playSoftChime(); showGoalCompleteModal();
   }
@@ -175,12 +274,7 @@ const TimerModule = (function() {
     playSoftChime();
     // Record stats + XP once — guarded so Pomodoro path (which calls us with skipXPAndStats=true)
     // and mid-session completions never double-count.
-    if (!skipXPAndStats && !sessionStatsRecorded) {
-      sessionStatsRecorded = true;
-      if (typeof StatsModule !== 'undefined') StatsModule.recordSession(elapsedSeconds, selectedGoal?.text || '');
-      if (typeof XPModule !== 'undefined') XPModule.onSessionComplete(elapsedSeconds, false, selectedGoal?.text || '');
-      if (typeof DrinkShelfModule !== 'undefined') DrinkShelfModule.addCup(elapsedSeconds);
-    }
+    if (!skipXPAndStats) recordSessionOnce(false);
     const quote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
     const modal = document.createElement('div');
     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(40,22,10,0.72);z-index:10000;display:flex;align-items:center;justify-content:center;';
@@ -218,7 +312,9 @@ const TimerModule = (function() {
     const milestone = Math.floor(pct / 10) * 10;
     if (milestone === lastQuoteMilestone) return;
     lastQuoteMilestone = milestone;
-    const entry = PROGRESS_QUOTES.find(q => q.pct === milestone) || PROGRESS_QUOTES[0];
+    const entry = pomodoroMode && pomoIsWork && milestone === 100 && pomoCurrentCycle < POMO_CYCLES
+      ? { text: 'Work block complete — time to recharge.', author: '' }
+      : (PROGRESS_QUOTES.find(q => q.pct === milestone) || PROGRESS_QUOTES[0]);
     if (box) box.classList.add('quote-fade-out');
     setTimeout(() => {
       textEl.textContent = '"' + entry.text + '"';
@@ -250,12 +346,12 @@ const TimerModule = (function() {
       const pct = ((totalSeconds - remainingSeconds) / totalSeconds) * 100;
       fill.style.width = pct + '%';
       if (pctEl) pctEl.textContent = Math.round(pct) + '%';
-      updateProgressQuote(pct);
+      if (!pomodoroMode || pomoIsWork) updateProgressQuote(pct);
       // Update drink progress
-      if (typeof DrinkModule !== 'undefined') DrinkModule.onProgressUpdate(pct);
+      if (typeof DrinkModule !== 'undefined') DrinkModule.onProgressUpdate(getDrinkProgressPct(pct));
     } else { fill.style.width = '0%'; if (pctEl) pctEl.textContent = '0%'; }
     if (elapsed) {
-      const e = totalSeconds - remainingSeconds;
+      const e = syncElapsedSeconds();
       const eh = Math.floor(e / 3600), em = Math.floor((e % 3600) / 60), es = e % 60;
       elapsed.textContent = eh > 0 ? (pad(eh)+':'+pad(em)+':'+pad(es)) : (pad(em)+':'+pad(es));
     }
@@ -1017,6 +1113,14 @@ body { background: linear-gradient(165deg,#1c0f06 0%,#2e1a0c 22%,#4a2c14 48%,#2e
    distracts. Pop-out only; the main timer page is untouched. */
 @keyframes poHighlightGlow { 0%,100%{box-shadow:0 0 0 rgba(212,165,116,0);} 50%{box-shadow:0 0 13px rgba(212,165,116,0.32);} }
 @keyframes poHighlightSweep { 0%{left:-60%;} 18%{left:130%;} 100%{left:130%;} }
+@media (prefers-reduced-motion: reduce) {
+  .po-progress-fill, .po-btn, .po-sounds-toggle, .po-sounds-toggle::after,
+  .po-sounds-arrow, .po-sounds-body, .po-drink-label, .po-drink-label::after,
+  .po-drink-cup *, .po-drink-cup svg * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
 </style></head><body>
 <div class="po-header">
   <span class="po-title">☕ LetsFocus Timer</span>
@@ -1282,13 +1386,16 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
   }
 
   function showTimerPage() {
+    cancelPomoAutoStart();
+    clearTimerCompletionVisuals();
     document.getElementById('mainPage').classList.add('hidden');
     document.getElementById('timerPage').classList.remove('hidden');
     const saved = loadTimerData();
     timerHours = saved.hours ?? 0; timerMinutes = saved.minutes ?? 0; timerSeconds = saved.seconds ?? 0;
     totalSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
     remainingSeconds = totalSeconds;
-    elapsedSeconds = 0; lastQuoteMilestone = -1; sessionStatsRecorded = false;
+    remainingMs = remainingSeconds * 1000;
+    resetFocusTracking(); lastQuoteMilestone = -1; sessionStatsRecorded = false;
     const textEl = document.getElementById('progressQuoteText'), milestoneEl = document.getElementById('progressQuoteMilestone');
     if (textEl) textEl.textContent = '"The secret of getting ahead is getting started."';
     if (milestoneEl) milestoneEl.textContent = '— Mark Twain';
@@ -1300,105 +1407,146 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
     if (typeof DrinkModule !== 'undefined') {
       DrinkModule.onSessionStart(selectedGoal?.category || null);
     }
+    syncTimerVisualState();
   }
 
   function hideTimerPage() {
+    cancelPomoAutoStart();
+    clearTimerCompletionVisuals();
     document.getElementById('timerPage').classList.add('hidden');
     document.getElementById('mainPage').classList.remove('hidden');
+    if (timerRunning) settleFocusRun();
+    phaseEndsAtMs = 0;
     if (timerRunning) { clearInterval(timerInterval); timerRunning = false; }
     MusicModule.stopAllAudio();
     broadcastState({ action: 'hide' });
     const btn = document.getElementById('startPauseBtn');
     if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
+    syncTimerVisualState();
     GoalsModule.renderGoals(); GoalsModule.updateMainProgress();
     if (typeof window.hideFocusModeBanner === 'function') window.hideFocusModeBanner();
   }
 
   function toggleTimer() {
+    cancelPomoAutoStart();
     const btn = document.getElementById('startPauseBtn');
     if (!timerRunning) {
-      if (remainingSeconds <= 0) { showCustomAlert('Timer is at zero — reset it first.'); return; }
+      if (remainingMs <= 0) { showCustomAlert('Timer is at zero — reset it first.'); return; }
+      const startedAt = Date.now();
+      phaseEndsAtMs = startedAt + remainingMs;
+      if (isFocusPhase()) focusRunStartedAtMs = startedAt;
       timerRunning = true;
+      syncTimerVisualState();
       if (btn) { btn.textContent = '⏸ Pause'; btn.classList.add('pause'); }
-      timerInterval = setInterval(() => {
-        remainingSeconds--;
-        if (remainingSeconds < 0) {
-          clearInterval(timerInterval); timerRunning = false;
-          if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
-          onTimerComplete(); return;
-        }
+      const tick = () => {
+        const now = Date.now();
+        remainingMs = Math.max(0, phaseEndsAtMs - now);
+        remainingSeconds = Math.ceil(remainingMs / 1000);
         timerHours = Math.floor(remainingSeconds / 3600);
         timerMinutes = Math.floor((remainingSeconds % 3600) / 60);
         timerSeconds = remainingSeconds % 60;
         updateTimerDisplay(); updateTimerProgress();
-      }, 1000);
+        if (remainingSeconds === 0) {
+          settleFocusRun(now);
+          phaseEndsAtMs = 0;
+          clearInterval(timerInterval); timerRunning = false;
+          if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
+          syncTimerVisualState();
+          onTimerComplete(); return;
+        }
+      };
+      tick();
+      timerInterval = setInterval(tick, 1000);
     } else {
+      const pausedAt = Date.now();
+      remainingMs = Math.max(0, phaseEndsAtMs - pausedAt);
+      remainingSeconds = Math.ceil(remainingMs / 1000);
+      const reachedEnd = remainingMs === 0;
+      settleFocusRun(pausedAt);
+      phaseEndsAtMs = 0;
       clearInterval(timerInterval); timerRunning = false;
       if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
+      syncTimerVisualState();
+      timerHours = Math.floor(remainingSeconds / 3600);
+      timerMinutes = Math.floor((remainingSeconds % 3600) / 60);
+      timerSeconds = remainingSeconds % 60;
+      updateTimerDisplay(); updateTimerProgress();
+      if (reachedEnd) { onTimerComplete(); return; }
     }
     broadcastState();
   }
 
   function resetTimer() {
+    cancelPomoAutoStart();
+    clearTimerCompletionVisuals();
     clearInterval(timerInterval); timerRunning = false; lastQuoteMilestone = -1;
+    resetFocusTracking(); sessionStatsRecorded = false;
     const btn = document.getElementById('startPauseBtn');
     if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
-    const saved = loadTimerData();
-    timerHours = saved.hours ?? 0; timerMinutes = saved.minutes ?? 0; timerSeconds = saved.seconds ?? 0;
+    if (pomodoroMode) {
+      pomoCurrentCycle = 1; pomoIsWork = true;
+      timerHours = 0; timerMinutes = 25; timerSeconds = 0;
+      updatePomoIndicator();
+    } else {
+      const saved = loadTimerData();
+      timerHours = saved.hours ?? 0; timerMinutes = saved.minutes ?? 0; timerSeconds = saved.seconds ?? 0;
+    }
     totalSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
     remainingSeconds = totalSeconds;
+    remainingMs = remainingSeconds * 1000;
     const fill = document.getElementById('timerProgressFill'); if (fill) fill.style.width = '0%';
     const pctEl = document.getElementById('progressPctDisplay'); if (pctEl) pctEl.textContent = '0%';
     const elapsed = document.getElementById('elapsedDisplay'); if (elapsed) elapsed.textContent = '00:00';
-    document.getElementById('timerPage')?.classList.remove('timer-complete');
     const textEl = document.getElementById('progressQuoteText'), milestoneEl = document.getElementById('progressQuoteMilestone');
     if (textEl) textEl.textContent = '"The secret of getting ahead is getting started."';
     if (milestoneEl) milestoneEl.textContent = '— Mark Twain';
     updateTimerDisplay(); updateTimerProgress();
+    syncTimerVisualState();
     broadcastState({ action: 'reset' });
   }
 
   function onTimerComplete() {
-    updateProgressQuote(100);
-    const tp = document.getElementById('timerPage');
-    if (tp) { tp.classList.add('timer-complete'); setTimeout(() => tp.classList.remove('timer-complete'), 3000); }
-
     // Pomodoro auto-cycle
     if (pomodoroMode) {
       playSoftChime();
       if (pomoIsWork) {
+        updateProgressQuote(100);
         pomoIsWork = false;
         remainingSeconds = POMO_BREAK; totalSeconds = POMO_BREAK;
+        remainingMs = remainingSeconds * 1000;
         timerHours = 0; timerMinutes = 5; timerSeconds = 0;
         updateTimerDisplay(); updateTimerProgress(); updatePomoIndicator();
+        syncTimerVisualState();
         showPomoBanner('☕ Break time! 5 minutes to recharge.', false);
         // auto-start break
-        setTimeout(() => { if (!timerRunning) toggleTimer(); }, 1500);
+        schedulePomoAutoStart();
       } else {
         pomoIsWork = true;
         if (pomoCurrentCycle >= POMO_CYCLES) {
           // All cycles done — record stats + XP once here with the pomodoro bonus flag
-          if (!sessionStatsRecorded) {
-            sessionStatsRecorded = true;
-            if (typeof StatsModule !== 'undefined') StatsModule.recordSession(elapsedSeconds, selectedGoal?.text || '');
-            if (typeof XPModule !== 'undefined') XPModule.onSessionComplete(elapsedSeconds, true, selectedGoal?.text || '');
-            if (typeof DrinkShelfModule !== 'undefined') DrinkShelfModule.addCup(elapsedSeconds);
-          }
+          updateProgressQuote(100);
+          playTimerCompletionVisuals();
+          recordSessionOnce(true);
           pomoCurrentCycle = 1;
           updatePomoIndicator();
+          syncTimerVisualState();
           showTimerEndModal(true);
         } else {
           pomoCurrentCycle++;
           remainingSeconds = POMO_WORK; totalSeconds = POMO_WORK;
+          remainingMs = remainingSeconds * 1000;
           timerHours = 0; timerMinutes = 25; timerSeconds = 0;
           updateTimerDisplay(); updateTimerProgress(); updatePomoIndicator();
+          syncTimerVisualState();
           showPomoBanner(`🍅 Work cycle ${pomoCurrentCycle} of ${POMO_CYCLES} — let's go!`, true);
-          setTimeout(() => { if (!timerRunning) toggleTimer(); }, 1500);
+          schedulePomoAutoStart();
         }
       }
       return;
     }
 
+    updateProgressQuote(100);
+    playTimerCompletionVisuals();
     if (selectedGoal?.subgoals?.length && selectedGoal.subgoals.every(s => s.done)) triggerGoalComplete();
     else showTimerEndModal();
   }
@@ -1412,7 +1560,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
       background:${isWork ? 'rgba(16,185,129,0.92)' : 'rgba(59,130,246,0.92)'};
       color:#fff;padding:12px 28px;border-radius:30px;font-family:'Playfair Display',serif;
       font-size:1rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.25);
-      animation:fadeIn 0.3s ease-out;backdrop-filter:blur(6px);`;
+      animation:pomoBannerIn 0.3s ease-out;backdrop-filter:blur(6px);`;
     banner.textContent = msg;
     document.body.appendChild(banner);
     setTimeout(() => { banner.style.opacity='0'; banner.style.transition='opacity 0.4s'; setTimeout(() => banner.remove(), 400); }, 3000);
@@ -1481,6 +1629,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
           if (key === 'minutes') { timerMinutes = val; }
           if (key === 'seconds') { timerSeconds = val; }
           remainingSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
+          remainingMs = remainingSeconds * 1000;
           // keep totalSeconds synced so progress bar reflects new time
           totalSeconds = remainingSeconds;
           updateTimerDisplay(); updateTimerProgress(); broadcastState();
@@ -1528,6 +1677,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
           else if (key === 'minutes') timerMinutes = nv;
           else timerSeconds = nv;
           remainingSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
+          remainingMs = remainingSeconds * 1000;
           totalSeconds = remainingSeconds;
           updateTimerDisplay(); updateTimerProgress();
         } else if (e.key === 'ArrowDown') {
@@ -1538,6 +1688,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
           else if (key === 'minutes') timerMinutes = nv;
           else timerSeconds = nv;
           remainingSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
+          remainingMs = remainingSeconds * 1000;
           totalSeconds = remainingSeconds;
           updateTimerDisplay(); updateTimerProgress();
         }
