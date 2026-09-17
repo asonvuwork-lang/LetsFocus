@@ -84,3 +84,12 @@ Five helper agents contributed marbling design review, layered palettes/details,
 ## Golden Hour mastercraft finish
 
 House keeps its diffuse sunset glow. Signature adds a feathered solar core, one slow-moving corona and a few gold flecks. Mastercraft adds three overlapping corona arcs moving at different speeds, fifteen floating gold flakes, and seven soft horizontal reflections under the sun. Effects gradually emerge from 45–94% progress. Shop previews show the mastercraft finish. Reduced-motion preferences remain respected. Tier-specific regression assertions pass, and the mastercraft browser preview was visually checked without console errors.
+
+
+## Pause behavior and recipe language (September 17)
+
+The main timer now explicitly shares running/work-phase state with the drink. Pausing cancels fill interpolation and hides pouring while steam, gentle waves, marbling and light effects remain ambient. Resume continues toward the held target. Breaks, navigation, completion and resets synchronize this state; explicit reset/completion remain authoritative. Numeric and arrow-key time edits update brewing state, including a zero-duration reset. Pop-out drinks use shared work-session progress so they do not empty/refill during breaks. Static shop previews omit frozen pour streams.
+
+All 405 recipe step labels now use concise café wording. Non-label recipe data is unchanged. Five helper agents contributed timer integration, motion review, recipe editing, playback tests and independent review; final integration and verification were completed in the main task.
+
+Validation: 3,001 render checks; seeded randomness and animation checks; pause/held-progress/resume tests; timer integration and generated pop-out script checks. Browser testing confirmed paused pours are hidden, steam remains running, progress stays fixed, and resume continues from that value without console errors.

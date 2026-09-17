@@ -6,6 +6,7 @@ const TimerModule = (function() {
   let timerHours = 0, timerMinutes = 25, timerSeconds = 0;
   let totalSeconds = 0, remainingSeconds = 0, remainingMs = 0;
   let timerRunning = false, timerInterval = null;
+  let drinkSessionActive = false;
   let elapsedSeconds = 0;
   let focusElapsedMs = 0;
   let focusRunStartedAtMs = null;
@@ -92,6 +93,12 @@ const TimerModule = (function() {
 
   function syncTimerVisualState() {
     const timerPage = document.getElementById('timerPage');
+    if (typeof DrinkModule !== 'undefined' && typeof DrinkModule.setPlaybackState === 'function') {
+      DrinkModule.setPlaybackState({
+        running: timerRunning,
+        brewing: drinkSessionActive && remainingMs > 0 && isFocusPhase() && !!timerPage && !timerPage.classList.contains('hidden')
+      });
+    }
     if (!timerPage) return;
     timerPage.classList.toggle('timer-running', timerRunning);
     timerPage.classList.toggle('timer-paused', !timerRunning && remainingMs > 0);
@@ -116,6 +123,7 @@ const TimerModule = (function() {
         remaining: remainingSeconds,
         total: totalSeconds,
         running: timerRunning,
+        drinkPct: totalSeconds > 0 ? getDrinkProgressPct((totalSeconds - remainingSeconds) / totalSeconds * 100) : 0,
         h: timerHours, m: timerMinutes, s: timerSeconds,
         ts: Date.now(),
         ...extra
@@ -239,6 +247,7 @@ const TimerModule = (function() {
 
   function triggerGoalComplete() {
     cancelPomoAutoStart();
+    drinkSessionActive = false;
     const now = Date.now();
     settleFocusRun(now);
     if (phaseEndsAtMs) {
@@ -247,6 +256,7 @@ const TimerModule = (function() {
     }
     phaseEndsAtMs = 0;
     clearInterval(timerInterval); timerRunning = false;
+    syncTimerVisualState();
     broadcastState({ action: 'complete' });
     const btn = document.getElementById('startPauseBtn');
     if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
@@ -271,6 +281,8 @@ const TimerModule = (function() {
   }
 
   function showTimerEndModal(skipXPAndStats = false) {
+    drinkSessionActive = false;
+    syncTimerVisualState();
     playSoftChime();
     // Record stats + XP once — guarded so Pomodoro path (which calls us with skipXPAndStats=true)
     // and mid-session completions never double-count.
@@ -349,7 +361,11 @@ const TimerModule = (function() {
       if (!pomodoroMode || pomoIsWork) updateProgressQuote(pct);
       // Update drink progress
       if (typeof DrinkModule !== 'undefined') DrinkModule.onProgressUpdate(getDrinkProgressPct(pct));
-    } else { fill.style.width = '0%'; if (pctEl) pctEl.textContent = '0%'; }
+    } else {
+      fill.style.width = '0%';
+      if (pctEl) pctEl.textContent = '0%';
+      if (typeof DrinkModule !== 'undefined') DrinkModule.onProgressUpdate(0);
+    }
     if (elapsed) {
       const e = syncElapsedSeconds();
       const eh = Math.floor(e / 3600), em = Math.floor((e % 3600) / 60), es = e % 60;
@@ -1031,7 +1047,8 @@ const TimerModule = (function() {
 
     const h = String(state.h).padStart(2,'0'), m = String(state.m).padStart(2,'0'), s = String(state.s).padStart(2,'0');
     const initialPct = state.total > 0 ? ((state.total - state.remaining) / state.total * 100) : 0;
-    const initialCupSVG = buildPoCupSVG(drinkVisual, initialPct);
+    const initialDrinkPct = Number.isFinite(state.drinkPct) ? state.drinkPct : getDrinkProgressPct(initialPct);
+    const initialCupSVG = buildPoCupSVG(drinkVisual, initialDrinkPct);
     const initialDrinkLabel = drinkVisual
       ? (drinkVisual.label + (drinkVisual.tier === 'mastercraft' ? ' 👑' : drinkVisual.tier === 'signature' ? ' ✦' : ''))
       : 'No drink yet — start a session';
@@ -1160,6 +1177,8 @@ const audios = {};
 let poRunning = ${state.running};
 let poRemaining = ${state.remaining};
 let poTotal = ${state.total};
+let poDrinkPct = ${initialDrinkPct};
+let poLastDrinkPct = poDrinkPct;
 let poInterval = null;
 let poDrinkVisual = ${JSON.stringify(drinkVisual)};
 
@@ -1169,7 +1188,8 @@ function pad(n) { return String(n).padStart(2,'0'); }
 function updateDrinkCup(pct) {
   const cupEl = document.getElementById('poDrinkCup');
   const labelEl = document.getElementById('poDrinkLabel');
-  if (cupEl) cupEl.innerHTML = buildPoCupSVG(poDrinkVisual, pct);
+  if (cupEl && pct !== poLastDrinkPct) cupEl.innerHTML = buildPoCupSVG(poDrinkVisual, pct);
+  poLastDrinkPct = pct;
   if (labelEl) labelEl.textContent = poDrinkVisual
     ? (poDrinkVisual.label + (poDrinkVisual.tier === 'mastercraft' ? ' 👑' : poDrinkVisual.tier === 'signature' ? ' ✦' : ''))
     : 'No drink yet — start a session';
@@ -1180,7 +1200,7 @@ function updateDisplay(rem) {
   const pct = poTotal > 0 ? (poTotal - rem) / poTotal * 100 : 0;
   document.getElementById('poProgressFill').style.width = pct + '%';
   document.getElementById('poPct').textContent = Math.round(pct) + '%';
-  updateDrinkCup(pct);
+  updateDrinkCup(poDrinkPct);
 }
 
 // Listen for main window sync
@@ -1188,8 +1208,9 @@ window.addEventListener('storage', (e) => {
   if (e.key === DRINK_SYNC_KEY) {
     try {
       poDrinkVisual = JSON.parse(e.newValue);
+      poLastDrinkPct = -1;
       const pct = poTotal > 0 ? (poTotal - poRemaining) / poTotal * 100 : 0;
-      updateDrinkCup(pct);
+      updateDrinkCup(poDrinkPct);
     } catch(err) {}
     return;
   }
@@ -1198,6 +1219,7 @@ window.addEventListener('storage', (e) => {
     const data = JSON.parse(e.newValue);
     poRemaining = data.remaining;
     poTotal = data.total;
+    if (Number.isFinite(data.drinkPct)) poDrinkPct = data.drinkPct;
     if (data.running !== poRunning) {
       poRunning = data.running;
       const btn = document.getElementById('poStartBtn');
@@ -1387,6 +1409,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
 
   function showTimerPage() {
     cancelPomoAutoStart();
+    drinkSessionActive = true;
     clearTimerCompletionVisuals();
     document.getElementById('mainPage').classList.add('hidden');
     document.getElementById('timerPage').classList.remove('hidden');
@@ -1412,6 +1435,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
 
   function hideTimerPage() {
     cancelPomoAutoStart();
+    drinkSessionActive = false;
     clearTimerCompletionVisuals();
     document.getElementById('timerPage').classList.add('hidden');
     document.getElementById('mainPage').classList.remove('hidden');
@@ -1478,6 +1502,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
 
   function resetTimer() {
     cancelPomoAutoStart();
+    drinkSessionActive = true;
     clearTimerCompletionVisuals();
     clearInterval(timerInterval); timerRunning = false; lastQuoteMilestone = -1;
     resetFocusTracking(); sessionStatsRecorded = false;
@@ -1632,7 +1657,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
           remainingMs = remainingSeconds * 1000;
           // keep totalSeconds synced so progress bar reflects new time
           totalSeconds = remainingSeconds;
-          updateTimerDisplay(); updateTimerProgress(); broadcastState();
+          updateTimerDisplay(); updateTimerProgress(); syncTimerVisualState(); broadcastState();
         }
         editBuffer = '';
         isEditing = false;
@@ -1679,7 +1704,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
           remainingSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
           remainingMs = remainingSeconds * 1000;
           totalSeconds = remainingSeconds;
-          updateTimerDisplay(); updateTimerProgress();
+          updateTimerDisplay(); updateTimerProgress(); syncTimerVisualState(); broadcastState();
         } else if (e.key === 'ArrowDown') {
           e.preventDefault();
           const cur = key === 'hours' ? timerHours : key === 'minutes' ? timerMinutes : timerSeconds;
@@ -1690,7 +1715,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
           remainingSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
           remainingMs = remainingSeconds * 1000;
           totalSeconds = remainingSeconds;
-          updateTimerDisplay(); updateTimerProgress();
+          updateTimerDisplay(); updateTimerProgress(); syncTimerVisualState(); broadcastState();
         }
       });
 

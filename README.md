@@ -199,3 +199,7 @@ Post it if you want but don't copy everything. A ☕ credit is always appreciate
 Run `node tests/drinks.cjs` (Node.js 18 or later) to validate drink rendering, SVG references, seeded marbling, animation resets, and Golden Hour equipment tiers. The test also generates `tests/review.html` for interactive playback and `tests/gallery.html` for collection review. These generated pages stay local and are excluded from Git.
 
 Serve this folder locally and open `tests/review.html` to inspect the animations. See [DRINK-IMPROVEMENTS.md](DRINK-IMPROVEMENTS.md) for the drink-by-drink change record.
+
+Run `node tests/timer-drinks.cjs` for timer/drink integration checks, including pause/resume precision, Pomodoro breaks, zero-time edits, and shared pop-out progress. The animation studio now includes Pause/Resume controls.
+
+Run `node tests/drink-tiers.cjs` to generate a controlled three-tier comparison at `tests/tiers.html`. The latest visual decisions are documented in [DRINK-EXPERIENCE-REVIEW.md](DRINK-EXPERIENCE-REVIEW.md).

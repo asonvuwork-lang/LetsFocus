@@ -225,7 +225,6 @@ const DrinkModule = (function () {
       liquidColor: '#3e1c08', liquidColor2: '#6a3010',
       foamColor: 'rgba(255,255,255,0.95)', cupTint: '#5a2010',
       bobas: false, hasFoam: true, hasIce: false, rarity: 'common',
-      dripDrizzle: { color: '#2a0d00' },  // chocolate drizzle over white foam
     },
     _latte: {
       label: 'Latte', type: 'coffee',
@@ -246,7 +245,6 @@ const DrinkModule = (function () {
       liquidColor: '#2a1010', liquidColor2: '#4a1818',
       foamColor: 'rgba(255,255,255,0.90)', cupTint: '#601818',
       bobas: false, hasFoam: true, hasIce: false, rarity: 'uncommon',
-      dripDrizzle: { color: '#2a0d00' },  // chocolate drizzle — unique to mocha + hot choc
     },
     _macchiato: {
       label: 'Macchiato', type: 'coffee',
@@ -292,7 +290,7 @@ const DrinkModule = (function () {
     },
     _cherry_blossom: {
       label: 'Cherry Blossom', type: 'sakura',
-      liquidColor: '#5a2848', liquidColor2: '#e8c0d8',
+      liquidColor: '#b96d8d', liquidColor2: '#fce5e7',
       foamColor: 'rgba(255,220,240,0.90)', cupTint: '#c090b0',
       bobas: false, hasFoam: true, hasIce: false, rarity: 'epic',
       petalFlecks: true,  // pink petal flecks on foam surface — unique identifier
@@ -344,6 +342,7 @@ const DrinkModule = (function () {
   let currentPct    = 0;
   let visualPct = 0;
   let progressFrame = null;
+  let playback = { running: true, brewing: true };
   let isFinished    = false;
   let _currentCategoryName = null;  // passed from onSessionStart, used for category pill
 
@@ -486,8 +485,35 @@ const DrinkModule = (function () {
       _lastRippleMilestone = Math.floor(nextPct / 25) * 25;
     }
     currentPct = nextPct;
+    driveVisualProgress();
+    updateLabel(currentPct);
+    if (currentPct >= 100 && !isFinished) {
+      isFinished = true;
+      finishDrinkAnimation();
+    }
+  }
+
+  function setPlaybackState({ running, brewing }) {
+    playback = { running: !!running, brewing: !!brewing };
+    const scene = document.getElementById('drinkScene');
+    if (scene) {
+      scene.dataset.running = String(playback.running);
+      scene.dataset.brewing = String(playback.brewing);
+    }
+    if (!playback.running || !playback.brewing) {
+      if (progressFrame !== null) cancelAnimationFrame(progressFrame);
+      progressFrame = null;
+    } else if (currentDrink && visualPct !== currentPct) {
+      driveVisualProgress();
+    }
+  }
+
+  function driveVisualProgress() {
+    // Reset and completion are authoritative even when a session is paused.
+    const endpoint = currentPct === 0 || currentPct === 100;
+    if ((!playback.running || !playback.brewing) && !endpoint) return;
     const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (typeof requestAnimationFrame !== 'function' || reduced || nextPct === 0) {
+    if (typeof requestAnimationFrame !== 'function' || reduced || currentPct === 0 || currentPct === 100) {
       if (progressFrame !== null) cancelAnimationFrame(progressFrame);
       progressFrame = null;
       visualPct = currentPct;
@@ -503,11 +529,6 @@ const DrinkModule = (function () {
         progressFrame = visualPct === currentPct ? null : requestAnimationFrame(tick);
       };
       progressFrame = requestAnimationFrame(tick);
-    }
-    updateLabel(currentPct);
-    if (currentPct >= 100 && !isFinished) {
-      isFinished = true;
-      finishDrinkAnimation();
     }
   }
 
@@ -599,13 +620,19 @@ const DrinkModule = (function () {
     style.dataset.amp = wAmp;
     style.dataset.spd = wSpd;
     style.textContent = `
-      @media (prefers-reduced-motion: reduce) { #drinkScene *, svg[data-drink-preview] * { animation: none !important; transition: none !important; } }
+      #drinkScene[data-running="false"] [style*="animation:lfPour"],
+      #drinkScene[data-brewing="false"] [style*="animation:lfPour"] { visibility:hidden; animation-play-state:paused !important; }
+      #drinkScene[data-running="false"] [style*="animation:lfRipple"],
+      #drinkScene[data-brewing="false"] [style*="animation:lfRipple"] { animation-play-state:paused !important; }
+      @media (prefers-reduced-motion: reduce) { #drinkScene [data-effect="completion-celebration"] { display:none; } #drinkScene *, svg[data-drink-preview] * { animation: none !important; transition: none !important; } }
+      @keyframes lfCompletionSparkles { 0% { opacity:0;transform:translateY(4px); } 20% { opacity:1; } 100% { opacity:0;transform:translateY(-5px); } }
       @keyframes lfGoldFloat { 0%,100% { transform:translate(0,1px) rotate(-10deg);opacity:.45; } 50% { transform:translate(1.5px,-3px) rotate(18deg);opacity:.95; } }
       @keyframes lfSunsetBreathe { 0%,100% { opacity:.72; transform:scale(.97); } 50% { opacity:.96; transform:scale(1.035); } }
       @keyframes lfSunsetShimmer { 0%,100% { opacity:.35; transform:translate(-1px,1px); } 50% { opacity:.65; transform:translate(1px,-1px); } }
       @keyframes lfMarbleDiffuse { 0%,100% { transform:translate(-.7px,.4px) scale(1); } 50% { transform:translate(.9px,-.8px) scale(1.045); } }
       @keyframes lfW1 { 0%,100%{transform:translateX(-${tx}px)} 50%{transform:translateX(${tx}px)} }
       @keyframes lfW2 { 0%,100%{transform:translateX(${tx}px)} 50%{transform:translateX(-${tx}px)} }
+      @keyframes lfFloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-1.5px); } }
       @keyframes lfBoba { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
       @keyframes lfSteam { 0%{opacity:0;transform:translateY(0) scaleX(1)} 40%{opacity:0.75} 100%{opacity:0;transform:translateY(-26px) scaleX(2)} }
       @keyframes lfBub { 0%{opacity:0.85;transform:translateY(0)} 85%{opacity:0.4} 100%{opacity:0;transform:translateY(-55px)} }
@@ -1069,6 +1096,7 @@ const DrinkModule = (function () {
       iced_matcha: ['#f0eedc','#638750','#b7c59b',40,82,.42],
       caramel_mac: ['#f3e5d1','#775039','#c3a17d',44,82,.32],
       irish_coffee: ['#42291d','#f9ebd4','#b39573',58,92,.24],
+      sakura: ['#b96d8d','#fce5e7','#e9b8cd',28,76,.54],
       brown_sugar: ['#bd9873','#f5e9d8','#e5cfaf',18,65,.48],
     };
     const [base, top, blend, start, end, split] = profiles[type];
@@ -1100,25 +1128,79 @@ const DrinkModule = (function () {
     return `${gradient}<path d="${wavePath(fillY,1,false)}" fill="${base}"/><path d="${wavePath(fillY,1,false)}" fill="url(#${id})" opacity="${phase}"/><path d="${wavePath(fillY,1,false)}" fill="url(#${id}_milk)" opacity="${phase}"/>${details}`;
   }
 
-  // Surface finishes use local normalized coordinates in both renderers.
-  function buildFinish(d, CX, CW, fillY, pct) {
-    if (pct <= 75) return '';
-    const opacity = Math.min(1, (pct - 75) / 20);
-    const name = d.label;
-    let art = '';
-    if (['Mocha', 'Caramel Macchiato', 'Hot Chocolate'].includes(name)) {
-      const color = name === 'Caramel Macchiato' ? '#bc731f' : '#42190e';
-      art = `<path d="M-27,-2 Q-14,-8 0,-2 T27,-2 M-24,2 Q-12,-4 0,2 T24,2 M-18,6 Q-8,1 8,6" fill="none" stroke="${color}" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${100*(1-opacity)}"/>`;
-    } else if (name === 'Affogato') {
-      art = `<ellipse cy="-5" rx="23" ry="15" fill="#fff2d3"/><path d="M-15,-12 Q-5,-4 -10,3 M4,-17 Q15,-4 10,7" fill="none" stroke="#754128" stroke-width="3"/><ellipse cx="-6" cy="-11" rx="9" ry="4" fill="#fffbed"/>`;
-    } else if (name === 'Latte' || name === 'Flat White') {
-      art = name === 'Latte' ? `<path d="M0,7 C-36,-4 -8,-13 0,-3 C8,-13 36,-4 0,7" fill="#fff7e8" stroke="#b88760" stroke-width=".8"/>` : `<ellipse rx="14" ry="5" fill="#fffdf7"/><path d="M0,6 Q-3,0 0,-5" stroke="#bc936d" fill="none"/>`;
-    } else if (['Cappuccino','Vienna Coffee','Egg Coffee'].includes(name)) {
-      art = Array.from({length:18}, (_,i) => `<circle cx="${Math.sin(i*2.4)*(10+i*.7)}" cy="${Math.cos(i*2.4)*4-2}" r="${.5+(i%3)*.2}" fill="#744528" opacity=".65"/>`).join('');
-    } else if (name === 'Lavender Latte') {
-      art = `<path d="M-18,4 L17,-5" stroke="#768556" stroke-width="1.2"/>` + [0,1,2,3,4].map(i=>`<ellipse cx="${-12+i*6}" cy="${1-i*1.4}" rx="3" ry="1.7" fill="#d6b8f0" transform="rotate(-25)"/>`).join('');
+  function hasCreamCrown(d, tier) {
+    return tier >= 1 && (['sakura','rosegold'].includes(d.type) || ['Vienna Coffee','Hot Chocolate','Mocha'].includes(d.label));
+  }
+
+  // Finishing is a staged reward: the body forms first, cream is piped next,
+  // and the small garnish lands last. Finished drinks remain calm and legible.
+  function buildFinish(d, CX, CW, fillY, pct, tier = 2, ns = 'lf_finish') {
+    if (pct <= 68 || d.type === 'birthday_cake') return '';
+    const name = d.label, type = d.type;
+    const creamPhase = smoothPhase(pct,68,91);
+    const garnishPhase = smoothPhase(pct,88,100);
+    const master = tier === 2, signature = tier >= 1;
+    const color = type === 'sakura' ? '#fff1ef' : '#fff5e4';
+    let art = '', defs = '';
+    const dust = (count, tint, y=0) => Array.from({length:count},(_,i)=>`<ellipse cx="${Math.sin(i*2.399)* (8+i*.8)}" cy="${y+Math.cos(i*2.399)*3}" rx="${.5+i%3*.17}" ry=".45" fill="${tint}"/>`).join('');
+    const flower = (x,y,scale,tint) => `<g transform="translate(${x} ${y}) scale(${scale})">${[0,72,144,216,288].map(angle=>`<path d="M0,0 C-5,-2 -4,-8 0,-5 C4,-8 5,-2 0,0" fill="${tint}" stroke="#d98f9f" stroke-width=".25" transform="rotate(${angle})"/>`).join('')}<circle r="1.2" fill="#e5b357"/><circle r=".45" fill="#fff3c7"/></g>`;
+    const cream = (height=1,tint=color) => {
+      const id = `${ns}_cream`;
+      defs += `<linearGradient id="${id}" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#fffdf8"/><stop offset=".45" stop-color="${tint}"/><stop offset="1" stop-color="${type==='sakura'?'#dca6b4':'#d7bea0'}"/></linearGradient>`;
+      return `<g data-effect="piped-cream" transform="scale(1 ${height*creamPhase})"><ellipse cy="3" rx="36" ry="6" fill="${tint}"/><path d="M-34,2 C-38,-5 -23,-9 -18,-10 C-24,-14 -7,-18 0,-19 C-6,-23 7,-25 5,-29 C20,-24 8,-19 17,-16 C30,-13 21,-9 29,-7 C38,-4 39,1 32,4 C12,10 -17,8 -34,2Z" fill="url(#${id})"/><path d="M-26,-4 Q-1,2 26,-5 M-16,-11 Q1,-6 20,-12 M-4,-18 Q5,-14 12,-18" fill="none" stroke="#fffaf0" stroke-width="1.8" opacity=".65" stroke-linecap="round"/></g>`;
+    };
+    const heart = `<path d="M0,7 C-32,-3 -9,-12 0,-3 C9,-12 32,-3 0,7Z" fill="#fff8e9"/>`;
+    const leaf = (tint) => `<path d="M0,7 C-21,0 -18,-10 0,-6 C18,-10 21,0 0,7" fill="${tint}"/><path d="M0,7 L0,-7" stroke="#fff5e5" stroke-width=".7"/>`;
+    const rosette = (tint) => [0,1,2,3].map(i=>`<path d="M0,${8-i*3} Q${-23+i*5},${3-i*3} ${-15+i*4},${-1-i*3} Q-2,${-3-i*3} 0,${2-i*3} Q2,${-3-i*3} ${15-i*4},${-1-i*3} Q${23-i*5},${3-i*3} 0,${8-i*3}" fill="${tint}"/>`).join('')+`<path d="M0,9 L0,-12" stroke="${tint}" stroke-width="1.5"/>`;
+    if (type === 'sakura') {
+      art = tier === 0 ? `<ellipse rx="33" ry="5" fill="#fbe0e5"/>` : cream(master ? .85 : .48,'#ffe9ec');
+      art += `<g opacity="${garnishPhase}">${flower(signature?13:0,signature?-12:0,master?1:.8,'#f6b5c8')}${master?flower(-14,-4,.68,'#ffd5dd'):''}${master?dust(9,'#d88c9e',1):''}</g>`;
+    } else if (['Vienna Coffee','Hot Chocolate','Mocha'].includes(name)) {
+      if (signature) art += cream(name==='Vienna Coffee'?(master ? .95 : .6):(master ? .72 : .4));
+      else art += `<ellipse rx="31" ry="5" fill="${d.foamColor}"/>`;
+      art += `<g opacity="${garnishPhase}">${dust(master?17:8,'#784932',signature?-2:1)}</g>`;
+      if (name==='Mocha' || (name==='Hot Chocolate' && master)) art += `<path d="M-22,-2 Q-6,4 19,-4 M-13,-10 Q0,-5 13,-11" fill="none" stroke="#66381e" stroke-width="1.5" stroke-linecap="round" opacity="${garnishPhase}"/>`;
+      if (name==='Hot Chocolate' && master) art += `<g opacity="${garnishPhase}" transform="translate(19 -14) rotate(18)"><rect x="-4" y="-7" width="8" height="14" rx="1" fill="#603b2a"/><path d="M-3,0 H3 M0,-6 V6" stroke="#996244" stroke-width=".65"/></g>`;
+    } else if (name==='Latte') {
+      art = tier===0?`<ellipse rx="12" ry="4" fill="#fff5e4"/>`:master?rosette('#fff5e4'):heart;
+    } else if (name==='Flat White') {
+      art = `<ellipse rx="${master?17:12}" ry="${master?5:4}" fill="#fff8ed"/>${signature?'<path d="M0,6 Q-5,-1 0,-5" stroke="#c09b7d" fill="none" stroke-width="1"/>':''}`;
+    } else if (type==='matcha') {
+      art = master?rosette('#447b49'):signature?leaf('#55905a'):dust(12,'#699763');
+    } else if (name==='Cappuccino') {
+      art = `<g opacity="${garnishPhase}">${dust(master?23:signature?15:7,'#966442',-3)}</g>`;
+      if(master) art += `<path d="M-8,-5 C-17,-13 -4,-15 0,-8 C4,-15 17,-13 8,-5 L0,0Z" fill="#fff9ed"/>`;
+    } else if (name==='Caramel Macchiato') {
+      art = `<path d="M-29,0 C-18,-9 -13,8 -3,0 S12,-7 18,0 S29,6 30,-2" fill="none" stroke="#b57128" stroke-width="${master?2:1.4}" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${100*(1-garnishPhase)}"/>`;
+      if(master) art += `<g opacity="${garnishPhase}">${dust(10,'#d99945',2)}</g>`;
+    } else if (name==='Affogato') {
+      art = `<g transform="scale(${.8+tier*.12} ${creamPhase})"><ellipse cy="-7" rx="21" ry="16" fill="#fff0cd"/><ellipse cx="-6" cy="-13" rx="10" ry="5" fill="#fff9e8"/><path d="M-13,-14 Q-4,-3 -9,5 M5,-20 Q16,-5 9,6" fill="none" stroke="#875139" stroke-width="${master?3:1.8}" stroke-linecap="round" opacity="${garnishPhase}"/></g>`;
+      if(master) art += `<g transform="translate(23 -7) rotate(23)" opacity="${garnishPhase}"><rect x="-3" y="-14" width="6" height="21" rx="1" fill="#c69758"/><path d="M-2,-11 L2,-7 M-2,-5 L2,-1 M-2,1 L2,5" stroke="#edc995" stroke-width="1"/></g>`;
+    } else if (name==='Lavender Latte') {
+      art = signature?`<ellipse rx="30" ry="5" fill="#f1e5f2"/>`:'';
+      art += `<g opacity="${garnishPhase}"><path d="M-16,3 L14,-4" stroke="#788568" stroke-width="1"/>${[0,1,2,3,4].slice(0,master?5:3).map(i=>`<ellipse cx="${-10+i*5}" cy="${1-i*1.2}" rx="2.5" ry="1.4" fill="#ad8cbd"/>`).join('')}</g>`;
+    } else if (type==='rosegold') {
+      art = signature?cream(master ? .58 : .3,'#ffe4d9'):`<ellipse rx="28" ry="4" fill="#f5d6ce"/>`;
+      art += `<g opacity="${garnishPhase}"><g transform="translate(-5 ${signature?-8:0})"><path d="M-9,1 C-13,-6 -4,-11 1,-8 C9,-12 15,-2 8,3 C7,10 -5,10 -9,1Z" fill="#e8a4b9"/><path d="M-7,-1 C-6,-8 6,-7 7,0 C6,6 -3,6 -4,1 C-5,-3 2,-4 3,0" fill="none" stroke="#bf6e8d" stroke-width="1"/><path d="M-8,1 Q-3,9 7,3" fill="none" stroke="#f9d2dd" stroke-width="1"/></g>${master?'<path d="M13,-8 L19,-11 22,-5 16,-2Z" fill="#e8bd60"/><path d="M14,-7 L19,-9" stroke="#fff3ae" stroke-width="1"/>':''}</g>`;
+    } else if (name==='Dalgona') {
+      art = `<path d="M-31,3 Q-40,-8 -22,-10 Q-16,-23 -2,-14 Q10,-27 19,-13 Q37,-15 33,2 Q5,12 -31,3Z" fill="#cf9a64" transform="scale(1 ${creamPhase*(.45+tier*.25)})"/><path d="M-22,-3 Q-5,4 14,-5" fill="none" stroke="#ebc392" stroke-width="1.4" opacity="${creamPhase}"/>`;
+    } else if (name==='Egg Coffee') {
+      art = `<ellipse cy="-1" rx="${29+tier*3}" ry="${5+tier}" fill="#f8e0a1"/><g opacity="${garnishPhase}">${dust(master?14:6,'#9d7847',-2)}</g>`;
+    } else if (name==='Brown Sugar Boba' || type==='milktea') {
+      art = signature?`<ellipse rx="35" ry="5" fill="${name==='Lavender Latte'?'#efe2f2':'#fff0d9'}" opacity=".65"/>`:'';
+      if(master && name==='Brown Sugar Boba') art += `<g opacity="${garnishPhase}">${dust(12,'#b6814d')}</g>`;
+    } else if (type==='midnight') {
+      if(signature) art = `<path d="M3,-8 A9,7 0 1 0 8,5 A7,6 0 0 1 3,-8" fill="#e8d9b4" opacity="${garnishPhase}"/>`;
+      if(master) art += `<path d="M21,-4 L22,-1 25,0 22,1 21,4 20,1 17,0 20,-1Z" fill="#f5e7c8" opacity="${garnishPhase}"/>`;
+    } else if (type==='smoothie') {
+      art = `<ellipse rx="32" ry="6" fill="#db9bbb"/><g opacity="${garnishPhase}"><circle cx="-8" cy="-3" r="4" fill="#8e3d62"/><circle cx="0" cy="-5" r="3.5" fill="#b85176"/><path d="M7,-3 Q7,-12 16,-8 Q13,-2 7,-3" fill="#72966b"/></g>`;
+    } else if (type==='chamomile') {
+      art = `<g opacity="${garnishPhase}">${flower(10,0,.7,'#fff5d4')}</g>`;
+    } else if (type==='oj' || type==='lemonade') {
+      const tint=type==='oj'?'#f1a442':'#e3cd54';
+      art = `<g opacity="${garnishPhase}" transform="translate(20 -2) rotate(-18)"><path d="M-11,0 A11,11 0 0 1 11,0Z" fill="${tint}" stroke="#fff0b8" stroke-width="1"/><path d="M0,0 L-7,-7 M0,0 L0,-10 M0,0 L7,-7" stroke="#fff2c3" stroke-width=".8"/></g>`;
     }
-    return art ? `<g transform="translate(${CX+CW/2} ${fillY}) scale(${CW/100})" opacity="${opacity}">${art}</g>` : '';
+    return art ? `<defs>${defs}</defs><g data-finish="${type}-tier-${tier}" transform="translate(${CX+CW/2} ${fillY}) scale(${CW/100})" opacity="${creamPhase}">${art}</g>` : '';
   }
 
   // ---- Aurora ribbon — replaces the old flat two-line "drizzle-looking" garnish ----
@@ -1259,7 +1341,7 @@ const DrinkModule = (function () {
     }[type] || { sw: 3.5, w: 3, op: 0.68 };
     const cx = 72;
     return `
-      <g style="animation:lfPour 1.4s ease-in-out infinite ${ao(1.4)}">
+      <g data-preparation="pour" style="animation:lfPour 1.4s ease-in-out infinite ${ao(1.4)}">
         <path d="M${cx},${CTY+4} C${cx-V.w},${CTY+streamH*0.35} ${cx+V.w},${CTY+streamH*0.65} ${cx},${fillY-2}"
           stroke="${liquidColor}" stroke-width="${V.sw}" fill="none" stroke-linecap="round" opacity="${V.op}"/>
         <ellipse cx="${cx}" cy="${fillY}" rx="${(V.sw * 1.6).toFixed(1)}" ry="1.8"
@@ -1323,8 +1405,9 @@ const DrinkModule = (function () {
     // bespoke premium-type branches below (galaxy/midnight/rosegold/sakura/
     // secret/goldenhour) assign to it before the standard flow runs.
     let inner = '';
+    const visualTier = d.visualTier ?? 0;
 
-    if (['ca_phe_sua_da','dalgona','egg_coffee','iced_matcha','caramel_mac','irish_coffee'].includes(type) || d.label === 'Brown Sugar Boba') {
+    if (['ca_phe_sua_da','dalgona','egg_coffee','iced_matcha','caramel_mac','irish_coffee','sakura'].includes(type) || d.label === 'Brown Sugar Boba') {
       return buildLayeredBody(d, d.label === 'Brown Sugar Boba' ? 'brown_sugar' : type, CX, CW, fillY, fillH, CBY, pct);
     }
 
@@ -1338,7 +1421,7 @@ const DrinkModule = (function () {
         [68,148,1.4,1.3],[82,78,1.0,2.2],[114,98,0.9,2.6],[40,90,1.1,1.4],
       ];
       // More stars = more progress
-      const starCount = Math.floor(3 + (pct / 100) * 17);
+      const starCount = Math.floor(3 + (pct / 100) * (visualTier === 2 ? 17 : visualTier === 1 ? 9 : 3));
       const stars = starSeeds.slice(0, Math.min(starCount, starSeeds.length)).map(([sx,sy,sr,sdur]) => {
         const sy2 = Math.max(fillY + 6, Math.min(CBY - 6, sy));
         return `<circle cx="${sx}" cy="${sy2}" r="${sr}" fill="rgba(255,255,255,${(0.2 + Math.min(0.6, pct/150)).toFixed(2)})"
@@ -1360,7 +1443,7 @@ const DrinkModule = (function () {
             stroke-dasharray="32 200"
             style="animation:voidOrbitOuter 7s linear infinite ${ao(7)}"/>
         ` : ''}
-        ${pct > 60 ? `
+        ${pct > 60 && visualTier === 2 ? `
           <ellipse cx="${CX+CW/2}" cy="${orbitY+4}" rx="${orbitRx*0.62}" ry="3.5"
             fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.2"
             stroke-dasharray="20 125"
@@ -1372,13 +1455,13 @@ const DrinkModule = (function () {
     // ─── AURORA — Northern lights flowing color bands ──────────────────────────────
     if (type === 'aurora') {
       const band1Ph = Math.min(1, pct / 40);
-      const band2Ph = Math.min(1, Math.max(0, (pct - 28) / 42));
-      const band3Ph = Math.min(1, Math.max(0, (pct - 55) / 38));
+      const band2Ph = visualTier >= 1 ? smoothPhase(pct,28,70) : 0;
+      const band3Ph = visualTier === 2 ? smoothPhase(pct,55,93) : 0;
       const auroraY1 = fillY + fillH * 0.45;
       const auroraY2 = fillY + fillH * 0.62;
       const auroraY3 = fillY + fillH * 0.28;
       const aCX = CX + CW/2;
-      const pour = (pct > 4 && pct < 92) ? buildPourStream(d.liquidColor, fillY, CTY, 'milktea') : '';
+      const pour = (!d.preview && pct > 4 && pct < 92) ? buildPourStream(d.liquidColor, fillY, CTY, 'milktea') : '';
       return `
         <rect x="${CX-1}" y="${fillY}" width="${CW+2}" height="${CBY-fillY+5}" fill="${liquidFill}" opacity="0.92"/>
         <path d="${wP2}" fill="${d.liquidColor2}" opacity="0.35"
@@ -1411,14 +1494,14 @@ const DrinkModule = (function () {
         [34,130,1.3,2.0],[58,92,1.0,2.6],[82,145,1.6,1.7],[46,70,1.1,2.3],
         [100,115,1.3,1.9],[70,60,1.0,2.5],[110,138,1.4,1.6],[54,105,1.2,2.1],
       ];
-      const starCount = Math.max(2, Math.floor(2 + (pct / 100) * (starSeeds.length - 2)));
+      const starCount = Math.max(2, Math.floor(2 + (pct / 100) * (visualTier === 2 ? starSeeds.length - 2 : visualTier === 1 ? 7 : 3)));
       const stars = starSeeds.slice(0, starCount).map(([sx,sy,sr,sdur]) => {
         const sy2 = Math.max(fillY + 6, Math.min(CBY - 6, sy));
         return `<circle cx="${sx}" cy="${sy2}" r="${sr}" fill="rgba(230,220,255,${(0.25 + Math.min(0.55, pct/160)).toFixed(2)})"
           style="animation:voidStar ${sdur}s ease-in-out infinite ${ao(sdur)}"/>`;
       }).join('');
       const swirlY = fillY + fillH * 0.45;
-      const nebula = pct > 25 ? `
+      const nebula = pct > 25 && visualTier >= 1 ? `
         <ellipse cx="${CX+CW/2}" cy="${swirlY}" rx="${CW*0.30}" ry="${Math.max(6, fillH*0.14)}"
           fill="rgba(140,80,220,0.30)" style="animation:lfSwirl 12s linear infinite ${ao(12)};transform-origin:${CX+CW/2}px ${swirlY}px"/>
         <ellipse cx="${CX+CW/2}" cy="${swirlY}" rx="${CW*0.16}" ry="${Math.max(3, fillH*0.08)}"
@@ -1542,7 +1625,7 @@ const DrinkModule = (function () {
         style="animation:lfW1 ${wSpd}s ease-in-out infinite ${wOff1}"/>`;
 
     // Pour stream during active fill — width/wobble vary by drink viscosity
-    const pour = (pct > 4 && pct < 92) ? buildPourStream(d.liquidColor, fillY, CTY, type) : '';
+    const pour = (!d.preview && pct > 4 && pct < 92) ? buildPourStream(d.liquidColor, fillY, CTY, type) : '';
 
     if (type === 'coffee' && pct > 10) {
       inner = `<ellipse cx="70" cy="${fillY+4}" rx="${CW*0.38}" ry="4.5" fill="rgba(140,65,12,0.30)" opacity="0.88"/>`;
@@ -1793,7 +1876,7 @@ const DrinkModule = (function () {
       </text>` : '';
 
     // ── Progress % text (inside bottom tier body) ────────────────────────────
-    const pctText = p > 15 ? `
+    const pctText = p > 15 && p < 100 ? `
       <text x="${cx}" y="${(t1.by - 9).toFixed(1)}"
         text-anchor="middle" font-family="Playfair Display,serif"
         font-size="13" font-weight="600" fill="rgba(255,255,255,0.88)">
@@ -1874,15 +1957,16 @@ const DrinkModule = (function () {
     const foamFill100 = step100?.foamFill;
     const foamColor  = (foamFill100 && foamFill100 !== 'transparent')
       ? foamFill100 : (d.hasFoam ? d.foamColor : null);
-    const garnishSvg = (pct >= 100 && step100?.garnishSvg && !buildFinish(d, 20, 100, 50, pct)) ? step100.garnishSvg : '';
-    const svgContentIn = d.label === 'Brown Sugar Boba' ? '' : getCumulativeSvgContent(tierCfg, pct, false);
+    const nativeArtwork = ['sakura','ca_phe_sua_da','dalgona','iced_matcha','galaxy','midnight','void','aurora'].includes(d.type) || ['Affogato','Brown Sugar Boba'].includes(d.label);
+    const garnishSvg = (pct >= 100 && step100?.garnishSvg && !nativeArtwork && !buildFinish(d, 20, 100, 50, pct, tierRank(tierCfg?.tier))) ? step100.garnishSvg : '';
+    const svgContentIn = nativeArtwork ? '' : getCumulativeSvgContent(tierCfg, pct, false);
     const svgContentOut = getCumulativeSvgContent(tierCfg, pct, true);
     const bgGlow     = tierCfg?.bgGlow || 'transparent';
     scene.style.filter = (bgGlow && bgGlow !== 'transparent') ? `drop-shadow(0 0 20px ${bgGlow})` : '';
 
     // Cup geometry
     const CX = 20, CW = 100, CTY = 30, CBY = 155;
-    const fillH = Math.max(0, (pct / 100) * (CBY - CTY - 20));
+    const fillH = Math.max(0, (pct / 100) * (CBY - CTY - (hasCreamCrown(d, tierRank(tierCfg?.tier)) ? 8 : 20)));
     const fillY = CBY - fillH;
 
     const type = d.type || 'coffee';
@@ -1950,7 +2034,7 @@ const DrinkModule = (function () {
         fill="none" stroke="rgba(200,145,60,0.75)" stroke-width="2.5"/>
       <ellipse cx="${CX+CW/2}" cy="${fillY+2}" rx="${CW*0.22}" ry="3"
         fill="rgba(185,130,50,0.35)"/>` : '';
-    const petalFlecksSVG = (d.petalFlecks && pct >= 90) ? `
+    const petalFlecksSVG = (d.petalFlecks && d.type !== 'sakura' && pct >= 90) ? `
       <ellipse cx="${CX+22}" cy="${fillY-1}" rx="3.5" ry="1.5" fill="rgba(255,160,200,0.65)" transform="rotate(-20,${CX+22},${fillY-1})"/>
       <ellipse cx="${CX+46}" cy="${fillY+1}" rx="3"   ry="1.2" fill="rgba(255,180,210,0.60)" transform="rotate(15,${CX+46},${fillY+1})"/>
       <ellipse cx="${CX+66}" cy="${fillY-2}" rx="2.8" ry="1.1" fill="rgba(255,150,195,0.55)" transform="rotate(-10,${CX+66},${fillY-2})"/>` : '';
@@ -2031,7 +2115,7 @@ const DrinkModule = (function () {
       ${pct > 5 ? `<path d="M${CX+2},${fillY} Q${CX+CW/2},${fillY-3} ${CX+CW-2},${fillY}"
         fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-linecap="round"/>` : ''}
 
-      ${(!d.bobas && !d.hasIce) ? buildLid(CX, CW, CTY, d.cupTint) : ''}
+      ${(!d.bobas && !d.hasIce && !['sakura','rosegold'].includes(type) && !['Vienna Coffee','Hot Chocolate','Mocha','Affogato'].includes(d.label)) ? buildLid(CX, CW, CTY, d.cupTint) : ''}
 
       ${steamSVG}
 
@@ -2042,7 +2126,7 @@ const DrinkModule = (function () {
       ${garnishSvg ? `<g clip-path="url(#lf_cupClip)"><g transform="translate(5 15) scale(.65)">${garnishSvg}</g></g>` : ''}
 
       <!-- Special flourishes: crema ring (espresso), petals (cherry blossom), aurora ribbon -->
-      ${buildFinish(d, CX, CW, fillY, pct)}
+      ${buildFinish(d, CX, CW, fillY, pct, liveTierRank)}
       ${cremaSVG}
       ${petalFlecksSVG}
       ${auroraRibbonSVG}
@@ -2055,7 +2139,7 @@ const DrinkModule = (function () {
       ${isCold && pct > 0 ? buildCondensation(CX, CW, CTY, CBY, pct) : ''}
 
       <!-- Progress % text -->
-      ${pct > 15 ? `
+      ${pct > 15 && pct < 100 ? `
       <text x="${CX + CW/2}" y="${Math.max(fillY + 18, CBY - 10)}"
         text-anchor="middle" font-family="Playfair Display,serif"
         font-size="13" font-weight="600" fill="rgba(255,255,255,0.85)">
@@ -2065,12 +2149,10 @@ const DrinkModule = (function () {
   }
 
   function generateSparkles() {
-    return `<g>
-      <text x="18" y="22" font-size="14" style="animation:sparkle 1.5s ease-in-out infinite ${ao(1.5)}">✨</text>
-      <text x="108" y="18" font-size="12" style="animation:sparkle 1.8s ease-in-out infinite ${ao(1.8)}">⭐</text>
-      <text x="60" y="12" font-size="10" style="animation:sparkle 1.3s ease-in-out infinite ${ao(1.3)}">✦</text>
-      <text x="28" y="42" font-size="11" style="animation:sparkle 2.0s ease-in-out infinite ${ao(2.0)}">✧</text>
-      <text x="100" y="38" font-size="13" style="animation:sparkle 1.6s ease-in-out infinite ${ao(1.6)}">✨</text>
+    return `<g data-effect="completion-celebration" style="animation:lfCompletionSparkles 2.4s ease-out forwards;pointer-events:none">
+      <path d="M18,18 l1.5,4 4,1.5 -4,1.5 -1.5,4 -1.5,-4 -4,-1.5 4,-1.5Z" fill="#edc479"/>
+      <path d="M126,28 l1,3 3,1 -3,1 -1,3 -1,-3 -3,-1 3,-1Z" fill="#edc479"/>
+      <circle cx="107" cy="13" r="1.6" fill="#f5d6a1"/>
     </g>`;
   }
 
@@ -2487,6 +2569,7 @@ const DrinkModule = (function () {
     // Shop IDs (e.g. 'espresso') → visual key (e.g. '_espresso') → DRINKS entry
     const visualKey = SHOP_ID_TO_VISUAL[drinkId] || drinkId;
     const d = DRINKS[visualKey] || DRINKS[drinkId] || DRINKS['☕ Coffee'];
+    const previewTier = tierRank(getCurrentTierConfig(DRINK_KEY_TO_RECIPE[drinkId])?.tier);
     const type = d.type || 'coffee';
 
     // ── Birthday Cake — 3-tier chocolate cake (image 2 inspired) ─────────────
@@ -2684,7 +2767,9 @@ const DrinkModule = (function () {
     const p = Math.max(0, Math.min(100, Number(pct) || 0));
 
     // Liquid fill height and Y position
-    const fillH = (p / 100) * (cupH - 14);
+    const headroom = hasCreamCrown(d, previewTier) ? 6 : 14;
+    const liveSpan = hasCreamCrown(d, previewTier) ? 117 : 105;
+    const fillH = (p / 100) * (cupH - headroom);
     const fillY = CBY - fillH;
 
     // Taper: liquid surface X narrows toward bottom
@@ -2699,12 +2784,12 @@ const DrinkModule = (function () {
 
     // Reuse live liquid geometry in a normalized coordinate system. Static
     // previews retain each drink's layers and special effects without timers.
-    const liveH = p / 100 * 105;
+    const liveH = p / 100 * liveSpan;
     const liveY = 155 - liveH;
     const previewDefs = `<linearGradient id="lf_liquidGrad"><stop stop-color="${d.liquidColor}"/><stop offset="1" stop-color="${d.liquidColor2}"/></linearGradient><radialGradient id="lf_sunGlow"><stop stop-color="#fff8da"/><stop offset="1" stop-color="#ed9f32" stop-opacity="0"/></radialGradient>`;
-    const previewLiquid = p > 0 ? buildLiquid({...d, visualTier: 2}, type, liveY, liveH, 20, 100, 155,
+    const previewLiquid = p > 0 ? buildLiquid({...d, visualTier: previewTier, preview: true}, type, liveY, liveH, 20, 100, 155,
       'url(#lf_liquidGrad)', null, p, 2, 5, 30) : '';
-    const liquidSVG = `<defs>${previewDefs}</defs><g transform="translate(${CX-20*CW/100} ${CBY-155*(cupH-14)/105}) scale(${CW/100} ${(cupH-14)/105})">${previewLiquid}</g>`
+    const liquidSVG = `<defs>${previewDefs}</defs><g transform="translate(${CX-20*CW/100} ${CBY-155*(cupH-headroom)/liveSpan}) scale(${CW/100} ${(cupH-headroom)/liveSpan})">${previewLiquid}</g>`
       .replace(/lf_/g, ns).replace(/style="[^"]*animation:[^"]*"/g, '');
 
     // ---- Foam ----
@@ -2750,7 +2835,7 @@ const DrinkModule = (function () {
     const marbleSVG = buildSyrupMarbling(d, CX, CW, fillY, CBY, p, cardRng, Infinity, shopClipId, shopBlurId);
 
     // ---- Petal flecks (cherry blossom) ----
-    const petalSVG = (d.petalFlecks && p >= 90) ? `
+    const petalSVG = (d.petalFlecks && d.type !== 'sakura' && p >= 90) ? `
       <ellipse cx="${CX+22}" cy="${fillY-1}" rx="3.5" ry="1.5" fill="rgba(255,160,200,0.65)" transform="rotate(-20,${CX+22},${fillY-1})"/>
       <ellipse cx="${CX+46}" cy="${fillY+1}" rx="3"   ry="1.2" fill="rgba(255,180,210,0.60)" transform="rotate(15,${CX+46},${fillY+1})"/>
       <ellipse cx="${CX+66}" cy="${fillY-2}" rx="2.8" ry="1.1" fill="rgba(255,150,195,0.55)" transform="rotate(-10,${CX+66},${fillY-2})"/>` : '';
@@ -2779,15 +2864,15 @@ const DrinkModule = (function () {
       </g>
       ${wallsSVG}
       ${foamSVG}
-      ${buildFinish(d, CX, CW, fillY, p)}
       ${petalSVG}
       ${cremaSVG}
       ${rimSVG}
       ${decorSVG}
+      ${buildFinish(d, CX, CW, fillY, p, previewTier, `${ns}finish`)}
     </svg>`;
   }
 
   return { init, onSessionStart, onProgressUpdate, renderBillBoard,
-           getCurrentDrinkInfo, generateShopCupSVG };
+           getCurrentDrinkInfo, generateShopCupSVG, setPlaybackState };
 
 })();
