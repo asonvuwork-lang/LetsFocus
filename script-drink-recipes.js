@@ -305,7 +305,7 @@ const DRINK_RECIPES = {
           <rect x="108" y="135" width="26" height="26" rx="4" fill="#e0f2fe" opacity="0.55" transform="rotate(-12 121 148)"/>
         `},
         80: { label: "Infusing high-pressure micro-foamed milk tea matrix", fill: "url(#masterBobaFluid)" },
-        100: { label: "Brown sugar syrup fully marbled through the tea", fill: "url(#masterBobaFluid)", foamFill: "#ffffff" }
+        100: { label: "Creamy milk tea with softly blended brown sugar", fill: "url(#masterBobaFluid)", foamFill: "#ffffff" }
       }
     }
   },
@@ -689,7 +689,7 @@ const DRINK_RECIPES = {
   },
 
   galaxyColdBrew: {
-    allPossibleEquipment: ["IceBucket", "ColdBrewTower", "ButterflyPeaJar"],
+    allPossibleEquipment: ["IceBucket", "ColdBrewTower"],
     house: {
       bgGlow: "transparent",
       defs: `<linearGradient id="houseGalaxy" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2a1a4a"/><stop offset="55%" stop-color="#16102a"/><stop offset="100%" stop-color="#080510"/></linearGradient>`,
@@ -714,7 +714,7 @@ const DRINK_RECIPES = {
       }
     },
     mastercraft: {
-      requires: ["IceBucket", "ColdBrewTower", "ButterflyPeaJar"],
+      requires: ["IceBucket", "ColdBrewTower"],
       bgGlow: "rgba(120, 60, 220, 0.4)",
       defs: `
         <linearGradient id="masterGalaxy" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7c3aed"/><stop offset="45%" stop-color="#2e1065"/><stop offset="100%" stop-color="#050210"/></linearGradient>

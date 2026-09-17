@@ -192,3 +192,10 @@ Post it if you want but don't copy everything. A ☕ credit is always appreciate
 ---
 
 *Built with focus, caffeine, and a lot of ☕.*
+
+
+## Drink animation checks
+
+Run `node tests/drinks.cjs` (Node.js 18 or later) to validate drink rendering, SVG references, seeded marbling, animation resets, and Golden Hour equipment tiers. The test also generates `tests/review.html` for interactive playback and `tests/gallery.html` for collection review. These generated pages stay local and are excluded from Git.
+
+Serve this folder locally and open `tests/review.html` to inspect the animations. See [DRINK-IMPROVEMENTS.md](DRINK-IMPROVEMENTS.md) for the drink-by-drink change record.
