@@ -6,7 +6,7 @@ const TourModule = (function () {
   const STORAGE_KEY     = 'letsfocus_tour_done';
   const SESSION_KEY     = 'letsfocus_tour_step';
 
-  // Steps: 14 total (steps 5+6 merged into one coffee-cup step)
+  // Tour targets are deliberately compact so the card can sit beside each feature.
   const STEPS = [
     // ── 1. Welcome ─────────────────────────────────────────────────────────────
     {
@@ -33,7 +33,7 @@ const TourModule = (function () {
         '🏷️ Pick Category — colour + drink pairing for the goal',
         '📅 Deadline — shows up on the Deadlines tab with urgency colours',
         '🔁 Recurring goals auto-reset daily or weekly',
-        '⚙ Export / Import all your data as a backup file',
+        'Use Sort and Filter to find the next goal to work on',
       ],
       position: 'bottom',
     },
@@ -41,7 +41,7 @@ const TourModule = (function () {
     // ── 3. List vs Board views ─────────────────────────────────────────────────
     {
       tab: 'goals',
-      target: '#viewListBtn',
+      target: '.goal-view-toggle',
       title: '☰ List & 📋 Board Views',
       text: 'Toggle between two views using these buttons above your goal list.',
       bullets: [
@@ -51,9 +51,7 @@ const TourModule = (function () {
         '✓ Double-click a bill to mark it done; completed bills get a green stamp',
       ],
       position: 'bottom',
-      beforeShow() {
-        document.getElementById('viewListBtn')?.click();
-      },
+
     },
 
     // ── 4. Templates ───────────────────────────────────────────────────────────
@@ -79,12 +77,24 @@ const TourModule = (function () {
       bullets: [
         '⚙ Custom time or 🍅 Pomodoro (25 min work → 5 min break × 4)',
         '🥤 Drink type matches your goal\'s category — swap it anytime with ⟳',
-        '🎂 Unlock the Birthday Cake code for a legendary 3-tier chocolate ganache experience',
+        'Cream, garnishes and finishing touches appear as your session progresses',
         '⤢ Pop Out — float the timer in its own window while you work',
       ],
       position: 'left',
     },
 
+    {
+      page: 'timer', target: '.timer-controls-large', fallback: '#startPauseBtn',
+      title: '⏯ A Timer That Follows Your Pace',
+      text: 'This is a preview of your focus space. The tour does not start or reset a session.',
+      bullets: ['Start or pause here; your drink holds its progress while paused', 'Click the time digits to edit the duration', 'Pop Out keeps the timer in a separate window'], position: 'bottom',
+    },
+    {
+      page: 'timer', target: '#drinkProgressBox .goal-area-box-header', fallback: '#drinkSwapBtn',
+      title: '🥤 Make Each Session Your Own',
+      text: 'Your category pairs a drink with your session. Use the swap button to choose another unlocked drink.',
+      bullets: ['The drink builds during work and rests during breaks', 'Equipment adds Signature and Mastercraft finishes', 'Completed drinks become part of your focus history'], position: 'left',
+    },
     // ── 6. Beans & Shop widget ─────────────────────────────────────────────────
     {
       tab: 'goals',
@@ -102,8 +112,8 @@ const TourModule = (function () {
 
     // ── 7. Shop page ───────────────────────────────────────────────────────────
     {
-      tab: null,
-      target: '#shopTabContent',
+      page: 'shop',
+      target: '.chalk-header',
       title: '🛒 The Shop — Daily Specials & Mystery Brews',
       text: 'Spend your beans here. The shop has two sections — daily deals and a gacha roll system.',
       bullets: [
@@ -112,22 +122,19 @@ const TourModule = (function () {
         '🎰 Mystery Brews — roll ×1 for 30 beans or ×10 for 250 (50 beans saved!)',
         '🔧 Equipment unlocks Signature & Mastercraft recipe stages for your drinks',
       ],
-      position: 'center',
-      beforeShow() {
-        const mainPage = document.getElementById('mainPage');
-        const shopPage = document.getElementById('shopPage');
-        if (mainPage && shopPage) {
-          mainPage.classList.add('hidden');
-          shopPage.classList.remove('hidden');
-          if (typeof ShopModule !== 'undefined') ShopModule.renderShopTab();
-        }
-      },
+      position: 'bottom',
     },
 
+    {
+      page: 'shop', target: '.roll-btn-row', fallback: '.roll-panel-header',
+      title: '🎲 Mystery Brews', text: 'Choose a single roll or a bundle to discover collectible drinks.',
+      bullets: ['Check the bean cost before rolling', 'Duplicate drinks return some beans', 'Daily specials offer a direct purchase instead'], position: 'top',
+    },
     // ── 8. My Collection ───────────────────────────────────────────────────────
     {
       tab: 'collection',
-      target: '#tab-collection',
+      target: '.col-header',
+      fallback: '.tab-btn[data-tab="collection"]',
       title: '🍵 My Collection',
       text: 'Every drink you\'ve unlocked lives here — organised by rarity tier on wooden shelves.',
       bullets: [
@@ -137,37 +144,30 @@ const TourModule = (function () {
         '👑 Each drink has 3 recipe stages: House → Signature → Mastercraft',
       ],
       position: 'top',
-      beforeShow() {
-        const mainPage = document.getElementById('mainPage');
-        const shopPage = document.getElementById('shopPage');
-        if (shopPage && !shopPage.classList.contains('hidden')) {
-          shopPage.classList.add('hidden');
-          mainPage?.classList.remove('hidden');
-        }
-        switchTab('collection');
-      },
+
     },
 
     // ── 9. Deadlines ───────────────────────────────────────────────────────────
     {
       tab: 'deadlines',
-      target: '#tab-deadlines',
+      target: '.deadlines-header h2',
+      fallback: '.tab-btn[data-tab="deadlines"]',
       title: '📅 Deadlines & Overdue Streak',
       text: 'Every goal with a deadline shows here with a live urgency colour. Miss too many and your XP starts dropping.',
       bullets: [
         '🟢 Safe · 🟡 Soon (≤3 days) · 🟠 Urgent (≤1 day) · 🔴 Overdue',
-        '🔥 Overdue streak — consecutive overdue goals stack a penalty',
+        '⚡ Early Shift adds a buffer before your actual deadlines',
         '⚠️ Streak 1–2: −5 XP · Streak 5+: −35 XP per overdue goal',
         '💪 Completing a late goal still earns 50% Redemption XP',
       ],
       position: 'top',
-      beforeShow() { switchTab('deadlines'); },
     },
 
     // ── 10. Stats & XP ─────────────────────────────────────────────────────────
     {
       tab: 'stats',
-      target: '#tab-stats',
+      target: '#xpRankBadge',
+      fallback: '.tab-btn[data-tab="stats"]',
       title: '📊 Stats & Barista Rank',
       text: 'Track your focus journey and watch your barista rank climb.',
       bullets: [
@@ -177,13 +177,13 @@ const TourModule = (function () {
         '☕ Drink Shelf — every completed session adds a mini cup to your wall',
       ],
       position: 'top',
-      beforeShow() { switchTab('stats'); },
     },
 
     // ── 11. Achievements ───────────────────────────────────────────────────────
     {
       tab: 'achievements',
-      target: '#tab-achievements',
+      target: '#achievementsTabContent h2',
+      fallback: '.tab-btn[data-tab="achievements"]',
       title: '🏅 Achievements',
       text: '30 achievements across 6 categories. Each one gives bonus XP and beans when unlocked.',
       bullets: [
@@ -193,13 +193,13 @@ const TourModule = (function () {
         '⏰ Deadlines — complete goals on time, recover from overdue streaks',
       ],
       position: 'top',
-      beforeShow() { switchTab('achievements'); },
     },
 
     // ── 12. Categories ─────────────────────────────────────────────────────────
     {
       tab: 'categories',
-      target: '#tab-categories',
+      target: '.cat-tab-header',
+      fallback: '.tab-btn[data-tab="categories"]',
       title: '🏷️ Categories',
       text: 'Categories give your goals a colour and a matching drink for your focus sessions.',
       bullets: [
@@ -209,15 +209,15 @@ const TourModule = (function () {
         '🔍 Filter your goal list by one or more categories at once',
       ],
       position: 'top',
-      beforeShow() { switchTab('categories'); },
     },
 
     // ── 13. Music & Sounds ─────────────────────────────────────────────────────
     {
       tab: 'music',
-      target: '#tab-music',
+      target: '.music-setup-header',
+      fallback: '.tab-btn[data-tab="music"]',
       title: '🎵 Ambient Sounds',
-      text: 'Layer up to 10 ambient sounds and save your favourite mix as a preset.',
+      text: 'Preview and layer ambient sounds here. Your active sounds carry over into the timer, where you can adjust their volume.',
       bullets: [
         '☕ Café — barista + keyboard + writing',
         '🌧 Rainy Day — soft rain + thunder + wind',
@@ -225,9 +225,18 @@ const TourModule = (function () {
         '🎧 Deep Work — AC hum + keyboard + soft rain',
       ],
       position: 'top',
-      beforeShow() { switchTab('music'); },
     },
 
+    {
+      tab: 'goals', target: '#goalSettingsBtn', title: '💾 Keep a Backup',
+      text: 'The settings gear beside your goal controls contains Export Data and Import Data.',
+      bullets: ['Export a backup before switching browsers or devices', 'Import a saved file to restore your data'], position: 'bottom',
+    },
+    {
+      tab: 'goals', target: '#enterCodeBtn', title: '🎟️ Redeem a Café Treat',
+      text: 'Have a promo code? Enter Code beside the shop lets you redeem it.',
+      bullets: ['Check your collection after unlocking a new drink', 'Pair unlocked drinks with categories for future sessions'], position: 'left',
+    },
     // ── 14. Help button / finish ────────────────────────────────────────────────
     {
       tab: 'goals',
@@ -242,354 +251,173 @@ const TourModule = (function () {
       ],
       position: 'bottom',
       isLast: true,
-      beforeShow() { switchTab('goals'); },
     },
   ];
 
-  let currentStep      = 0;
-  let overlay          = null;
-  let _resizeHandler   = null;
-  let _keyHandler      = null;
-  let _resizeTimer     = null;
-  let _dontShowChecked = false;
+  let currentStep = 0, overlay = null, frame = 0, observer = null, saved = null;
+  const pageIds = ['mainPage', 'shopPage', 'timerPage'];
+  const clamp = (n, lo, hi) => Math.max(lo, Math.min(n, Math.max(lo, hi)));
 
-  // ── Persistence helpers ──────────────────────────────────────────────────────
-  function shouldAutoLaunch() {
-    return !localStorage.getItem(STORAGE_KEY);
+  // Score every side before clamping; clamping first used to prevent flipping.
+  function placeCard(rect, width, height, viewport, preferred = 'bottom') {
+    const { width: W, height: H } = viewport, margin = 12, gap = 16;
+    if (!rect) return { x: (W-width)/2, y: Math.max(margin,(H-height)/2), side: 'center' };
+    const cx = (rect.left+rect.right-width)/2, cy = (rect.top+rect.bottom-height)/2;
+    const positions = { bottom:[cx,rect.bottom+gap], top:[cx,rect.top-height-gap], right:[rect.right+gap,cy], left:[rect.left-width-gap,cy] };
+    return Object.entries(positions).map(([side,[x,y]]) => {
+      const px = clamp(x,margin,W-width-margin), py = clamp(y,margin,H-height-margin);
+      const overlap = Math.max(0,Math.min(px+width,rect.right)-Math.max(px,rect.left)) * Math.max(0,Math.min(py+height,rect.bottom)-Math.max(py,rect.top));
+      return { x:px, y:py, side, score: overlap*100 + Math.abs(x-px)+Math.abs(y-py)+(side===preferred?0:8) };
+    }).sort((a,b)=>a.score-b.score)[0];
   }
-  function markDone() {
-    localStorage.setItem(STORAGE_KEY, '1');
-    sessionStorage.removeItem(SESSION_KEY);
-  }
-  function saveProgress(idx) {
-    try { sessionStorage.setItem(SESSION_KEY, String(idx)); } catch(e) {}
-  }
-  function loadProgress() {
-    try {
-      const v = sessionStorage.getItem(SESSION_KEY);
-      if (v === null) return null;
-      const n = parseInt(v, 10);
-      return (isFinite(n) && n >= 0 && n < STEPS.length) ? n : null;
-    } catch(e) { return null; }
-  }
-
-  // ── Overlay transition helpers ───────────────────────────────────────────────
-  function setOverlayOpacity(val) {
-    if (!overlay) return;
-    ['tourBackdropTop','tourBackdropBottom','tourBackdropLeft','tourBackdropRight'].forEach(id => {
-      const el = overlay.querySelector('#' + id);
-      if (el) el.style.opacity = val;
-    });
-  }
-
-  // ── Public API ───────────────────────────────────────────────────────────────
-  function start(fromStep) {
-    if (overlay) stop(true); // silent stop — don't markDone
-    currentStep = (fromStep !== undefined) ? fromStep : (loadProgress() || 0);
-    _dontShowChecked = false;
-    buildOverlay();
-    attachKeyboard();
-    attachResize();
-    showStep(currentStep);
-  }
-
-  function stop(silent) {
-    detachKeyboard();
-    detachResize();
-    if (overlay) { overlay.remove(); overlay = null; }
-    sessionStorage.removeItem(SESSION_KEY);
-    if (!silent) {
-      if (_dontShowChecked) markDone();
-      // If user didn't check "don't show again" and finished naturally → still mark done
-      // (they completed the tour)
-      else markDone();
-    }
-  }
-
-  // ── Keyboard navigation ──────────────────────────────────────────────────────
-  function attachKeyboard() {
-    _keyHandler = function(e) {
-      if (!overlay) return;
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (currentStep < STEPS.length - 1) showStep(currentStep + 1);
-        else stop();
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (currentStep > 0) showStep(currentStep - 1);
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        stop();
-      }
-    };
-    document.addEventListener('keydown', _keyHandler);
-  }
-  function detachKeyboard() {
-    if (_keyHandler) {
-      document.removeEventListener('keydown', _keyHandler);
-      _keyHandler = null;
-    }
-  }
-
-  // ── Resize repositioning (debounced 150ms) ───────────────────────────────────
-  function attachResize() {
-    _resizeHandler = function() {
-      clearTimeout(_resizeTimer);
-      _resizeTimer = setTimeout(() => {
-        if (overlay) positionSpotlight(STEPS[currentStep]);
-      }, 150);
-    };
-    window.addEventListener('resize', _resizeHandler);
-  }
-  function detachResize() {
-    if (_resizeHandler) {
-      window.removeEventListener('resize', _resizeHandler);
-      _resizeHandler = null;
-    }
-    clearTimeout(_resizeTimer);
-  }
-
-  // ── Build overlay DOM ────────────────────────────────────────────────────────
-  function buildOverlay() {
-    overlay = document.createElement('div');
-    overlay.id = 'tourOverlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:30000;pointer-events:none;';
-
-    overlay.innerHTML = `
-      <div id="tourBackdropTop"    class="tour-backdrop-piece" style="transition:all 0.25s ease, opacity 0.2s ease;"></div>
-      <div id="tourBackdropBottom" class="tour-backdrop-piece" style="transition:all 0.25s ease, opacity 0.2s ease;"></div>
-      <div id="tourBackdropLeft"   class="tour-backdrop-piece" style="transition:all 0.25s ease, opacity 0.2s ease;"></div>
-      <div id="tourBackdropRight"  class="tour-backdrop-piece" style="transition:all 0.25s ease, opacity 0.2s ease;"></div>
-      <div id="tourTooltip" class="tour-tooltip">
-        <div class="tour-tooltip-step" id="tourStepCounter"></div>
-        <div class="tour-tooltip-title" id="tourTitle"></div>
-        <div class="tour-tooltip-text"  id="tourText"></div>
-        <ul class="tour-bullets" id="tourBullets"></ul>
-        <div id="tourDontShow" style="display:none;margin-bottom:10px;">
-          <label style="display:flex;align-items:center;gap:8px;font-family:'Source Sans Pro',sans-serif;font-size:0.8rem;color:rgba(107,81,57,0.7);cursor:pointer;">
-            <input type="checkbox" id="tourDontShowCheck" style="accent-color:#8b6f47;width:14px;height:14px;">
-            Don't show this tour again
-          </label>
-        </div>
-        <div class="tour-tooltip-actions">
-          <button class="tour-btn-skip"  id="tourSkip">Skip Tour</button>
-          <div class="tour-btn-row">
-            <button class="tour-btn-prev" id="tourPrev">← Back</button>
-            <button class="tour-btn-next" id="tourNext">Next →</button>
-          </div>
-        </div>
-        <div class="tour-dots" id="tourDots"></div>
-      </div>
-    `;
-
-    document.body.appendChild(overlay);
-
-    const tip = overlay.querySelector('#tourTooltip');
-    tip.style.pointerEvents = 'all';
-
-    overlay.querySelector('#tourSkip').addEventListener('click', stop);
-    overlay.querySelector('#tourPrev').addEventListener('click', () => {
-      if (currentStep > 0) showStep(currentStep - 1);
-    });
-    overlay.querySelector('#tourNext').addEventListener('click', () => {
-      if (currentStep < STEPS.length - 1) showStep(currentStep + 1);
-      else stop();
-    });
-    overlay.querySelector('#tourDontShowCheck').addEventListener('change', (e) => {
-      _dontShowChecked = e.target.checked;
-    });
-
-    // Progress dots — larger touch target
-    const dotsEl = overlay.querySelector('#tourDots');
-    STEPS.forEach((_, i) => {
-      const dot = document.createElement('div');
-      dot.className = 'tour-dot';
-      dot.style.cssText = 'width:14px;height:14px;min-width:14px;min-height:14px;border-radius:50%;cursor:pointer;flex-shrink:0;';
-      dot.addEventListener('click', () => showStep(i));
-      dotsEl.appendChild(dot);
-    });
-  }
-
-  // ── Tab switching helper ─────────────────────────────────────────────────────
-  function switchTab(tabName) {
-    const btn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+  function switchTab(name) {
+    const btn = document.querySelector(`.tab-btn[data-tab="${name}"]`);
     if (btn && !btn.classList.contains('active')) btn.click();
   }
-
-  // ── Show a specific step ─────────────────────────────────────────────────────
+  function targetFor(step) {
+    for (const selector of [step.target,step.fallback]) {
+      const el = selector && document.querySelector(selector);
+      if (el && el.getClientRects().length && el.getBoundingClientRect().width > 0) return el;
+    }
+    return null;
+  }
+  function scheduleLayout(event) {
+    if (event?.target instanceof Node && overlay?.contains(event.target)) return;
+    if (!overlay || frame) return;
+    frame = requestAnimationFrame(()=>{ frame=0; positionSpotlight(); });
+  }
+  function positionSpotlight() {
+    if (!overlay) return;
+    const step = STEPS[currentStep], el = targetFor(step), tip = overlay.querySelector('#tourTooltip');
+    const W = document.documentElement.clientWidth, H = window.innerHeight;
+    tip.style.width = `${Math.min(380,W-24)}px`;
+    tip.style.maxHeight = `${H-24}px`;
+    let tipH = tip.offsetHeight; const tipW = tip.offsetWidth;
+    let rect = null;
+    if (el) {
+      const r = el.getBoundingClientRect(), pad = 8;
+      if (r.bottom>0 && r.top<H && r.right>0 && r.left<W) rect = { left:clamp(r.left-pad,0,W), right:clamp(r.right+pad,0,W), top:clamp(r.top-pad,0,H), bottom:clamp(r.bottom+pad,0,H) };
+    }
+    const mask = overlay.querySelector('#tourMask'), ring = overlay.querySelector('#tourHighlight');
+    mask.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    let path = `M0 0H${W}V${H}H0Z`;
+    ring.style.display = rect ? 'block':'none';
+    if (rect) {
+      const {left:l,right:r,top:t,bottom:b}=rect, k=Math.min(12,(r-l)/2,(b-t)/2);
+      path += ` M${l+k} ${t}H${r-k}Q${r} ${t} ${r} ${t+k}V${b-k}Q${r} ${b} ${r-k} ${b}H${l+k}Q${l} ${b} ${l} ${b-k}V${t+k}Q${l} ${t} ${l+k} ${t}Z`;
+      Object.assign(ring.style,{left:`${l}px`,top:`${t}px`,width:`${r-l}px`,height:`${b-t}px`});
+    }
+    mask.firstElementChild.setAttribute('d',path);
+    let pos = placeCard(rect,tipW,tipH,{width:W,height:H},step.position);
+    if (rect && pos.score >= 100) {
+      const available = Math.max(rect.top-28,H-rect.bottom-28);
+      if (available >= 220 && available < tipH) {
+        tip.style.maxHeight=`${available}px`;tipH=tip.offsetHeight;
+        pos=placeCard(rect,tipW,tipH,{width:W,height:H},step.position);
+      }
+    }
+    tip.style.left=`${pos.x}px`; tip.style.top=`${pos.y}px`;
+    tip.dataset.side=pos.side;
+    overlay.classList.add('tour-ready');
+  }
   function showStep(idx) {
-    currentStep = idx;
-    const step  = STEPS[idx];
-
-    saveProgress(idx);
-
-    // Fade backdrop out before navigation
-    const hasNavigation = typeof step.beforeShow === 'function';
-    if (hasNavigation) setOverlayOpacity('0.3');
-
-    // Run beforeShow (may navigate pages / switch tabs)
-    if (hasNavigation) step.beforeShow();
-
-    // Also switch tab if specified
+    if (!overlay) return;
+    currentStep=clamp(idx,0,STEPS.length-1);
+    const step=STEPS[currentStep];
+    sessionStorage.setItem(SESSION_KEY,String(currentStep));
+    const page = step.page==='shop'?'shopPage':step.page==='timer'?'timerPage':'mainPage';
+    pageIds.forEach(id=>document.getElementById(id)?.classList.toggle('hidden',id!==page));
+    if (page==='shopPage' && typeof ShopModule!=='undefined') ShopModule.renderShopTab();
     if (step.tab) switchTab(step.tab);
-
-    // ── Update tooltip content ──────────────────────────────────────────────
-    overlay.querySelector('#tourStepCounter').textContent = `${idx + 1} / ${STEPS.length}`;
-    overlay.querySelector('#tourTitle').textContent  = step.title;
-    overlay.querySelector('#tourText').textContent   = step.text;
-
-    // Bullets
-    const bulletsEl = overlay.querySelector('#tourBullets');
-    bulletsEl.innerHTML = '';
-    if (step.bullets && step.bullets.length) {
-      bulletsEl.style.display = 'block';
-      step.bullets.forEach(b => {
-        const li = document.createElement('li');
-        li.className = 'tour-bullet';
-        li.textContent = b;
-        bulletsEl.appendChild(li);
-      });
-    } else {
-      bulletsEl.style.display = 'none';
+    overlay.querySelector('#tourStepCounter').textContent=`YOUR CAFÉ GUIDE · ${currentStep+1} OF ${STEPS.length}`;
+    overlay.querySelector('#tourTitle').textContent=step.title;
+    overlay.querySelector('#tourText').textContent=step.text;
+    const bullets=overlay.querySelector('#tourBullets'); bullets.replaceChildren();
+    (step.bullets||[]).forEach(text=>{const li=document.createElement('li');li.className='tour-bullet';li.textContent=text;bullets.append(li);});
+    overlay.querySelector('#tourPrev').disabled=currentStep===0;
+    overlay.querySelector('#tourNext').textContent=currentStep===STEPS.length-1?'Finish tour ✓':'Next →';
+    overlay.querySelector('#tourProgress').style.width=`${(currentStep+1)/STEPS.length*100}%`;
+    overlay.querySelectorAll('.tour-dot').forEach((dot,i)=>{
+      dot.classList.toggle('active',i===currentStep);
+      dot.setAttribute('aria-current',i===currentStep?'step':'false');
+    });
+    observer?.disconnect();
+    const target=targetFor(step);
+    // Scroll first, then measure. Small screens reserve the top half for the target.
+    if (target) {
+      target.scrollIntoView({block:'start',inline:'nearest',behavior:'instant'});
+      if (window.innerWidth<700) window.scrollBy({top:-24,behavior:'instant'});
+      observer?.observe(target);
     }
-
-    // "Don't show again" checkbox — only on last step
-    const dontShowEl = overlay.querySelector('#tourDontShow');
-    if (dontShowEl) {
-      dontShowEl.style.display = step.isLast ? 'block' : 'none';
-    }
-
-    // Dots and buttons
-    overlay.querySelectorAll('.tour-dot').forEach((d, i) =>
-      d.classList.toggle('active', i === idx)
-    );
-    overlay.querySelector('#tourPrev').style.visibility = idx === 0 ? 'hidden' : 'visible';
-    overlay.querySelector('#tourNext').textContent =
-      idx === STEPS.length - 1 ? 'Finish ✓' : 'Next →';
-
-    // Delay before positioning: give layout time to settle after navigation
-    const delay = hasNavigation ? 500 : (step.tab ? 300 : 50);
-    setTimeout(() => {
-      positionSpotlight(step);
-      // Fade backdrop back in after positioning
-      if (hasNavigation) setOverlayOpacity('1');
-    }, delay);
+    observer?.observe(overlay.querySelector('#tourTooltip'));
+    positionSpotlight(); scheduleLayout();
   }
-
-  // ── Spotlight positioning ────────────────────────────────────────────────────
-  function positionSpotlight(step) {
-    const pad = 12;
-    let el = null;
-
-    if (step.target && step.position !== 'center') {
-      el = document.querySelector(step.target);
-    }
-
-    // Zero-rect guard: treat hidden / zero-size elements as not found
-    if (el) {
-      const r = el.getBoundingClientRect();
-      if (r.width === 0 && r.height === 0) el = null;
-    }
-
-    let rect;
-    if (el) {
-      const r = el.getBoundingClientRect();
-      rect = {
-        top:    r.top    - pad,
-        left:   r.left   - pad,
-        right:  r.right  + pad,
-        bottom: r.bottom + pad,
-        width:  r.width  + pad * 2,
-        height: r.height + pad * 2,
-      };
-    } else {
-      // Centred fallback
-      const cx = window.innerWidth  / 2;
-      const cy = window.innerHeight / 2;
-      const r  = 180;
-      rect = { top: cy-r, left: cx-r, right: cx+r, bottom: cy+r, width: r*2, height: r*2 };
-    }
-
-    const W = window.innerWidth;
-    const H = window.innerHeight;
-
-    // Clamp so pieces never go negative or overflow
-    const rTop    = Math.max(0, rect.top);
-    const rLeft   = Math.max(0, rect.left);
-    const rRight  = Math.min(W, rect.right);
-    const rBottom = Math.min(H, rect.bottom);
-
-    setStyle('tourBackdropTop',
-      `left:0;top:0;width:${W}px;height:${rTop}px;`);
-    setStyle('tourBackdropBottom',
-      `left:0;top:${rBottom}px;width:${W}px;height:${Math.max(0,H-rBottom)}px;`);
-    setStyle('tourBackdropLeft',
-      `left:0;top:${rTop}px;width:${rLeft}px;height:${rBottom-rTop}px;`);
-    setStyle('tourBackdropRight',
-      `left:${rRight}px;top:${rTop}px;width:${Math.max(0,W-rRight)}px;height:${rBottom-rTop}px;`);
-
-    // ── Tooltip position ────────────────────────────────────────────────────
-    const tip  = overlay.querySelector('#tourTooltip');
-    const tipW = 380;
-    const tipH = tip.offsetHeight || 320;
-    const pos  = step.position || 'bottom';
-
-    let tx, ty;
-
-    if (pos === 'center') {
-      tx = Math.max(12, (W - tipW) / 2);
-      ty = Math.max(12, (H - tipH) / 2 + 60);
-    } else if (pos === 'top') {
-      ty = Math.max(12, rTop - tipH - 16);
-      tx = Math.max(12, Math.min(rLeft + (rRight-rLeft)/2 - tipW/2, W-tipW-12));
-      if (ty < 12) ty = rBottom + 12; // flip below if no room above
-    } else if (pos === 'bottom') {
-      ty = rBottom + 12;
-      tx = Math.max(12, Math.min(rLeft + (rRight-rLeft)/2 - tipW/2, W-tipW-12));
-      if (ty + tipH > H - 12) ty = Math.max(12, rTop - tipH - 16); // flip above
-    } else if (pos === 'left') {
-      tx = Math.max(12, rLeft - tipW - 16);
-      ty = Math.max(12, Math.min(rTop + (rBottom-rTop)/2 - tipH/2, H-tipH-12));
-      if (tx < 12) tx = rRight + 12; // flip right
-    } else if (pos === 'right') {
-      tx = rRight + 12;
-      ty = Math.max(12, Math.min(rTop + (rBottom-rTop)/2 - tipH/2, H-tipH-12));
-      if (tx + tipW > W - 12) tx = Math.max(12, rLeft - tipW - 16); // flip left
-    } else {
-      ty = rBottom + 12;
-      tx = Math.max(12, Math.min(rLeft + (rRight-rLeft)/2 - tipW/2, W-tipW-12));
-    }
-
-    // Final clamp
-    tx = Math.max(12, Math.min(tx, W - tipW - 12));
-    ty = Math.max(12, Math.min(ty, H - tipH - 12));
-
-    tip.style.left  = tx + 'px';
-    tip.style.top   = ty + 'px';
-    tip.style.width = tipW + 'px';
-
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
-
-  // ── Backdrop piece styler ────────────────────────────────────────────────────
-  function setStyle(id, css) {
-    const el = overlay && overlay.querySelector('#' + id);
-    if (el) {
-      el.style.cssText =
-        'position:fixed;background:rgba(20,10,5,0.72);pointer-events:all;' +
-        'transition:all 0.25s ease, opacity 0.2s ease;' + css;
+  function onKey(e) {
+    if (!overlay) return;
+    if (['Escape','ArrowRight','ArrowLeft','ArrowDown','ArrowUp','Tab',' '].includes(e.key)) e.stopImmediatePropagation();
+    if (e.key==='Escape') {e.preventDefault();stop();}
+    else if (['ArrowRight','ArrowDown'].includes(e.key)) {e.preventDefault();next();}
+    else if (['ArrowLeft','ArrowUp'].includes(e.key)) {e.preventDefault();showStep(currentStep-1);}
+    else if (e.key==='Tab') {
+      const buttons=[...overlay.querySelectorAll('button:not(:disabled)')];
+      const index=buttons.indexOf(document.activeElement);
+      if (index<0 || (e.shiftKey && index===0) || (!e.shiftKey && index===buttons.length-1)) {
+        e.preventDefault();buttons[e.shiftKey?buttons.length-1:0].focus();
+      }
     }
   }
-
-  // ── Init ─────────────────────────────────────────────────────────────────────
+  function next() { if(currentStep===STEPS.length-1) stop(); else showStep(currentStep+1); }
+  function start(fromStep=0) {
+    if (overlay) return;
+    saved={ focus:document.activeElement, scrollX:window.scrollX, scrollY:window.scrollY, tab:document.querySelector('.tab-btn.active')?.dataset.tab,
+      scrolls:[...document.querySelectorAll('body *')].filter(el=>el.scrollHeight>el.clientHeight || el.scrollWidth>el.clientWidth).map(el=>[el,el.scrollLeft,el.scrollTop]),
+      pages:pageIds.map(id=>({id,hidden:document.getElementById(id)?.classList.contains('hidden')})), inert:[] };
+    overlay=document.createElement('div');overlay.id='tourOverlay';
+    overlay.innerHTML=`<svg id="tourMask" aria-hidden="true" preserveAspectRatio="none"><path fill-rule="evenodd"/></svg>
+      <div id="tourHighlight" aria-hidden="true"></div>
+      <section id="tourTooltip" class="tour-tooltip" role="dialog" aria-modal="true" aria-labelledby="tourTitle" aria-describedby="tourText">
+        <div class="tour-progress-track" aria-hidden="true"><div id="tourProgress"></div></div>
+        <div id="tourStepCounter" class="tour-tooltip-step"></div>
+        <div class="tour-copy"><div aria-live="polite" aria-atomic="true"><h2 id="tourTitle" class="tour-tooltip-title"></h2><p id="tourText" class="tour-tooltip-text"></p></div>
+        <ul id="tourBullets" class="tour-bullets"></ul></div>
+        <div class="tour-tooltip-actions"><button id="tourSkip" class="tour-btn-skip">Close tour</button><div class="tour-btn-row"><button id="tourPrev" class="tour-btn-prev">← Back</button><button id="tourNext" class="tour-btn-next">Next →</button></div></div>
+        <nav id="tourDots" class="tour-dots" aria-label="Tour steps"></nav>
+      </section>`;
+    document.body.append(overlay);
+    [...document.body.children].filter(el=>el!==overlay && !['SCRIPT','STYLE','LINK'].includes(el.tagName)).forEach(el=>{saved.inert.push([el,el.inert]);el.inert=true;});
+    STEPS.forEach((step,i)=>{const dot=document.createElement('button');dot.className='tour-dot';dot.setAttribute('aria-label',`Step ${i+1}: ${step.title}`);dot.title=step.title;dot.onclick=()=>showStep(i);overlay.querySelector('#tourDots').append(dot);});
+    overlay.querySelector('#tourSkip').onclick=()=>stop();
+    overlay.querySelector('#tourPrev').onclick=()=>showStep(currentStep-1);
+    overlay.querySelector('#tourNext').onclick=next;
+    observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(scheduleLayout):null;
+    window.addEventListener('resize',scheduleLayout);
+    window.addEventListener('scroll',scheduleLayout,true);
+    window.visualViewport?.addEventListener('resize',scheduleLayout);
+    document.addEventListener('keydown',onKey,true);
+    showStep(Number.isInteger(fromStep)?fromStep:0);
+    overlay.querySelector('#tourNext').focus({preventScroll:true});
+  }
+  function stop() {
+    if (!overlay) return;
+    cancelAnimationFrame(frame);frame=0;observer?.disconnect();observer=null;
+    window.removeEventListener('resize',scheduleLayout);window.removeEventListener('scroll',scheduleLayout,true);
+    window.visualViewport?.removeEventListener('resize',scheduleLayout);
+    document.removeEventListener('keydown',onKey,true);
+    overlay.remove();overlay=null;
+    saved.inert.forEach(([el,value])=>el.inert=value);
+    if(saved.tab) switchTab(saved.tab);
+    saved.pages.forEach(({id,hidden})=>document.getElementById(id)?.classList.toggle('hidden',hidden));
+    saved.scrolls.forEach(([el,left,top])=>el.scrollTo({left,top,behavior:'instant'}));
+    window.scrollTo({left:saved.scrollX,top:saved.scrollY,behavior:'instant'});
+    saved.focus?.focus({preventScroll:true});saved=null;
+    localStorage.setItem(STORAGE_KEY,'1');sessionStorage.removeItem(SESSION_KEY);
+  }
   function init() {
-    document.getElementById('helpBtn')?.addEventListener('click', () => start(0));
-
-    if (shouldAutoLaunch()) {
-      const resumed = loadProgress();
-      setTimeout(() => start(resumed !== null ? resumed : 0), 800);
+    document.getElementById('helpBtn')?.addEventListener('click',()=>start(0));
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      const resume=Number(sessionStorage.getItem(SESSION_KEY)||0);
+      setTimeout(()=>{if(!overlay && !localStorage.getItem(STORAGE_KEY)) start(resume);},800);
     }
   }
-
   return { init, start, stop };
 })();

@@ -4619,3 +4619,32 @@ aside.right {
     transform: rotate(-1deg);
   }
 }
+
+/* Tour: viewport-based geometry, quiet spotlight, and accessible controls. */
+#tourOverlay { position:fixed; inset:0; z-index:30000; pointer-events:all; }
+#tourMask { position:absolute; inset:0; width:100%; height:100%; fill:rgba(24,16,12,.68); pointer-events:none; }
+#tourHighlight { position:fixed; box-sizing:border-box; border:2px solid #edc995; border-radius:12px; box-shadow:0 0 0 4px rgba(237,201,149,.16); pointer-events:none; }
+#tourOverlay .tour-tooltip { box-sizing:border-box; margin:0; overflow:auto; overscroll-behavior:contain; background:#faf5ed; border:1px solid #ddc5a5; padding:22px; animation:none; visibility:hidden; box-shadow:0 18px 60px #160e0a55; }
+#tourOverlay.tour-ready .tour-tooltip { visibility:visible; }
+#tourOverlay .tour-tooltip-title { margin:0 0 10px; font-size:1.15rem; line-height:1.3; }
+#tourOverlay .tour-tooltip-step { color:#806445; font-size:.65rem; margin-bottom:10px; }
+#tourOverlay .tour-tooltip-text { margin:0 0 12px; }
+#tourOverlay .tour-bullets { display:flex; gap:6px; }
+#tourOverlay .tour-bullet { padding:6px 8px; }
+#tourOverlay .tour-tooltip-actions { gap:8px; margin:18px 0 12px; }
+#tourOverlay button { min-height:36px; }
+#tourOverlay button:focus-visible { outline:3px solid #94672e; outline-offset:3px; }
+#tourOverlay button:disabled { opacity:.35; cursor:default; }
+#tourOverlay .tour-btn-skip { color:#775e48; padding:6px 0; }
+#tourOverlay .tour-btn-prev, #tourOverlay .tour-btn-next { padding:8px 12px; white-space:nowrap; }
+#tourOverlay .tour-dots { flex-wrap:wrap; gap:0; }
+#tourOverlay .tour-dot { border:0; background:transparent; width:24px; height:24px; min-height:24px; padding:8px; position:relative; transform:none; }
+#tourOverlay .tour-dot::after { content:''; display:block; width:8px; height:8px; border-radius:50%; background:#dccab4; }
+#tourOverlay .tour-dot.active::after { background:#8b6f47; box-shadow:0 0 0 3px #8b6f471c; }
+.tour-progress-track { height:3px; background:#e9ddcb; border-radius:2px; margin-bottom:16px; overflow:hidden; }
+#tourProgress { height:100%; background:#a27a46; transition:width .2s ease; }
+@media(max-width:480px) { #tourOverlay .tour-tooltip { padding:16px; } #tourOverlay .tour-bullet { font-size:.78rem; } }
+@media(prefers-reduced-motion:reduce) { #tourOverlay * { transition:none!important; animation:none!important; } }
+#tourOverlay .tour-tooltip { display:flex; flex-direction:column; overflow:hidden; }
+#tourOverlay .tour-copy { min-height:0; overflow:auto; overscroll-behavior:contain; }
+#tourOverlay .tour-tooltip > :not(.tour-copy) { flex-shrink:0; }

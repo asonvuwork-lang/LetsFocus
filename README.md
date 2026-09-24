@@ -203,3 +203,11 @@ Serve this folder locally and open `tests/review.html` to inspect the animations
 Run `node tests/timer-drinks.cjs` for timer/drink integration checks, including pause/resume precision, Pomodoro breaks, zero-time edits, and shared pop-out progress. The animation studio now includes Pause/Resume controls.
 
 Run `node tests/drink-tiers.cjs` to generate a controlled three-tier comparison at `tests/tiers.html`. The latest visual decisions are documented in [DRINK-EXPERIENCE-REVIEW.md](DRINK-EXPERIENCE-REVIEW.md).
+
+### Guided tour checks
+
+Run `node tests/tour.cjs` to check card placement at viewport edges and side flipping.
+The tour includes 19 steps, tracks scroll and resize, and restores the original tab,
+scroll position and keyboard focus when closed. Timer steps preview the existing
+interface without starting or resetting a session. Browser checks covered all steps
+at 1280×720, 390×844 and 320×568, plus keyboard navigation and exit cleanup.

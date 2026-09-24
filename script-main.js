@@ -397,11 +397,6 @@ document.addEventListener('letsfocus:ready', function() {
     if (selectbarExpanded && !selectbarPanel.contains(e.target)) { selectbarPanel.classList.remove('expanded'); selectbarOverlay.classList.remove('visible'); selectbarOverlay.classList.add('hidden'); selectbarExpanded = false; }
   });
 
-  // ---- Help button → Tour ----
-  document.getElementById('helpBtn')?.addEventListener('click', () => {
-    if (typeof TourModule !== 'undefined') TourModule.start(0);
-  });
-
   // ---- Goal Settings Gear (Export/Import) ----
   document.getElementById('goalSettingsBtn')?.addEventListener('click', (e) => {
     e.stopPropagation();
