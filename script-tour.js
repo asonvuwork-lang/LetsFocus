@@ -126,7 +126,7 @@ const TourModule = (function () {
     },
 
     {
-      page: 'shop', target: '.roll-btn-row', fallback: '.roll-panel-header',
+      page: 'shop', target: '.roll-panel-title', fallback: '.roll-panel-header',
       title: '🎲 Mystery Brews', text: 'Choose a single roll or a bundle to discover collectible drinks.',
       bullets: ['Check the bean cost before rolling', 'Duplicate drinks return some beans', 'Daily specials offer a direct purchase instead'], position: 'top',
     },

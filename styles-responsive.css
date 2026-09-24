@@ -1,0 +1,134 @@
+/* Shared responsive layout. Loaded after component styles so screen-size rules
+   do not get overwritten by later desktop restyles. */
+html { scrollbar-gutter: stable; }
+body { min-height:100svh; overflow-y:auto; }
+#mainPage { width:100%; max-width:1600px; margin-inline:auto; min-width:0; }
+#tab-goals .container { max-width:1440px; margin-inline:auto; width:100%; }
+#goalPanel { min-width:0; max-height:none; }
+.goal-text, .focus-goal-title, .cat-row-name { min-width:0; overflow-wrap:anywhere; }
+.goal-input-wrap, .controls-center { min-width:0; }
+.goal-input-wrap #newGoalInput { min-width:0; width:100%; }
+.stats-page, .categories-page, .achievements-page, .deadlines-page {
+  width:calc(100% - 32px)!important; margin:16px auto;
+  padding:clamp(16px,3vw,40px)!important;
+}
+#tab-stats.active, #tab-achievements.active, #tab-collection.active, #tab-deadlines.active {
+  max-height:none; overflow:visible;
+}
+.ach-tab-grid, .achievements-list { grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))!important; max-height:none!important; overflow:visible; }
+.cat-list { grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))!important; }
+.col-page { width:100%; }
+.tab-nav { max-width:100%; }
+
+/* Timer columns grow with their content: the drink must never collapse. */
+.timer-page { min-height:100svh; overflow:clip; }
+.timer-layout {
+  display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);
+  height:auto; min-height:100svh; width:100%; max-width:1320px;
+  margin-inline:auto; padding:100px 24px 32px; gap:24px; overflow:visible;
+}
+.timer-left-col, .timer-right-col { width:100%; min-width:0; max-width:none; height:auto; overflow:visible; gap:20px; }
+.timer-left-col { container-type:inline-size; }
+.timer-right-col > .goal-area-box, .timer-right-col > .drink-progress-box { flex:0 0 auto!important; min-height:min-content; }
+.focus-session-box { flex:none; padding:24px; gap:12px; }
+.timer-display-large { font-size:clamp(2rem,9cqw,5rem); gap:clamp(2px,1cqw,8px); letter-spacing:0; max-width:100%; font-variant-numeric:tabular-nums; }
+.timer-right-col > .goal-area-box:first-child .noise-toggle-grid { max-height:none; overflow:visible; }
+.timer-right-col .noise-toggle-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); }
+.timer-right-col .noise-item { min-width:0; }
+.drink-content-row { min-width:0; }
+.drink-content-row .drink-scene { min-width:0; }
+.drink-scene svg { max-width:100%; height:auto; }
+.timer-page .hanging-sign-container, .shop-page-full .hanging-sign-container { position:absolute; top:20px; left:24px; }
+.timer-popout-btn { position:absolute; top:24px; right:24px; }
+
+/* Dialogs fit the available screen, including short landscape viewports. */
+.timer-confirm-overlay { padding:16px; }
+.timer-confirm-content { width:min(760px,100%); max-height:calc(100dvh - 32px); overflow-y:auto; padding:clamp(20px,4vw,40px); border-radius:24px; }
+.timer-confirm-controls { gap:12px; }
+.timer-confirm-btn { flex:1; min-width:0; padding:14px 18px; font-size:1rem; letter-spacing:.5px; border-radius:14px; }
+.timer-config-desktop, .timer-config-touch { gap:8px; }
+.time-section, .scroll-wheel-wrap { min-width:0; flex:1; }
+.time-segment-box { min-width:0; width:100%; font-size:clamp(2.5rem,7vw,5rem); padding:12px; }
+.time-separator { font-size:clamp(2rem,6vw,4rem); margin:0; }
+.scroll-wheel { width:100%; max-width:110px; }
+.timer-config-title { font-size:clamp(1.2rem,3vw,1.8rem); letter-spacing:1px; margin-bottom:20px; }
+.pomodoro-toggle-row, .pomodoro-cycle-info { flex-wrap:wrap; }
+.templates-modal, .cat-editor-modal { max-width:100%; max-height:calc(100dvh - 32px); overflow-y:auto; }
+
+@media (max-width:1050px) {
+  .timer-layout { grid-template-columns:minmax(0,1fr); max-width:760px; }
+  .timer-left-col, .timer-right-col { flex:none; }
+  .timer-right-col .drink-progress-box { order:-1; }
+  .tab-nav { flex-wrap:wrap; gap:6px; padding-inline:16px; }
+  .tab-btn { flex:1 0 auto; }
+  #tab-goals .container { flex-direction:column; }
+  #goalPanel { width:100%; max-width:none; }
+  aside.right { width:100%!important; min-width:0!important; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:stretch; }
+  aside.right .widget { width:100%; min-width:0; margin:0; }
+  .wooden-sign-button-container { display:flex; justify-content:center; align-items:center; }
+}
+@media (max-width:600px) {
+  #tab-goals .container { padding:12px; gap:16px; }
+  #goalPanel { padding:16px; border-radius:16px; }
+  #goalPanel:hover, .focus-session-box:hover { transform:none; }
+  .controls-center { justify-content:flex-start; }
+  .goal-input-wrap { flex:1 0 calc(100% - 56px); width:auto; }
+  #newGoalInput { font-size:16px; }
+  .controls-center > button, .goal-settings-btn, .toolbar-deadline-btn { min-height:44px; }
+  .goals-container { padding:10px; }
+  .goal-item { padding:12px; gap:8px; }
+  .goal-text { font-size:1rem; }
+  .tab-nav { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); overflow:visible; padding:8px 12px; gap:4px; }
+  .tab-btn { min-width:0; padding:10px 3px; font-size:.72rem; white-space:normal; border-radius:10px; min-height:44px; }
+  aside.right { grid-template-columns:repeat(2,minmax(0,1fr)); padding:0; gap:12px; }
+  aside.right .wooden-sign-button-container { grid-column:1/-1; min-height:88px; }
+  .stats-page, .categories-page, .achievements-page, .deadlines-page { width:calc(100% - 24px)!important; padding:16px!important; margin:8px auto 24px; }
+  .stats-grid { gap:10px; }
+  .stats-header h2, .deadlines-header h2, .cat-tab-header h2 { font-size:1.65rem; }
+  .ach-tab-header { padding:16px; }
+  .ach-tab-grid { padding:12px; }
+  .ach-tab-filters { flex-wrap:wrap; }
+  .music-setup-page, .col-page { padding:16px; margin:0 auto; width:100%; }
+  .col-header { margin-bottom:24px; }
+  .col-panel-inner { padding:16px; gap:20px; }
+  .timer-layout { padding:94px 12px 24px; gap:16px; }
+  .timer-left-col, .timer-right-col { gap:16px; }
+  .focus-session-box { padding:18px 14px; }
+  .timer-controls-large { width:100%; gap:10px; }
+  .timer-btn-large { flex:1; min-width:0; padding:12px; font-size:1rem; }
+  .timer-title { font-size:1.4rem; }
+  .timer-right-col .noise-toggle-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .goal-area-box-header { gap:8px; flex-wrap:wrap; }
+  .drink-content-row { flex-wrap:wrap; justify-content:center; }
+  .drink-recipe-bill { flex:0 1 112px; }
+  .drink-content-row .drink-scene { flex:1 1 130px; }
+  .drink-swap-btn { min-width:44px; min-height:44px; }
+  .timer-page .hanging-sign-container, .shop-page-full .hanging-sign-container { top:16px; left:20px; }
+  .timer-page .hanging-sign .sign-wood, .shop-page-full .hanging-sign .sign-wood { padding:10px 16px; font-size:14px; }
+  .timer-popout-btn { top:22px; right:12px; min-height:40px; }
+  .shop-page-inner { padding:96px 16px 32px; }
+  .chalk-title { font-size:1.8rem; }
+  .roll-btn-row { flex-wrap:wrap; }
+  .roll-btn { min-width:0; flex:1 1 120px; }
+  .timer-confirm-overlay { padding:12px; }
+  .timer-confirm-content { padding:20px 14px; max-height:calc(100dvh - 24px); }
+  .timer-confirm-controls { gap:8px; }
+  .timer-confirm-btn { font-size:.9rem; padding:14px 8px; }
+  .time-label { font-size:.8rem; }
+  .timer-config-touch { gap:6px; }
+  .timer-input-hint { display:none; }
+  input[type=text], input[type=search], textarea, select { font-size:16px; }
+  .templates-modal { padding:20px 16px; }
+  .templates-grid { grid-template-columns:minmax(0,1fr); }
+}
+@media (hover:none) and (pointer:coarse) {
+  .tab-btn, .view-toggle-btn, .cat-row-btn, .noise-toggle-btn, .setup-noise-btn { min-height:44px; }
+  .kbd-shortcuts-hint { display:none; }
+}
+@supports (padding:max(0px)) {
+  .timer-layout, .shop-page-inner { padding-bottom:max(24px,env(safe-area-inset-bottom)); }
+}
+@media (max-width:600px) {
+  .templates-modal h2 { padding-right:28px; font-size:1.45rem; }
+  .templates-close { min-width:36px; min-height:36px; }
+}

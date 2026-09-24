@@ -15,6 +15,7 @@ const TimerModule = (function() {
   let configHours = 0, configMinutes = 25, configSeconds = 0;
   let selectedGoal = null;
   let popOutWindow = null;
+  let mainPageScrollY = 0;
 
   // Pomodoro state
   let pomodoroMode = false;
@@ -1408,11 +1409,13 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
   }
 
   function showTimerPage() {
+    mainPageScrollY = window.scrollY || 0;
     cancelPomoAutoStart();
     drinkSessionActive = true;
     clearTimerCompletionVisuals();
     document.getElementById('mainPage').classList.add('hidden');
     document.getElementById('timerPage').classList.remove('hidden');
+    window.scrollTo?.({top:0,behavior:'instant'});
     const saved = loadTimerData();
     timerHours = saved.hours ?? 0; timerMinutes = saved.minutes ?? 0; timerSeconds = saved.seconds ?? 0;
     totalSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
@@ -1449,6 +1452,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
     syncTimerVisualState();
     GoalsModule.renderGoals(); GoalsModule.updateMainProgress();
     if (typeof window.hideFocusModeBanner === 'function') window.hideFocusModeBanner();
+    window.scrollTo?.({top:mainPageScrollY,behavior:'instant'});
   }
 
   function toggleTimer() {

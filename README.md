@@ -211,3 +211,15 @@ The tour includes 19 steps, tracks scroll and resize, and restores the original 
 scroll position and keyboard focus when closed. Timer steps preview the existing
 interface without starting or resetting a session. Browser checks covered all steps
 at 1280×720, 390×844 and 320×568, plus keyboard navigation and exit cleanup.
+
+### Responsive layout
+
+`styles-responsive.css` loads after the component styles and defines the shared
+phone, tablet and desktop layout. Timer panels use content height so the drink and
+sound controls remain reachable; narrow screens stack them and put the drink first.
+Dialogs use the dynamic viewport height, and phone navigation wraps to expose all
+tabs. Returning from the timer restores the goal page's scroll position.
+
+Browser review covered the seven main tabs at 320, 390, 768, 1024 and 1440 CSS pixels,
+the timer at those widths, and narrow-screen shop, templates, category editor and
+timer setup. These are browser viewport checks, not physical iOS device tests.
