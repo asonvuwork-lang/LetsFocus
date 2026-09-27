@@ -668,6 +668,10 @@ const ShopModule = (function () {
   // =============================================
   const CODES_KEY = 'letsfocus_codes_redeemed';
   const SECRET_CODES = {
+    'MasterBrew': {
+      reward: 'master_collection',
+      message: '👑 All drinks unlocked, including Birthday Cake! All equipment is yours — every recipe can reach Mastercraft. Choose Auto or Mastercraft in your category settings.',
+    },
     'YouDeserveIt': {
       reward:  'drink',
       drinkId: 'birthday_cake',
@@ -700,10 +704,6 @@ const ShopModule = (function () {
       return false;
     }
     const entry = SECRET_CODES[matchKey];
-    // Mark code used
-    const redeemed = getRedeemedCodes();
-    redeemed.push(normalised);
-    saveRedeemedCodes(redeemed);
     // Unlock the drink reward
     if (entry.reward === 'drink') {
       const d = loadShop();
@@ -718,6 +718,21 @@ const ShopModule = (function () {
       }
       saveShop(d);
     }
+    if (entry.reward === 'master_collection') {
+      const d = loadShop();
+      const exclusiveDrinks = Object.values(SECRET_CODES)
+        .filter(reward => reward.reward === 'drink').map(reward => reward.drinkId);
+      d.owned_drinks = [...new Set([...(d.owned_drinks || []), ...DRINKS.map(drink => drink.id), ...exclusiveDrinks])];
+      d.owned_equipment = [...new Set([...(d.owned_equipment || []), ...EQUIPMENT.map(item => item.id)])];
+      d.code_drinks = [...new Set([...(d.code_drinks || []), ...exclusiveDrinks])];
+      saveShop(d);
+    }
+    // Record redemption only after the reward has been saved successfully.
+    const redeemed = getRedeemedCodes();
+    redeemed.push(normalised);
+    saveRedeemedCodes(redeemed);
+    if (typeof CollectionModule !== 'undefined') CollectionModule.renderCollectionTab();
+    if (typeof CategoriesModule !== 'undefined') CategoriesModule.renderTab();
     showCustomAlert(entry.message);
     return true;
   }
