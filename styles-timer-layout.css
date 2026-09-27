@@ -1,0 +1,28 @@
+.timer-layout-toolbar { max-width:1272px; margin:0 auto; padding:140px 24px 0; display:flex; flex-wrap:wrap; align-items:center; gap:10px; color:#f5e8d0; }
+.timer-layout-toolbar button { border:1px solid #bd9767; border-radius:10px; background:#f5eddf; color:#634829; padding:10px 16px; min-height:44px; cursor:pointer; }
+#layoutStatus { font-size:.85rem; }
+.customizable-layout { grid-template-columns:repeat(12,minmax(0,1fr)); padding-top:20px; min-height:0; align-items:start; }
+.layout-panel { grid-column:span 6; min-width:0; display:flex; flex-direction:column; position:relative; border-radius:18px; container-type:inline-size; }
+.layout-panel.panel-wide { grid-column:1/-1; }
+.layout-panel > .focus-session-box,.layout-panel > .goal-area-box,.layout-panel > .focus-goal-card-inline,.layout-panel > .progress-quote-box { width:100%; margin:0; flex:1 0 auto!important; }
+.layout-panel > .focus-goal-card-inline { padding:24px!important; background:#f5eddf!important; margin-top:0!important; }
+.layout-panel > .progress-quote-box { min-height:130px; }
+.layout-panel .noise-toggle-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(82px,1fr)); max-height:none; overflow:visible; }
+.layout-panel .noise-item { min-width:0; }
+.layout-panel .timer-display-large { font-size:clamp(2rem,9cqw,5rem); }
+.panel-layout-tools,.layout-resize { display:none; }
+.layout-editing .layout-panel { outline:1px dashed #d4a574; padding:8px 8px 32px; background:#3b281c; }
+.layout-editing .panel-layout-tools { display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.panel-layout-tools button,.layout-resize { background:#f5eddf; color:#634829; border:1px solid #c5a67c; border-radius:8px; min-height:36px; padding:6px 10px; cursor:pointer; }
+.panel-layout-actions { display:flex; gap:4px; }
+.layout-handle { cursor:grab!important; touch-action:none; }
+.layout-editing .layout-resize { display:block; position:absolute; bottom:2px; right:3px; min-height:28px; cursor:nwse-resize; touch-action:none; }
+.layout-panel.drop-target { outline:3px solid #edc995; }
+.layout-panel.layout-dragging { outline:2px solid #edc995; }
+.panel-layout-tools button:disabled { opacity:.4; }
+.timer-layout-toolbar button:focus-visible,.panel-layout-tools button:focus-visible,.layout-resize:focus-visible { outline:3px solid #c88b36; outline-offset:3px; }
+@media(max-width:1099px) { .customizable-layout { max-width:100%; } }
+@media(max-width:699px) { .layout-panel { grid-column:1/-1; } }
+@media(max-width:600px) { .timer-layout-toolbar { padding:130px 12px 0; } .customizable-layout { padding-top:16px; } .panel-layout-tools button { min-height:44px; } }
+
+@media(max-width:599px) { .layout-editing .layout-resize { display:none; } }

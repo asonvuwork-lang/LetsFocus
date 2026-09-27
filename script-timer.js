@@ -1373,6 +1373,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
       const timerPage = document.getElementById('timerPage');
       if (!timerPage || timerPage.classList.contains('hidden')) return;
       if (document.activeElement && document.activeElement.classList.contains('timer-seg-editing')) return;
+      if (e.defaultPrevented || [e.target, document.activeElement].some(el => el?.closest?.('button,input,textarea,select,[contenteditable="true"],.layout-editing'))) return;
       if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); toggleTimer(); }
       else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); resetTimer(); }
       else if (e.key === 'Escape') { e.preventDefault(); hideTimerPage(); }

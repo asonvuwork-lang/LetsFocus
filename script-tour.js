@@ -78,6 +78,7 @@ const TourModule = (function () {
         '⚙ Custom time or 🍅 Pomodoro (25 min work → 5 min break × 4)',
         '🥤 Drink type matches your goal\'s category — swap it anytime with ⟳',
         'Cream, garnishes and finishing touches appear as your session progresses',
+        'Edit layout — reorder and resize panels, with a separate saved layout for each screen size',
         '⤢ Pop Out — float the timer in its own window while you work',
       ],
       position: 'left',

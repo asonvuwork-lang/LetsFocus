@@ -223,3 +223,15 @@ tabs. Returning from the timer restores the goal page's scroll position.
 Browser review covered the seven main tabs at 320, 390, 768, 1024 and 1440 CSS pixels,
 the timer at those widths, and narrow-screen shop, templates, category editor and
 timer setup. These are browser viewport checks, not physical iOS device tests.
+
+### Custom timer layout
+On the timer page, choose **Edit layout** to reorder the timer, drink, current goal,
+ambient sounds, and quote. Drag a labelled handle or use its arrow buttons; desktop
+and tablet corner handles resize height and snap between half/full width. Arrow keys
+also work on move and resize handles. Phones offer Expand/Compact instead of corner
+resizing. Panels remain in normal grid flow and cannot cover one another.
+
+Layouts save in this browser separately for phone, tablet, and desktop. **Reset
+layout** restores the current screen-size layout. Browser storage restrictions may
+limit saving to the current visit. Run `node tests/timer-layout.cjs` for saved-layout
+validation checks.
