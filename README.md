@@ -253,3 +253,9 @@ validation checks.
 
 Experience checks: `node tests/session-recovery.cjs`, `node tests/session-completion.cjs`,
 `node tests/focus-mode.cjs`, `node tests/timer-layout.cjs`, and `node tests/shop-codes.cjs`.
+
+### Panel visibility and sizing
+Expand view sits next to Pop Out. The Panels menu saves visibility for each screen size;
+the timer remains available. Reset layout or a preset restores every panel. Cards pack
+into short grid tracks with small gutters, and the drink/recipe/timer text scale within
+their panel. Wide cards still require a full-width row.

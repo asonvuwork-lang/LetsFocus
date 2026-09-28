@@ -31,3 +31,38 @@
 .layout-preset-label { font-size:.9rem; font-weight:600; }
 .timer-layout-toolbar select:focus-visible { outline:3px solid #c88b36; outline-offset:3px; }
 @media(max-width:359px) { .timer-layout-toolbar { gap:8px; } .timer-layout-toolbar button { padding:10px 12px; } }
+
+/* Compact masonry tracks let short cards share the space beside taller cards. */
+.timer-layout-toolbar { max-width:1320px; padding:24px 24px 16px 175px; justify-content:flex-end; gap:8px; min-height:120px; }
+.timer-layout-toolbar #timerPopOutBtn { position:static; order:-1; }
+#expandTimerView { order:-2; }
+.customizable-layout { grid-auto-rows:1px; grid-auto-flow:row dense; gap:8px 12px; padding-top:8px; align-items:start; }
+.layout-panel { align-self:start; }
+.layout-panel[hidden] { display:none!important; }
+.expanded-timer-view .customizable-layout,.expanded-timer-view .timer-layout-toolbar { max-width:none; }
+.panel-visibility { position:relative; }
+.panel-visibility summary { cursor:pointer; border:1px solid #bd9767; border-radius:10px; background:#f5eddf; color:#634829; padding:12px 16px; min-height:44px; }
+.panel-visibility-options { position:absolute; z-index:50; right:0; top:calc(100% + 6px); width:235px; padding:10px; border-radius:12px; background:#f5eddf; box-shadow:0 8px 30px #24160855; color:#634829; }
+.panel-visibility-options label { display:flex; gap:10px; align-items:center; min-height:44px; cursor:pointer; }
+.panel-visibility-options input { width:18px; height:18px; }
+.layout-panel > .drink-progress-box { display:flex; flex-direction:column; flex:1 0 auto!important; margin:0!important; width:100%; }
+.layout-panel .focus-session-box:hover { transform:none; }
+.layout-panel .drink-content-row { flex:1; gap:clamp(10px,3cqw,40px); }
+.layout-panel .drink-content-row .drink-scene { align-items:center; }
+.layout-panel .drink-scene svg { width:clamp(150px,calc(48cqw + var(--panel-extra,0px)*.25),560px)!important; height:auto!important; max-width:100%!important; }
+.layout-panel .drink-recipe-bill { flex-basis:clamp(100px,24cqw,240px); font-size:clamp(.8rem,2cqw,1.15rem); }
+.layout-panel .drink-progress-title { font-size:clamp(.95rem,2.5cqw,1.6rem); }
+.layout-panel .focus-session-box { justify-content:center; }
+.layout-panel .timer-display-large { font-size:clamp(2rem,calc(10cqw + var(--panel-extra,0px)*.08),8rem); }
+.layout-panel .noise-toggle-grid { grid-template-columns:repeat(auto-fit,minmax(95px,1fr)); }
+.layout-panel .focus-goal-title { font-size:clamp(1.2rem,3cqw,2rem)!important; }
+@media(max-width:699px) {
+ .timer-layout-toolbar { padding:120px 12px 8px; min-height:0; justify-content:flex-start; }
+ .customizable-layout { padding-top:8px; }
+ .panel-visibility-options { left:0; right:auto; }
+}
+.layout-panel .bill-drink-name { font-size:clamp(.7rem,1.8cqw,1.15rem); }
+.layout-panel .bill-items { font-size:clamp(.68rem,1.65cqw,1.05rem); }
+.layout-panel .bill-section-label,.layout-panel .bill-tier { font-size:clamp(.6rem,1.4cqw,.9rem); }
+.layout-panel .drink-recipe-bill { padding:clamp(10px,2.5cqw,24px); }
+.layout-panel #progressQuoteText { font-size:clamp(1rem,3cqw,1.8rem); }
