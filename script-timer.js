@@ -12,6 +12,7 @@ const TimerModule = (function() {
   let focusRunStartedAtMs = null;
   let phaseEndsAtMs = 0;
   let sessionStatsRecorded = false;
+  let sessionBeansEarned = 0;
   let configHours = 0, configMinutes = 25, configSeconds = 0;
   let selectedGoal = null;
   let popOutWindow = null;
@@ -29,6 +30,86 @@ const TimerModule = (function() {
 
   // ---- Sync key for pop-out ----
   const SYNC_KEY = 'letsfocus_timer_sync';
+
+  // Recovery records only observed focus time: time spent with the page closed is not credited.
+  const RECOVERY_KEY = 'letsfocus_session_recovery_v1';
+  let recoveryReady = false;
+  function clearRecovery() { try { localStorage.removeItem(RECOVERY_KEY); } catch (_) {} }
+  function saveRecovery() {
+    if (!recoveryReady || !drinkSessionActive) return;
+    if (sessionStatsRecorded || remainingMs <= 0) { clearRecovery(); return; }
+    const now = Date.now();
+    const remaining = timerRunning ? Math.max(0, phaseEndsAtMs - now) : remainingMs;
+    if (!remaining) { clearRecovery(); return; }
+    try { localStorage.setItem(RECOVERY_KEY, JSON.stringify({
+      version: 1, savedAt: now, totalSeconds, remainingMs: remaining,
+      focusElapsedMs: getFocusedMs(now), selectedGoal, pomodoroMode, pomoCurrentCycle, pomoIsWork,
+      drinkKey: typeof DrinkModule !== 'undefined' ? DrinkModule.getCurrentDrinkInfo?.()?.drinkKey : null
+    })); } catch (_) {}
+  }
+  function readRecovery() {
+    try {
+      const s = JSON.parse(localStorage.getItem(RECOVERY_KEY));
+      if (!s || s.version !== 1 || !Number.isFinite(s.remainingMs) || s.remainingMs <= 0 ||
+          !Number.isFinite(s.totalSeconds) || s.totalSeconds <= 0 || s.totalSeconds > 86400 ||
+          s.remainingMs > s.totalSeconds * 1000 || !Number.isFinite(s.focusElapsedMs) ||
+          s.focusElapsedMs < 0 || s.focusElapsedMs > 86400000 || !Number.isFinite(s.savedAt) ||
+          Date.now() - s.savedAt > 7 * 86400000 || s.savedAt > Date.now() + 60000 ||
+          !Number.isInteger(s.pomoCurrentCycle) || s.pomoCurrentCycle < 1 || s.pomoCurrentCycle > 4) return null;
+      if (s.selectedGoal && (typeof s.selectedGoal.text !== 'string' || !Array.isArray(s.selectedGoal.subgoals) ||
+          s.selectedGoal.subgoals.some(sub => !sub || typeof sub.text !== 'string'))) return null;
+      return s;
+    } catch (_) { return null; }
+  }
+  function resolveSelectedGoalIndex(goals) {
+    if (!selectedGoal) return null;
+    const matches = goals.map((goal, index) => !goal.completed &&
+      (selectedGoal.id != null ? goal.id === selectedGoal.id : goal.text === selectedGoal.text) ? index : -1).filter(index => index >= 0);
+    return matches.length === 1 ? matches[0] : null;
+  }
+  function restoreRecovery(saved) {
+    selectedGoal = saved.selectedGoal;
+    // Resolve stable identity before using a stored index; legacy saves require a unique title.
+    const goals = typeof GoalsModule !== 'undefined' ? GoalsModule.getGoals() : [];
+    if (selectedGoal) selectedGoal.index = resolveSelectedGoalIndex(goals);
+    pomodoroMode = saved.pomodoroMode === true;
+    pomoCurrentCycle = saved.pomoCurrentCycle; pomoIsWork = saved.pomoIsWork !== false;
+    showTimerPage();
+    totalSeconds = saved.totalSeconds; remainingMs = saved.remainingMs;
+    remainingSeconds = Math.ceil(remainingMs / 1000);
+    timerHours = Math.floor(remainingSeconds / 3600); timerMinutes = Math.floor(remainingSeconds % 3600 / 60); timerSeconds = remainingSeconds % 60;
+    focusElapsedMs = saved.focusElapsedMs; focusRunStartedAtMs = null; phaseEndsAtMs = 0;
+    if (typeof DrinkModule !== 'undefined') DrinkModule.onSessionStart(selectedGoal?.category || null, saved.drinkKey);
+    updateTimerDisplay(); updateTimerProgress(); updatePomoIndicator(); syncTimerVisualState();
+    const button = document.getElementById('startPauseBtn');
+    if (button) { button.textContent = '▶ Resume'; button.classList.remove('pause'); button.focus(); }
+    saveRecovery();
+  }
+  function offerRecovery() {
+    const saved = readRecovery(); recoveryReady = true;
+    if (!saved) { clearRecovery(); return; }
+    const overlay = document.createElement('div');
+    overlay.id = 'sessionRecovery';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:12000;background:#28160ab8;display:grid;place-items:center;padding:20px';
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog'); dialog.setAttribute('aria-modal', 'true'); dialog.setAttribute('aria-labelledby', 'recoveryTitle');
+    dialog.style.cssText = 'background:#f5f1eb;color:#4a3429;border-radius:20px;padding:28px;max-width:420px;width:100%;box-sizing:border-box';
+    dialog.innerHTML = '<h2 id="recoveryTitle">Your focus session is saved</h2><p id="recoveryDetail"></p><p>Return to your saved progress, then press Resume when you’re ready. Time away hasn’t been counted.</p><div style="display:flex;gap:12px;flex-wrap:wrap"><button id="recoveryResume" style="padding:12px">Return to session</button><button id="recoveryDiscard" style="padding:12px">Discard session</button></div>';
+    dialog.querySelector('#recoveryDetail').textContent = `${saved.selectedGoal?.text || 'Focus session'} · ${Math.ceil(saved.remainingMs / 60000)} min remaining`;
+    overlay.appendChild(dialog); document.body.appendChild(overlay);
+    const previous = document.activeElement;
+    const background = [...document.body.children].filter(el => el !== overlay && !['SCRIPT','STYLE','LINK'].includes(el.tagName));
+    const oldInert = background.map(el => el.inert); background.forEach(el => { el.inert = true; });
+    const close = () => { background.forEach((el, i) => { el.inert = oldInert[i]; }); overlay.remove(); };
+    const resume = dialog.querySelector('#recoveryResume'), discard = dialog.querySelector('#recoveryDiscard');
+    resume.onclick = () => { close(); restoreRecovery(saved); };
+    discard.onclick = () => { close(); clearRecovery(); previous?.focus?.(); };
+    overlay.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === resume ? discard : resume).focus(); }
+    });
+    resume.focus();
+  }
 
   function isFocusPhase() {
     return !pomodoroMode || pomoIsWork;
@@ -119,6 +200,7 @@ const TimerModule = (function() {
   }
 
   function broadcastState(extra) {
+    saveRecovery();
     try {
       localStorage.setItem(SYNC_KEY, JSON.stringify({
         remaining: remainingSeconds,
@@ -199,7 +281,7 @@ const TimerModule = (function() {
       item.addEventListener('click', () => {
         document.querySelectorAll('.goal-picker-item').forEach(el => el.classList.remove('selected'));
         item.classList.add('selected');
-        selectedGoal = { index: i, text: goal.text, category: goal.category || null, subgoals: (goal.subgoals || []).map(s => ({ text: s.text || s, done: s.completed || false })) };
+        selectedGoal = { id: goal.id, index: i, text: goal.text, category: goal.category || null, subgoals: (goal.subgoals || []).map(s => ({ text: s.text || s, done: s.completed || false })) };
         if (nextBtn) nextBtn.disabled = false;
         const preview = document.getElementById('selectedGoalPreview');
         if (preview) preview.textContent = '🎯 ' + goal.text;
@@ -225,6 +307,7 @@ const TimerModule = (function() {
       item.innerHTML = `<label class="focus-subgoal-label"><input type="checkbox" class="focus-subgoal-check" ${sub.done ? 'checked' : ''}><span>${sub.text}</span></label>`;
       item.querySelector('input').addEventListener('change', (e) => {
         selectedGoal.subgoals[i].done = e.target.checked;
+        saveRecovery();
         item.classList.toggle('done', e.target.checked);
         checkAllSubgoalsDone();
       });
@@ -241,12 +324,16 @@ const TimerModule = (function() {
     const focusedSeconds = syncElapsedSeconds();
     if (sessionStatsRecorded || focusedSeconds <= 0) return;
     sessionStatsRecorded = true;
+    clearRecovery();
+    const beansBefore = typeof ShopModule !== 'undefined' ? ShopModule.getBeans() : 0;
     if (typeof StatsModule !== 'undefined') StatsModule.recordSession(focusedSeconds, selectedGoal?.text || '');
     if (typeof XPModule !== 'undefined') XPModule.onSessionComplete(focusedSeconds, isFullPomodoro, selectedGoal?.text || '');
     if (typeof DrinkShelfModule !== 'undefined') DrinkShelfModule.addCup(focusedSeconds);
+    sessionBeansEarned = typeof ShopModule !== 'undefined' ? Math.max(0, ShopModule.getBeans() - beansBefore) : 0;
   }
 
   function triggerGoalComplete() {
+    clearRecovery();
     cancelPomoAutoStart();
     drinkSessionActive = false;
     const now = Date.now();
@@ -263,11 +350,25 @@ const TimerModule = (function() {
     if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
     // Record stats if not already done (handles mid-session goal completion path)
     recordSessionOnce(false);
-    if (selectedGoal?.index != null) GoalsModule.completeGoalByIndex(selectedGoal.index, selectedGoal.subgoals?.map(s => s.done) || []);
+    if (selectedGoal && typeof GoalsModule !== 'undefined') {
+      const goals = GoalsModule.getGoals();
+      const index = resolveSelectedGoalIndex(goals);
+      if (index != null) {
+        const unchanged = (goals[index].subgoals || []).every((sub, i) => (sub.text || sub) === selectedGoal.subgoals?.[i]?.text);
+        GoalsModule.completeGoalByIndex(index, unchanged ? selectedGoal.subgoals?.map(s => s.done) || [] : []);
+      }
+    }
     playSoftChime(); showGoalCompleteModal();
   }
 
   function showGoalCompleteModal() {
+    if (typeof SessionCompletionModule !== 'undefined') {
+      SessionCompletionModule.show({focusedSeconds: syncElapsedSeconds(), beansEarned: sessionBeansEarned,
+        goal: selectedGoal?.text || '', goalComplete: true,
+        onFinish: hideTimerPage,
+        onContinue: () => { hideTimerPage(); document.getElementById('coffeeCup')?.click(); }});
+      return;
+    }
     const modal = document.createElement('div');
     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(40,22,10,0.72);z-index:10000;display:flex;align-items:center;justify-content:center;';
     const dialog = document.createElement('div');
@@ -282,12 +383,24 @@ const TimerModule = (function() {
   }
 
   function showTimerEndModal(skipXPAndStats = false) {
+    clearRecovery();
     drinkSessionActive = false;
     syncTimerVisualState();
     playSoftChime();
     // Record stats + XP once — guarded so Pomodoro path (which calls us with skipXPAndStats=true)
     // and mid-session completions never double-count.
     if (!skipXPAndStats) recordSessionOnce(false);
+    if (typeof SessionCompletionModule !== 'undefined') {
+      SessionCompletionModule.show({focusedSeconds: syncElapsedSeconds(), beansEarned: sessionBeansEarned,
+        goal: selectedGoal?.text || '', goalComplete: false, onFinish: hideTimerPage,
+        onContinue: () => {
+          const saved = loadTimerData();
+          configHours = saved.hours ?? 0; configMinutes = saved.minutes ?? 25; configSeconds = saved.seconds ?? 0;
+          syncSegmentsFromConfig(); syncWheelsFromConfig(); showConfigStep(2);
+          document.getElementById('timerConfirmOverlay')?.classList.remove('hidden');
+        }});
+      return;
+    }
     const quote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
     const modal = document.createElement('div');
     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(40,22,10,0.72);z-index:10000;display:flex;align-items:center;justify-content:center;';
@@ -1301,6 +1414,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
         const data = JSON.parse(e.newValue);
         if (data.ts <= lastCmdTs) return;
         lastCmdTs = data.ts;
+        if (!drinkSessionActive || document.getElementById('timerPage')?.classList.contains('hidden') || document.getElementById('sessionRecovery')) return;
         if (data.cmd === 'toggle') toggleTimer();
         else if (data.cmd === 'reset') resetTimer();
       } catch(err) {}
@@ -1347,7 +1461,10 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
       syncWheelsFromConfig();
       showConfigStep(2);
     });
-    document.getElementById('goalPickerCancelBtn')?.addEventListener('click', () => overlay.classList.add('hidden'));
+    document.getElementById('goalPickerCancelBtn')?.addEventListener('click', () => {
+      overlay.classList.add('hidden');
+      if (sessionStatsRecorded) hideTimerPage();
+    });
 
     document.getElementById('confirmStartBtn')?.addEventListener('click', () => {
       if (pomodoroMode) {
@@ -1362,7 +1479,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
       showTimerPage();
       updatePomoIndicator();
     });
-    document.getElementById('confirmBackBtn')?.addEventListener('click', () => showConfigStep(1));
+    document.getElementById('confirmBackBtn')?.addEventListener('click', () => { populateGoalPicker(); showConfigStep(1); });
 
     initInputMode();
   }
@@ -1422,7 +1539,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
     totalSeconds = timerHours * 3600 + timerMinutes * 60 + timerSeconds;
     remainingSeconds = totalSeconds;
     remainingMs = remainingSeconds * 1000;
-    resetFocusTracking(); lastQuoteMilestone = -1; sessionStatsRecorded = false;
+    resetFocusTracking(); lastQuoteMilestone = -1; sessionStatsRecorded = false; sessionBeansEarned = 0;
     const textEl = document.getElementById('progressQuoteText'), milestoneEl = document.getElementById('progressQuoteMilestone');
     if (textEl) textEl.textContent = '"The secret of getting ahead is getting started."';
     if (milestoneEl) milestoneEl.textContent = '— Mark Twain';
@@ -1438,6 +1555,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
   }
 
   function hideTimerPage() {
+    clearRecovery();
     cancelPomoAutoStart();
     drinkSessionActive = false;
     clearTimerCompletionVisuals();
@@ -1510,7 +1628,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
     drinkSessionActive = true;
     clearTimerCompletionVisuals();
     clearInterval(timerInterval); timerRunning = false; lastQuoteMilestone = -1;
-    resetFocusTracking(); sessionStatsRecorded = false;
+    resetFocusTracking(); sessionStatsRecorded = false; sessionBeansEarned = 0;
     const btn = document.getElementById('startPauseBtn');
     if (btn) { btn.textContent = '▶ Start'; btn.classList.remove('pause'); }
     if (pomodoroMode) {
@@ -1744,6 +1862,10 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
     initInlineTimerEdit();
     initKeyboardShortcuts();
     initSoundPresets();
+    window.addEventListener('pagehide', saveRecovery);
+    document.addEventListener('visibilitychange', saveRecovery);
+    // Bootstrap initializes drinks after the timer module.
+    setTimeout(offerRecovery, 0);
   }
 
   return { init, showTimerPage, hideTimerPage, playChime: playSoftChime };

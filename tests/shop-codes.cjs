@@ -7,17 +7,19 @@ const data = new Map([
   ['letsfocus_beans','95'],
   ['letsfocus_shop',JSON.stringify({owned_drinks:['espresso'],owned_equipment:['frother'],active_drink:'espresso',custom:'preserved'})]
 ]);
-let failSave=false;
-const ctx = {localStorage:{getItem:k=>data.get(k)??null,setItem:(k,v)=>{if(failSave&&k==='letsfocus_shop')throw Error('Storage full');data.set(k,v);}},showCustomAlert:()=>{}};
+let failSave=false, failMarker=false;
+const messages=[];
+const ctx = {localStorage:{getItem:k=>data.get(k)??null,setItem:(k,v)=>{if((failSave&&k==='letsfocus_shop')||(failMarker&&k==='letsfocus_codes_redeemed'))throw Error('Storage full');data.set(k,v);}},showCustomAlert:m=>messages.push(m)};
 vm.createContext(ctx);
-vm.runInContext(read('script-shop.js')+'\nthis.shop=ShopModule;',ctx);
+vm.runInContext(read('script-shop.js').replace('return { init, awardBeans', 'return { redeemCodeResult, init, awardBeans')+'\nthis.shop=ShopModule;',ctx);
 vm.runInContext(read('script-drink-recipes.js')+'\nthis.recipes=DRINK_RECIPES;',ctx);
 assert.equal(ctx.shop.redeemCode('wrong'),false);
 failSave=true;
-assert.throws(()=>ctx.shop.redeemCode('MasterBrew'));
+assert.equal(ctx.shop.redeemCode('MasterBrew'),false);
+assert.match(messages.at(-1), /could not save/);
 assert.equal(data.has('letsfocus_codes_redeemed'),false);
 failSave=false;
-assert.equal(ctx.shop.redeemCode('  mAsTeRbReW  '),true);
+assert.equal(ctx.shop.redeemCode('  mAsTeR \n bReW  '),true);
 const owned=ctx.shop.getOwned();
 assert.equal(owned.drinks.length,ctx.shop.DRINKS.length+1);
 assert.equal(owned.equipment.length,ctx.shop.EQUIPMENT.length);
@@ -38,3 +40,17 @@ assert.equal(data.get('letsfocus_shop'),saved);
 assert.equal(ctx.shop.redeemCode('YouDeserveIt'),true);
 assert.equal(ctx.shop.getOwned().drinks.length,owned.drinks.length);
 console.log('Passed: all drinks and equipment, Mastercraft requirements, case-insensitive redemption, duplicates, existing rewards, saved data and storage failure.');
+
+assert.equal(ctx.shop.redeemCodeResult(' ').status,'empty');
+assert.equal(ctx.shop.redeemCodeResult('unknown').status,'unknown');
+assert.equal(ctx.shop.redeemCodeResult('MasterBrew').status,'redeemed');
+const registry={old:{reward:'drink',drinkId:'espresso',expiresAt:'2020-01-01T00:00:00Z'}};
+assert.equal(ctx.shop.redeemCodeResult('old',registry,Date.parse('2021-01-01')).status,'expired');
+
+// The authoritative marker lives in the same write as rewards, even if legacy storage fails.
+failMarker=true;
+const extra={test:{reward:'drink',drinkId:'espresso',message:'Saved'}};
+assert.equal(ctx.shop.redeemCodeResult('test',extra).ok,true);
+assert.equal(ctx.shop.redeemCodeResult('test',extra).status,'redeemed');
+assert.equal(ctx.shop.getOwned().drinks.length,owned.drinks.length);
+console.log('Passed: empty, unknown, expired, already redeemed, whitespace, and atomic reward storage.');

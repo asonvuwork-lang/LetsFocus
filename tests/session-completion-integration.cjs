@@ -1,0 +1,12 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+let beans=80,stats=0,xp=0,cups=0,shown;
+const ctx=vm.createContext({Date,window:{},document:{getElementById:()=>null},localStorage:{removeItem(){}},ShopModule:{getBeans:()=>beans},StatsModule:{recordSession(){stats++}},XPModule:{onSessionComplete(seconds,full){xp++;beans+=full?45:25}},DrinkShelfModule:{addCup(){cups++}},SessionCompletionModule:{show(o){shown=o}}});
+let source=fs.readFileSync('script-timer.js','utf8');
+source=source.replace('return { init, showTimerPage',`return {audit:{recordSessionOnce,showTimerEndModal,set(){sessionStatsRecorded=false;focusElapsedMs=120000;focusRunStartedAtMs=null;sessionBeansEarned=0;selectedGoal={text:'Keep reading'};}}, init, showTimerPage`);
+vm.runInContext(source,ctx);const a=vm.runInContext('TimerModule.audit',ctx);
+a.set();a.showTimerEndModal();a.showTimerEndModal();
+assert.equal(stats,1);assert.equal(xp,1);assert.equal(cups,1);assert.equal(beans,105);
+assert.equal(shown.beansEarned,25);assert.equal(shown.focusedSeconds,120);assert.equal(shown.goalComplete,false);
+a.set();a.recordSessionOnce(true);a.showTimerEndModal(true);a.showTimerEndModal(true);
+assert.equal(stats,2);assert.equal(xp,2);assert.equal(cups,2);assert.equal(beans,150);assert.equal(shown.beansEarned,45);
+console.log('Completion accounting passed: repeated custom and Pomodoro presentation never repeats rewards, stats or cups.');

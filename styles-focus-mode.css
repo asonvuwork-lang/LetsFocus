@@ -1,0 +1,19 @@
+/* Focus mode changes presentation only; layout preferences remain intact. */
+#focusModeNotice { font-size:.85rem; line-height:1.5; }
+#focusModeNotice:empty { display:none; }
+.calm-focus-mode .timer-layout-toolbar > :not(#focusModeToggle):not(#focusModeNotice),
+.calm-focus-mode #layout-goal,
+.calm-focus-mode #layout-sounds,
+.calm-focus-mode #layout-quote,
+.calm-focus-mode .kbd-shortcuts-hint,
+.calm-focus-mode .session-stats { display:none!important; }
+.calm-focus-mode .customizable-layout { grid-template-columns:minmax(0,1fr) minmax(0,1fr); max-width:1100px; }
+.calm-focus-mode #layout-timer { order:0; }
+.calm-focus-mode #layout-drink { order:1; }
+.calm-focus-mode .layout-panel { grid-column:auto!important; min-height:0!important; }
+#focusModeToggle[aria-pressed="true"] { background:#eed9b7; border-color:#e4ba7f; font-weight:700; }
+@media(max-width:799px) {
+  .calm-focus-mode .customizable-layout { grid-template-columns:minmax(0,1fr); }
+  .calm-focus-mode .timer-layout-toolbar { align-items:flex-start; }
+  .calm-focus-mode #focusModeNotice { flex-basis:100%; }
+}

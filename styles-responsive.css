@@ -132,3 +132,18 @@ body { min-height:100svh; overflow-y:auto; }
   .templates-modal h2 { padding-right:28px; font-size:1.45rem; }
   .templates-close { min-width:36px; min-height:36px; }
 }
+
+/* Keep session/redeem dialogs reachable on short landscape screens and keyboards. */
+#codeRedeemModal > div,
+#sessionRecovery > div {
+  max-height:calc(100dvh - 24px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+}
+@media(max-height:450px) {
+  #codeRedeemModal > div,
+  #sessionRecovery > div { padding:16px!important; }
+}
+@media(pointer:coarse) {
+  .timer-page .panel-layout-tools button,.timer-page .layout-editing .layout-resize { min-width:44px; min-height:44px; }
+}

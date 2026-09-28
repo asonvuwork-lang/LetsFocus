@@ -12,6 +12,12 @@ const context = vm.createContext({console, Date, Math, setTimeout:()=>0, clearTi
 vm.runInContext(fs.readFileSync(path.join(root,'script-drink-recipes.js'),'utf8'),context);
 vm.runInContext(fs.readFileSync(path.join(root,'script-drink.js'),'utf8').replace('return { init, onSessionStart', 'return { audit: {setDrink, DRINKS, DRINK_KEY_TO_RECIPE, SHOP_ID_TO_VISUAL, EQUIP_ID_MAP, getCumulativeSvgContent, buildSyrupMarbling, seededRng, getProgress: () => ({visualPct, currentPct})}, init, onSessionStart'),context);
 const api=vm.runInContext('DrinkModule',context), audit=api.audit;
+// Recovery must restore its original drink even if the shop selection changed.
+context.ShopModule.getOwned=()=>({equipment:[],activeDrink:'espresso'});
+api.onSessionStart(null,'boba');
+assert.equal(api.getCurrentDrinkInfo().drinkKey,'boba');
+api.onSessionStart(null);
+assert.equal(api.getCurrentDrinkInfo().drinkKey,'espresso');
 let count=0; const gallery=[];
 function check(svg,label){
  assert(!/NaN|undefined|Infinity/.test(svg), label+' invalid numbers');

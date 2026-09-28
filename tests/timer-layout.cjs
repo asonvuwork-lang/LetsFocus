@@ -18,3 +18,19 @@ assert.equal(custom.order[0],'quote');
 assert.deepEqual(custom.sizes.timer,{wide:true,height:620});
 assert.deepEqual(normalize(custom),custom);
 console.log('Timer layout: valid layouts preserved; invalid/duplicate/missing panels and sizes safely normalized.');
+
+vm.runInContext('globalThis.preset=TimerLayoutModule.preset;globalThis.matchingPreset=TimerLayoutModule.matchingPreset;',context);
+for(const screen of ['phone','tablet','desktop']) {
+ for(const name of ['balanced','spotlight','minimal']) {
+  const layout=context.preset(name,screen);
+  assert.equal(new Set(layout.order).size,5,'Every preset retains all five panels');
+  assert.equal(context.matchingPreset(layout,screen),name);
+  assert.ok(Object.values(layout.sizes).every(size=>size.height>=0&&size.height<=800));
+ }
+ assert.equal(context.preset('spotlight',screen).order[0],'drink');
+ assert.equal(context.preset('minimal',screen).sizes.timer.wide,true);
+}
+const first=context.preset('spotlight','phone');first.sizes.drink.height=700;
+assert.equal(context.preset('spotlight','phone').sizes.drink.height,480,'Presets are independently editable');
+assert.equal(context.matchingPreset(first,'phone'),'custom');
+console.log('Timer presets: all panels retained, device sizes valid, custom layouts detected, preset state isolated.');

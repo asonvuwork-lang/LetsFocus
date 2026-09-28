@@ -235,3 +235,21 @@ Layouts save in this browser separately for phone, tablet, and desktop. **Reset
 layout** restores the current screen-size layout. Browser storage restrictions may
 limit saving to the current visit. Run `node tests/timer-layout.cjs` for saved-layout
 validation checks.
+
+
+### Focus experience
+- Interrupted sessions offer **Return to session** or **Discard session** on reload.
+  Returning restores the goal, drink and timer paused; closed-page time is not credited.
+  Returning to Goals intentionally ends recovery. Saves are local to this browser.
+- **Layout** offers Balanced, Drink spotlight and Minimal focus presets per screen size.
+  Manual edits show Custom. All five panels remain available in the regular view.
+- **Focus mode** temporarily shows just the timer and drink. Exit focus mode restores
+  panels and controls without changing the saved arrangement or stopping ambient sounds.
+- Completion shows focused time and beans awarded, with an optional five-minute break,
+  Continue and Finish. A break earns no focus rewards; Finish does not mark an unfinished goal complete.
+- Redeem codes ignore case and whitespace. Errors remain inline for correction, including
+  unknown, already redeemed, expired (when configured) and storage errors. Existing codes
+  have no newly added expiration. Rewards and redemption markers save together.
+
+Experience checks: `node tests/session-recovery.cjs`, `node tests/session-completion.cjs`,
+`node tests/focus-mode.cjs`, `node tests/timer-layout.cjs`, and `node tests/shop-codes.cjs`.

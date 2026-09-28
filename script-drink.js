@@ -2528,11 +2528,11 @@ const DrinkModule = (function () {
   }
 
   // Called by TimerModule when session starts with a goal
-  function onSessionStart(goalCategoryName) {
+  function onSessionStart(goalCategoryName, drinkKeyOverride) {
     _currentCategoryName = goalCategoryName || null;  // store for category pill in setDrink
     // If user has an active shop drink set, use that for the recipe
-    let drinkKey = null;
-    if (typeof ShopModule !== 'undefined') {
+    let drinkKey = drinkKeyOverride || null;
+    if (!drinkKey && typeof ShopModule !== 'undefined') {
       const owned = ShopModule.getOwned();
       if (owned.activeDrink) drinkKey = owned.activeDrink;
     }

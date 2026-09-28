@@ -1,0 +1,15 @@
+.session-completion{margin:auto;box-sizing:border-box;width:min(480px,calc(100% - 24px));max-height:calc(100dvh - 32px);overflow:auto;border:1px solid #cbb596;border-radius:26px;padding:24px;color:#4a3429;background:#faf5eb;text-align:center;box-shadow:0 24px 80px #24160855;font-family:'Source Sans Pro',sans-serif;animation:completion-arrive .35s ease-out}
+.session-completion::backdrop{background:#241608aa;backdrop-filter:blur(5px)}
+.completion-drink{height:190px;display:flex;align-items:center;justify-content:center;font-size:80px;background:radial-gradient(ellipse,#e9d6b988,transparent 68%);overflow:hidden}
+.completion-drink .drink-scene{width:180px;height:190px;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.completion-drink svg{max-width:180px!important;max-height:185px!important;height:185px!important;filter:drop-shadow(0 9px 8px #60432622)}
+.completion-eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:.72rem;margin:12px 0 5px;color:#806144}
+.session-completion h2{font-family:'Playfair Display',serif;font-size:clamp(1.45rem,5vw,1.9rem);margin:0 0 8px}
+.completion-goal{overflow-wrap:anywhere;margin:0 0 20px;color:#795e49}
+.completion-stats{display:flex;justify-content:center;gap:32px;padding:14px;border-top:1px solid #d8c8b3;border-bottom:1px solid #d8c8b3}
+.completion-stats strong,.completion-stats span{display:block}.completion-stats strong{font-size:1.4rem}.completion-stats span{font-size:.8rem;color:#795e49}
+.completion-message{font-size:.95rem;line-height:1.5;min-height:2.85em}
+.completion-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.completion-actions button{font:inherit;font-weight:600;flex:1 1 110px;min-height:46px;border:1px solid #bca183;border-radius:12px;padding:10px;color:#4a3429;background:#fffaf1;cursor:pointer}.completion-actions [data-action="continue"]{background:#765638;color:#fff;border-color:#765638}.completion-actions button:focus-visible{outline:3px solid #99672f;outline-offset:3px}.completion-actions button:disabled{opacity:.7;cursor:default}
+@keyframes completion-arrive{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.session-completion{animation:none}.completion-drink *{animation:none!important;transition:none!important}}
+@media(max-height:650px){.completion-drink{height:110px}.completion-drink .drink-scene{transform:scale(.6)}.session-completion{padding:18px}.completion-goal{margin-bottom:12px}}

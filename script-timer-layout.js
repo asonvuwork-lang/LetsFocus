@@ -12,6 +12,28 @@ const TimerLayoutModule = (() => {
     IDS.forEach(id=>{const s=value?.sizes?.[id];sizes[id]={wide:s?.wide===true,height:Number.isFinite(s?.height)?Math.max(0,Math.min(800,s.height)):0};});
     return {order,sizes};
   }
+  // Presets always return fresh state, so customizing one cannot mutate another.
+  function preset(name,screen='desktop') {
+    const value=normalize();
+    if(name==='spotlight') {
+      value.order=['drink','timer','goal','sounds','quote'];
+      value.sizes.drink={wide:true,height:screen==='phone'?480:0};
+    } else if(name==='minimal') {
+      value.order=['timer','goal','drink','sounds','quote'];
+      value.sizes.timer.wide=true;
+    }
+    return value;
+  }
+  function matchingPreset(value,screen) {
+    return ['balanced','spotlight','minimal'].find(name=>JSON.stringify(normalize(value))===JSON.stringify(preset(name,screen)))||'custom';
+  }
+  function finishEditing(){
+    endGesture({type:'pointercancel'});
+    editing=false;
+    grid?.classList.remove('layout-editing');
+    const button=document.getElementById('editTimerLayout');
+    if(button){button.textContent='Edit layout';button.setAttribute('aria-pressed','false');document.getElementById('resetTimerLayout').hidden=true;}
+  }
   function state(){return layouts[profile] ||= normalize();}
   function save(){try{localStorage.setItem(KEY,JSON.stringify(layouts));status('Layout saved.');}catch{status('Layout updated for this visit. Browser storage is unavailable.');}}
   function status(text){document.getElementById('layoutStatus').textContent=text;}
@@ -27,6 +49,7 @@ const TimerLayoutModule = (() => {
       panel.querySelector('[data-move="-1"]').disabled=s.order.indexOf(id)===0;
       panel.querySelector('[data-move="1"]').disabled=s.order.indexOf(id)===IDS.length-1;
     });
+    const picker=document.getElementById('timerLayoutPreset');if(picker)picker.value=matchingPreset(s,profile);
     if(focused?.isConnected)focused.focus({preventScroll:true});
   }
   function move(id,delta){const s=state(),from=s.order.indexOf(id),to=Math.max(0,Math.min(IDS.length-1,from+delta));s.order.splice(from,1);s.order.splice(to,0,id);apply();save();document.getElementById(`layout-${id}`).querySelector('.layout-handle').focus({preventScroll:true});}
@@ -74,8 +97,14 @@ const TimerLayoutModule = (() => {
       resize.onkeydown=e=>{if(!e.key.startsWith('Arrow'))return;e.preventDefault();e.stopPropagation();const size=state().sizes[id];if(e.key==='ArrowLeft'||e.key==='ArrowRight')size.wide=e.key==='ArrowRight';else size.height=Math.max(0,Math.min(800,(size.height||panel.offsetHeight)+(e.key==='ArrowDown'?40:-40)));apply();save();};
     });
     grid.querySelectorAll(':scope > .timer-left-col,:scope > .timer-right-col').forEach(el=>el.remove());grid.classList.add('customizable-layout');
-    const bar=document.createElement('div');bar.className='timer-layout-toolbar';bar.innerHTML='<button id="editTimerLayout" aria-pressed="false">Edit layout</button><button id="resetTimerLayout" hidden>Reset layout</button><span id="layoutStatus" role="status"></span>';
+    const bar=document.createElement('div');bar.className='timer-layout-toolbar';bar.innerHTML='<label class="layout-preset-label" for="timerLayoutPreset">Layout</label><select id="timerLayoutPreset"><option value="balanced">Balanced</option><option value="spotlight">Drink spotlight</option><option value="minimal">Minimal focus</option><option value="custom" disabled>Custom</option></select><button id="editTimerLayout" aria-pressed="false">Edit layout</button><button id="resetTimerLayout" hidden>Reset layout</button><span id="layoutStatus" role="status"></span>';
     grid.before(bar);
+    bar.querySelector('#timerLayoutPreset').onchange=e=>{
+      if(!['balanced','spotlight','minimal'].includes(e.target.value))return;
+      const name=e.target.value;
+      endGesture({type:'pointercancel'});
+      layouts[profile]=preset(name,profile);apply();save();
+    };
     bar.querySelector('#editTimerLayout').onclick=()=>{editing=!editing;grid.classList.toggle('layout-editing',editing);bar.querySelector('#editTimerLayout').textContent=editing?'Done editing':'Edit layout';bar.querySelector('#editTimerLayout').setAttribute('aria-pressed',String(editing));bar.querySelector('#resetTimerLayout').hidden=!editing;status(editing?(profile==='phone'?'Drag or use arrows to reorder. Choose Expand for more room.':'Drag a handle or use the arrows. Resize with the corner handle.'):'');};
     bar.querySelector('#resetTimerLayout').onclick=()=>{layouts[profile]=normalize();apply();save();status('Default layout restored for this screen size.');};
     grid.addEventListener('pointermove',e=>{if(!gesture)return;gesture.pointerX=e.clientX;gesture.pointerY=e.clientY;gesture.moved ||= Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)>5;if(!gesture.moved)return;if(gesture.kind==='resize'){const g=gesture,size=state().sizes[g.id],panel=document.getElementById(`layout-${g.id}`);size.height=Math.round(Math.max(0,Math.min(800,g.height+e.clientY-g.y)));if(profile!=='phone')size.wide=g.width+e.clientX-g.x>grid.clientWidth*.7;panel.style.minHeight=`${size.height}px`;panel.classList.toggle('panel-wide',size.wide);return;}const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.layout-panel');grid.querySelectorAll('.drop-target').forEach(el=>el.classList.remove('drop-target'));gesture.target=target?.dataset.panel;if(target&&target.dataset.panel!==gesture.id)target.classList.add('drop-target');});
@@ -86,5 +115,5 @@ const TimerLayoutModule = (() => {
     apply();
   }
   document.addEventListener('DOMContentLoaded',init);
-  return {normalize};
+  return {normalize,preset,matchingPreset,finishEditing};
 })();

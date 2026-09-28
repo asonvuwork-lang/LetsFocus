@@ -679,34 +679,29 @@ const ShopModule = (function () {
     },
   };
 
+  const normalizeCode = code => String(code ?? '').replace(/\s+/g, '').toLowerCase();
   function getRedeemedCodes() {
-    try { return JSON.parse(localStorage.getItem(CODES_KEY) || '[]'); } catch(e) { return []; }
-  }
-  function saveRedeemedCodes(arr) {
-    try { localStorage.setItem(CODES_KEY, JSON.stringify(arr)); } catch(e) {}
-  }
-
-  function isCodeRedeemed(code) {
-    return getRedeemedCodes().includes(code.trim().toLowerCase());
+    let legacy = [];
+    try { legacy = JSON.parse(localStorage.getItem(CODES_KEY) || '[]'); } catch(e) {}
+    const saved = loadShop().redeemed_codes;
+    return [...new Set([...(Array.isArray(legacy) ? legacy : []), ...(Array.isArray(saved) ? saved : [])].map(normalizeCode))];
   }
 
-  function redeemCode(code) {
-    const trimmed = code.trim();
-    // Case-insensitive lookup
-    const matchKey = Object.keys(SECRET_CODES).find(k => k.toLowerCase() === trimmed.toLowerCase());
-    if (!matchKey) {
-      showCustomAlert('❌ Invalid code. Check the spelling and try again.');
-      return false;
+  function redeemCodeResult(code, registry = SECRET_CODES, now = Date.now()) {
+    const normalised = normalizeCode(code);
+    if (!normalised) return { ok: false, status: 'empty', message: 'Enter a code first.' };
+    const matchKey = Object.keys(registry).find(k => normalizeCode(k) === normalised);
+    if (!matchKey) return { ok: false, status: 'unknown', message: 'Code not recognised. Check the spelling and try again.' };
+    if (getRedeemedCodes().includes(normalised)) {
+      return { ok: false, status: 'redeemed', message: 'You already redeemed this code. Your rewards are in your Collection.' };
     }
-    const normalised = trimmed.toLowerCase();
-    if (isCodeRedeemed(normalised)) {
-      showCustomAlert('☕ Already redeemed! Check your Collection.');
-      return false;
+    const entry = registry[matchKey];
+    if (entry.expiresAt && Date.parse(entry.expiresAt) <= now) {
+      return { ok: false, status: 'expired', message: 'This code has expired. Try another code.' };
     }
-    const entry = SECRET_CODES[matchKey];
+    const d = loadShop();
     // Unlock the drink reward
     if (entry.reward === 'drink') {
-      const d = loadShop();
       if (!d.owned_drinks) d.owned_drinks = [];
       if (!d.owned_drinks.includes(entry.drinkId)) {
         d.owned_drinks.push(entry.drinkId);
@@ -716,25 +711,28 @@ const ShopModule = (function () {
       if (!d.code_drinks.includes(entry.drinkId)) {
         d.code_drinks.push(entry.drinkId);
       }
-      saveShop(d);
     }
     if (entry.reward === 'master_collection') {
-      const d = loadShop();
       const exclusiveDrinks = Object.values(SECRET_CODES)
         .filter(reward => reward.reward === 'drink').map(reward => reward.drinkId);
       d.owned_drinks = [...new Set([...(d.owned_drinks || []), ...DRINKS.map(drink => drink.id), ...exclusiveDrinks])];
       d.owned_equipment = [...new Set([...(d.owned_equipment || []), ...EQUIPMENT.map(item => item.id)])];
       d.code_drinks = [...new Set([...(d.code_drinks || []), ...exclusiveDrinks])];
-      saveShop(d);
     }
-    // Record redemption only after the reward has been saved successfully.
-    const redeemed = getRedeemedCodes();
-    redeemed.push(normalised);
-    saveRedeemedCodes(redeemed);
+    // Save the reward and its redemption marker together; retries cannot duplicate rewards.
+    d.redeemed_codes = [...new Set([...getRedeemedCodes(), normalised])];
+    try { saveShop(d); }
+    catch(e) { return { ok: false, status: 'storage', message: 'Your browser could not save this reward. Free some browser storage or allow site storage, then try again.' }; }
+    try { localStorage.setItem(CODES_KEY, JSON.stringify(d.redeemed_codes)); } catch(e) {}
     if (typeof CollectionModule !== 'undefined') CollectionModule.renderCollectionTab();
     if (typeof CategoriesModule !== 'undefined') CategoriesModule.renderTab();
-    showCustomAlert(entry.message);
-    return true;
+    return { ok: true, status: 'success', message: entry.message };
+  }
+
+  function redeemCode(code) {
+    const result = redeemCodeResult(code);
+    showCustomAlert(result.message);
+    return result.ok;
   }
 
   function getCodeDrinks() {
@@ -748,6 +746,11 @@ const ShopModule = (function () {
 
     const modal = document.createElement('div');
     modal.id = 'codeRedeemModal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'codeRedeemTitle');
+    const opener = document.activeElement;
+    const close = () => { modal.remove(); opener?.focus(); };
     modal.style.cssText = `
       position:fixed;inset:0;background:rgba(40,22,10,0.72);
       z-index:20000;display:flex;align-items:center;justify-content:center;
@@ -763,11 +766,11 @@ const ShopModule = (function () {
         font-family:'Playfair Display',serif;
       ">
         <div style="font-size:2.8rem;margin-bottom:0.6rem;">🎟️</div>
-        <h2 style="color:#4a3429;font-size:1.5rem;margin-bottom:0.4rem;">Redeem a Code</h2>
+        <h2 id="codeRedeemTitle" style="color:#4a3429;font-size:1.5rem;margin-bottom:0.4rem;">Redeem a Code</h2>
         <p style="font-family:'Source Sans Pro',sans-serif;font-size:0.85rem;color:#8b6f47;margin-bottom:1.4rem;">
           Enter a special code to unlock exclusive drinks.
         </p>
-        <input id="codeRedeemInput" type="text" placeholder="Enter your code…"
+        <input id="codeRedeemInput" type="text" aria-label="Redeem code" aria-describedby="codeRedeemFeedback" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Enter your code…"
           style="
             width:100%;padding:12px 16px;
             border:2px solid rgba(139,111,71,0.25);border-radius:12px;
@@ -776,6 +779,7 @@ const ShopModule = (function () {
             margin-bottom:1rem;box-sizing:border-box;
             transition:border-color 0.2s ease;outline:none;
           "/>
+        <p id="codeRedeemFeedback" role="status" aria-live="polite" style="font-family:Arial,sans-serif;font-size:0.9rem;line-height:1.5;color:#74452c;min-height:1.5em;margin:0 0 1rem;"></p>
         <div style="display:flex;gap:10px;justify-content:center;">
           <button id="codeRedeemSubmit" style="
             background:linear-gradient(135deg,#8b6f47,#6b5139);
@@ -799,19 +803,39 @@ const ShopModule = (function () {
     input.addEventListener('focus', () => input.style.borderColor = 'rgba(139,111,71,0.6)');
     input.addEventListener('blur',  () => input.style.borderColor = 'rgba(139,111,71,0.25)');
 
+    const submitButton = modal.querySelector('#codeRedeemSubmit');
+    const cancelButton = modal.querySelector('#codeRedeemCancel');
+    const feedback = modal.querySelector('#codeRedeemFeedback');
     const submit = () => {
-      const val = input.value.trim();
-      if (!val) { input.style.borderColor = '#dc2626'; return; }
-      modal.remove();
-      redeemCode(val);
+      const result = redeemCodeResult(input.value);
+      feedback.textContent = result.message;
+      input.setAttribute('aria-invalid', String(!result.ok));
+      input.style.borderColor = result.ok ? '#567044' : '#b64c32';
+      if (result.ok) {
+        input.disabled = true;
+        submitButton.hidden = true;
+        cancelButton.textContent = 'Done';
+        cancelButton.focus();
+      } else input.focus();
     };
-
-    modal.querySelector('#codeRedeemSubmit').addEventListener('click', submit);
-    modal.querySelector('#codeRedeemCancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') submit();
-      if (e.key === 'Escape') modal.remove();
+    input.addEventListener('input', () => {
+      input.removeAttribute('aria-invalid');
+      input.style.borderColor = 'rgba(139,111,71,0.6)';
+      feedback.textContent = '';
+    });
+    submitButton.addEventListener('click', submit);
+    cancelButton.addEventListener('click', close);
+    modal.addEventListener('click', e => { if (e.target === modal) close(); });
+    modal.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (e.key === 'Enter' && e.target === input) { e.preventDefault(); submit(); }
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
+      if (e.key === 'Tab') {
+        const controls = [input, submitButton, cancelButton].filter(el => !el.disabled && !el.hidden);
+        const first = controls[0], last = controls[controls.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
     });
   }
 

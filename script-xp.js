@@ -352,5 +352,5 @@ const XPModule = (function () {
     });
   }
 
-  return {init,onSessionComplete,onGoalComplete,onOverdueDetected,checkAchievements,getOverdueStreak,refreshUI,renderXPLog,renderAchievements,renderAchievementTab,renderXPBar,renderBadgeOnBoard,getRank,load};
+  return {isCelebrating:()=>levelUpPlaying,init,onSessionComplete,onGoalComplete,onOverdueDetected,checkAchievements,getOverdueStreak,refreshUI,renderXPLog,renderAchievements,renderAchievementTab,renderXPBar,renderBadgeOnBoard,getRank,load};
 })();
