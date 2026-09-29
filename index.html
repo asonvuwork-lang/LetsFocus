@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="styles-focus-mode.css?v=experience-20260927">
   <link rel="stylesheet" href="styles-main-controls.css?v=brew-20260928">
   <script src="https://cdn.jsdelivr.net/npm/vara@1.4.0/lib/vara.min.js"></script>
+  <link rel="stylesheet" href="styles-account.css?v=accounts-20260928">
 </head>
 <body>
 
@@ -44,6 +45,7 @@
     <header>
       <div id="welcome-container"></div>
       <div class="header-actions">
+        <button id="accountBtn" class="account-btn" type="button">Sign in</button>
         <button id="helpBtn" class="help-btn" title="Guided tour — learn how to use LetsFocus">?</button>
       </div>
     </header>
@@ -679,12 +681,11 @@
     </div>
   </div><!-- end timerPage -->
 
-  <!-- Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Accounts stay local until a new backend is configured. -->
 
   <!-- Core infrastructure first -->
-  <script src="script-supabase.js"></script>
-  <script src="script-auth.js"></script>
+  <script src="script-supabase.js?v=accounts-20260928"></script>
+  <script src="script-auth.js?v=accounts-20260928"></script>
   <!-- Feature modules -->
   <script src="script-categories.js"></script>
   <script src="script-goals.js?v=brew-20260928"></script>

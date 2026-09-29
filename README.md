@@ -277,3 +277,16 @@ their panel. Wide cards still require a full-width row.
 
 Validation: `node tests/main-controls.cjs` checks Undo accounting, duplicate reward
 protection, local-calendar deadline calculations and saved shelf metadata.
+
+### Account preparation (local-only for now)
+
+The small **Sign in** button beside Help opens account information. Live Google sign-in,
+cloud saving, and Calendar authorization are intentionally deferred until a new backend
+is provisioned. The retired Supabase project is no longer contacted and its browser SDK
+is no longer loaded. Existing guest storage remains unchanged; use Goal Area → Settings
+→ Export for a portable backup. The account dialog does not claim that local data is synced.
+
+Before activating accounts: configure the new provider and approved redirect URLs;
+implement account-isolated storage, explicit guest import, conflict-safe atomic saves,
+offline/error states, and database ownership rules; then test two different accounts
+and cross-device save/reload. Calendar authorization must remain a separate optional step.
