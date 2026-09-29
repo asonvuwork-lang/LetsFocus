@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="styles-timer-layout.css?v=panels-20260927">
   <link rel="stylesheet" href="styles-session-completion.css?v=experience-20260927">
   <link rel="stylesheet" href="styles-focus-mode.css?v=experience-20260927">
-  <link rel="stylesheet" href="styles-main-controls.css?v=controls-20260928">
+  <link rel="stylesheet" href="styles-main-controls.css?v=brew-20260928">
   <script src="https://cdn.jsdelivr.net/npm/vara@1.4.0/lib/vara.min.js"></script>
 </head>
 <body>
@@ -60,7 +60,8 @@
     <!-- Progress bar -->
     <section class="progress-section">
       <div class="progress-bar-style">
-        <div class="progress-bar">
+        <div class="brew-progress-label"><span id="brewProgressText" role="status">Add your first goal to start brewing</span><span id="brewProgressPercent">0%</span></div>
+        <div class="progress-bar" id="brewProgressBar" role="progressbar" aria-label="Goal completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
           <div class="progress"></div>
         </div>
       </div>
@@ -125,6 +126,7 @@
           <div class="goal-view-toggle">
             <button class="view-toggle-btn active" id="viewListBtn">☰ List</button>
             <button class="view-toggle-btn" id="viewBoardBtn">📋 Board</button>
+            <button class="view-toggle-btn" id="viewFocusBtn" aria-pressed="false">☕ Focus</button>
           </div>
 
           <!-- LIST VIEW -->
@@ -685,23 +687,23 @@
   <script src="script-auth.js"></script>
   <!-- Feature modules -->
   <script src="script-categories.js"></script>
-  <script src="script-goals.js?v=controls-20260928"></script>
+  <script src="script-goals.js?v=brew-20260928"></script>
   <script src="script-session-completion.js?v=experience-20260927"></script>
-  <script src="script-timer.js?v=controls-20260928"></script>
+  <script src="script-timer.js?v=brew-20260928"></script>
   <script src="script-music.js"></script>
   <script src="script-stats.js"></script>
   <script src="script-drink-recipes.js"></script>
   <script src="script-drink.js?v=experience-20260927"></script>
   <script src="script-xp.js?v=experience-20260927"></script>
   <script src="script-templates.js"></script>
-  <script src="script-tour.js?v=controls-20260928"></script>
+  <script src="script-tour.js?v=brew-20260928"></script>
   <script src="script-shop.js?v=experience-20260927"></script>
   <script src="script-collection.js"></script>
-  <script src="script-shelf.js?v=controls-20260928"></script>
+  <script src="script-shelf.js?v=brew-20260928"></script>
   <script src="script-timer-layout.js?v=panels-20260927"></script>
   <script src="script-focus-mode.js?v=experience-20260927"></script>
-  <script src="script-main-controls.js?v=controls-20260928"></script>
+  <script src="script-main-controls.js?v=brew-20260928"></script>
   <!-- Bootstrap last -->
-  <script src="script-main.js?v=controls-20260928"></script>
+  <script src="script-main.js?v=brew-20260928"></script>
 </body>
 </html>

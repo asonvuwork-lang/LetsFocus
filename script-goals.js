@@ -537,6 +537,25 @@ const GoalsModule = (function() {
     const bar = document.querySelector('.progress');
     const clearBtn = document.getElementById('clearAllGoalsBtn');
     if (!bar) return;
+    const completed = goals.filter(g => g.completed).length;
+    const percent = goals.length ? Math.round(completed / goals.length * 100) : 0;
+    const text = document.getElementById('brewProgressText');
+    const number = document.getElementById('brewProgressPercent');
+    const track = document.getElementById('brewProgressBar');
+    const message = !goals.length ? 'Add your first goal to start brewing' : completed === goals.length ? `Your brew is complete · ${completed} of ${goals.length} goals` : `${completed} of ${goals.length} goals complete`;
+    if (text) text.textContent = message;
+    if (number) number.textContent = `${percent}%`;
+    if (track) {
+      const wasComplete = track.getAttribute('aria-valuenow') === '100';
+      track.setAttribute('aria-valuenow', String(percent));
+      track.setAttribute('aria-valuetext', message);
+      track.style.setProperty('--brew-scale', String(goals.length ? completed / goals.length : 0));
+      track.classList.toggle('brew-complete', percent === 100);
+      if (percent === 100 && !wasComplete) {
+        track.classList.add('brew-celebrate');
+        setTimeout(() => track.classList.remove('brew-celebrate'), 1000);
+      }
+    }
     if (!goals.length) {
       bar.style.width = '0%';
       if (clearBtn) clearBtn.classList.add('hidden');

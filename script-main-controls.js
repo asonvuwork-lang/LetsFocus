@@ -58,7 +58,9 @@ const MainControlsModule = (() => {
     const goalPanel=document.getElementById('goalPanel');if(!goalPanel)return;
     card=document.createElement('section');card.className='focus-next-card';card.id='focusNextCard';
     reminder=document.createElement('aside');reminder.className='deadline-reminder';reminder.setAttribute('aria-label','Deadline reminder');
-    goalPanel.prepend(reminder);goalPanel.prepend(card);render();
+    goalPanel.prepend(reminder);
+    card.classList.add('goal-view-hidden');
+    goalPanel.querySelector('.goal-view-toggle').after(card);render();
     document.addEventListener('letsfocus:datasave',render);
     document.addEventListener('letsfocus:sessionchange',render);
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)render();});

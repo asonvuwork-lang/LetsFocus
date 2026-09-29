@@ -93,8 +93,8 @@ const TimerModule = (function() {
     overlay.style.cssText = 'position:fixed;inset:0;z-index:12000;background:#28160ab8;display:grid;place-items:center;padding:20px';
     const dialog = document.createElement('div');
     dialog.setAttribute('role', 'dialog'); dialog.setAttribute('aria-modal', 'true'); dialog.setAttribute('aria-labelledby', 'recoveryTitle');
-    dialog.style.cssText = 'background:#f5f1eb;color:#4a3429;border-radius:20px;padding:28px;max-width:420px;width:100%;box-sizing:border-box';
-    dialog.innerHTML = '<h2 id="recoveryTitle">Your focus session is saved</h2><p id="recoveryDetail"></p><p>Return to your saved progress, then press Resume when you’re ready. Time away hasn’t been counted.</p><div style="display:flex;gap:12px;flex-wrap:wrap"><button id="recoveryResume" style="padding:12px">Return to session</button><button id="recoveryDiscard" style="padding:12px">Discard session</button></div>';
+    dialog.className = 'session-recovery-card';
+    dialog.innerHTML = '<span class="recovery-eyebrow">☕ SAVED FOR YOU</span><h2 id="recoveryTitle">Your focus session is saved</h2><p id="recoveryDetail"></p><p>Return to your saved progress, then press Resume when you’re ready. Time away hasn’t been counted.</p><div class="recovery-actions"><button id="recoveryResume">Return to session</button><button id="recoveryDiscard">Discard session</button></div>';
     dialog.querySelector('#recoveryDetail').textContent = `${saved.selectedGoal?.text || 'Focus session'} · ${Math.ceil(saved.remainingMs / 60000)} min remaining`;
     overlay.appendChild(dialog); document.body.appendChild(overlay);
     const previous = document.activeElement;

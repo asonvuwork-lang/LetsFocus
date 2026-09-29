@@ -450,27 +450,24 @@ document.addEventListener('letsfocus:ready', function() {
   const _lView = document.getElementById('goalListView');
   const _bView = document.getElementById('goalBoardView');
 
-  function showListView() {
-    if (!_lView || !_bView) return;
-    _lView.classList.remove('goal-view-hidden');
-    _bView.classList.add('goal-view-hidden');
-    _lBtn?.classList.add('active');
-    _bBtn?.classList.remove('active');
+  const _fBtn = document.getElementById('viewFocusBtn');
+  function selectGoalView(view) {
+    const focus = document.getElementById('focusNextCard');
+    [[_lBtn,_lView,'list'],[_bBtn,_bView,'board'],[_fBtn,focus,'focus']].forEach(([button,panel,name]) => {
+      const active = view === name;
+      panel?.classList.toggle('goal-view-hidden', !active);
+      button?.classList.toggle('active', active);
+      button?.setAttribute('aria-pressed', String(active));
+    });
+    if (view === 'board') {
+      if (typeof DrinkModule !== 'undefined') DrinkModule.renderBillBoard();
+      if (typeof GoalsModule !== 'undefined') GoalsModule.applyPriorityOutlinesToBoard();
+    }
   }
-
-  function showBoardView() {
-    if (!_lView || !_bView) return;
-    _bView.classList.remove('goal-view-hidden');
-    _lView.classList.add('goal-view-hidden');
-    _bBtn?.classList.add('active');
-    _lBtn?.classList.remove('active');
-    if (typeof DrinkModule !== 'undefined') DrinkModule.renderBillBoard();
-    // Apply priority outlines to bill squares after board renders
-    if (typeof GoalsModule !== 'undefined') GoalsModule.applyPriorityOutlinesToBoard();
-  }
-
-  _lBtn?.addEventListener('click', showListView);
-  _bBtn?.addEventListener('click', showBoardView);
+  _lBtn?.addEventListener('click', () => selectGoalView('list'));
+  _bBtn?.addEventListener('click', () => selectGoalView('board'));
+  _fBtn?.addEventListener('click', () => selectGoalView('focus'));
+  selectGoalView('list');
 
   // ---- Shop full page ----
   function openShopPage() {

@@ -49,3 +49,32 @@
  .goal-content > .goal-text { flex:1 1 130px; }
  .goal-content .goal-deadline-wrap { order:5; flex-basis:100%; margin-left:26px; }
 }
+
+/* Café-styled session entry and workspace controls. */
+#mainPage > header { position:sticky; top:0; z-index:1000; background:#695548; box-shadow:0 3px 14px #28160a20; }
+#focusNextCard.goal-view-hidden { display:none; }
+.goal-view-toggle { flex-wrap:wrap; }
+.session-recovery-card { width:min(480px,100%); max-height:calc(100dvh - 40px); overflow:auto; box-sizing:border-box; padding:clamp(24px,5vw,36px); color:#513a28; background:linear-gradient(135deg,#fffaf0,#eee2ce); border:1px solid #c6aa80; border-radius:24px; box-shadow:0 24px 70px #160b0960,inset 0 0 0 5px #fff8ea80; font-family:'Source Sans Pro',sans-serif; }
+.recovery-eyebrow { display:block; color:#8b6f47; font-size:.75rem; letter-spacing:.16em; font-weight:600; margin-bottom:14px; }
+.session-recovery-card h2 { font-family:'Playfair Display',serif; font-size:clamp(1.5rem,5vw,2rem); font-weight:500; line-height:1.25; text-wrap:balance; margin:0 0 16px; }
+.session-recovery-card p { line-height:1.55; margin:12px 0; }
+#recoveryDetail { padding:12px 16px; background:#dfcaaa55; border-radius:12px; font-weight:600; }
+.recovery-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+.recovery-actions button { flex:1 1 160px; min-height:46px; padding:12px 16px; border:1px solid #a98960; border-radius:12px; background:#fff9ef; color:#6b4e30; font:600 1rem 'Source Sans Pro',sans-serif; cursor:pointer; }
+#recoveryResume { background:#765333; color:#fff8ec; border-color:#765333; box-shadow:0 3px 8px #563a2420; }
+.recovery-actions button:focus-visible { outline:3px solid #b77b30; outline-offset:3px; }
+.timer-layout-toolbar { column-gap:10px; row-gap:12px; }
+.timer-layout-toolbar button,.timer-layout-toolbar select,.timer-layout-toolbar summary { font:600 .95rem 'Source Sans Pro',sans-serif; border:1px solid #b99a6c; border-radius:12px; background:linear-gradient(180deg,#fff9ec,#eaddc5); color:#634829; box-shadow:inset 0 1px #fffdf5,0 3px 8px #160b0926; min-height:44px; transition:background-color .18s,box-shadow .18s; }
+.timer-layout-toolbar button:hover,.timer-layout-toolbar summary:hover { background:#fff8e8; box-shadow:inset 0 1px #fffdf5,0 4px 12px #160b0940; }
+.timer-layout-toolbar button[aria-pressed="true"] { background:#795837; color:#fff8ea; box-shadow:inset 0 2px 5px #38221140; }
+.timer-layout-toolbar .layout-preset-label { font:italic 1rem 'Playfair Display',serif; color:#efddbd; }
+
+.brew-progress-label { display:flex; justify-content:space-between; align-items:baseline; gap:16px; margin:0 2px 8px; color:#654a33; font:600 .95rem 'Source Sans Pro',sans-serif; }
+#brewProgressPercent { font-variant-numeric:tabular-nums; flex-shrink:0; }
+#brewProgressBar { height:18px; position:relative; background:#e9decb; border:1px solid #cbb695; border-radius:999px; box-shadow:inset 0 2px 5px #69482618,0 1px #fff9ef; }
+#brewProgressBar .progress { width:100% !important; transform:scaleX(var(--brew-scale,0)); transform-origin:left; transition:transform .6s cubic-bezier(.22,1,.36,1); background:linear-gradient(180deg,#c89b62 0%,#916039 22%,#68422a 65%,#563622 100%); border-radius:999px; animation:none; box-shadow:inset 0 1px 0 #efc991; }
+#brewProgressBar .progress::before { display:none; }
+#brewProgressBar::after { content:''; position:absolute; inset:0; background:linear-gradient(100deg,transparent 30%,#ffe0a477 50%,transparent 70%); transform:translateX(-110%); pointer-events:none; }
+#brewProgressBar.brew-celebrate::after { animation:brew-finish .9s ease-out 1; }
+@keyframes brew-finish { to { transform:translateX(110%); } }
+@media(prefers-reduced-motion:reduce) { #brewProgressBar .progress { transition:none; } #brewProgressBar.brew-celebrate::after { animation:none; } }
