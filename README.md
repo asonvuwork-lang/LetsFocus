@@ -240,7 +240,7 @@ validation checks.
 ### Focus experience
 - Interrupted sessions offer **Return to session** or **Discard session** on reload.
   Returning restores the goal, drink and timer paused; closed-page time is not credited.
-  Returning to Goals intentionally ends recovery. Saves are local to this browser.
+  Returning to Goals pauses the session and keeps it available to resume. Saves are local to this browser.
 - **Layout** offers Balanced, Drink spotlight and Minimal focus presets per screen size.
   Manual edits show Custom. All five panels remain available in the regular view.
 - **Focus mode** temporarily shows just the timer and drink. Exit focus mode restores
@@ -259,3 +259,21 @@ Expand view sits next to Pop Out. The Panels menu saves visibility for each scre
 the timer remains available. Reset layout or a preset restores every panel. Cards pack
 into short grid tracks with small gutters, and the drink/recipe/timer text scale within
 their panel. Wide cards still require a full-width row.
+
+
+### Main controls and shelf details
+- **Your next focus** remembers a selected goal; Start focus uses the saved timer duration.
+- Returning to Goals pauses an unfinished session. Resume session continues it; End saved
+  session explicitly discards it after confirmation. Starting a different goal asks first.
+- Goal deletion, goal checkbox changes, subgoal changes/deletion and clearing goals offer
+  a ten-second Undo. Goal-checkbox rewards commit after the Undo window, and rechecking
+  the same goal cannot repeatedly earn rewards. Recurring goals can earn rewards each cycle.
+- Click or keyboard-activate a shelf cup in Stats or the timer to see studied duration,
+  goal, category and completion date. Older cups without goal metadata say so.
+- Deadlines offers counts and filters for overdue, today, the next seven days and later,
+  plus goal/category search and a direct Focus action. Main-page reminders can be snoozed
+  for an hour or dismissed for the local calendar day without changing the deadline.
+- Shared confirmation/prompt dialogs support Enter, Escape and contained keyboard focus.
+
+Validation: `node tests/main-controls.cjs` checks Undo accounting, duplicate reward
+protection, local-calendar deadline calculations and saved shelf metadata.

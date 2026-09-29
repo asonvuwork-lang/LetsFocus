@@ -74,14 +74,14 @@ const DrinkShelfModule = (function () {
 
   // ---- Persistence ----
   function load() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+    try { const data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');return Array.isArray(data)?data:[]; } catch { return []; }
   }
   function save(data) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
   }
 
   // ---- Public: record a completed session ----
-  function addCup(sessionSeconds) {
+  function addCup(sessionSeconds, goalName = '', category = null) {
     const info = (typeof DrinkModule !== 'undefined') ? DrinkModule.getCurrentDrinkInfo() : null;
     if (!info) return;
     const data = load();
@@ -91,6 +91,8 @@ const DrinkShelfModule = (function () {
       liquidColor:    info.liquidColor,
       tier:           info.tier || 'house',
       sessionSeconds: sessionSeconds || 0,
+      goalName: String(goalName || ''),
+      category: category ? String(category) : null,
       timestamp:      Date.now(),
     });
     save(data);
@@ -109,7 +111,8 @@ const DrinkShelfModule = (function () {
   }
 
   function fmtTime(secs) {
-    if (!secs) return '—';
+    if (!secs) return '0s';
+    if(secs<60)return `${Math.floor(secs)}s`;
     const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60);
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   }
@@ -224,7 +227,8 @@ const DrinkShelfModule = (function () {
           </div>`).join('')}
       </div>`;
 
-    container.querySelectorAll('.shelf-cup-wrap').forEach(el => {
+    container.querySelectorAll('.shelf-cup-wrap').forEach((el,index) => {
+      makeCupInteractive(el,data[index]);
       el.addEventListener('mouseenter', e => showTip(e, el.dataset.tip));
       el.addEventListener('mouseleave', hideTip);
     });
@@ -246,6 +250,27 @@ const DrinkShelfModule = (function () {
         <div class="timer-shelf-cups">${recent.map(c => miniSVG(c)).join('')}</div>
         <div class="timer-shelf-plank"></div>
       </div>`;
+    container.querySelectorAll('.shelf-mini-cup').forEach((el,index)=>makeCupInteractive(el,recent[index]));
+  }
+
+  function cupName(cup){return (typeof ShopModule!=='undefined'?ShopModule.DRINKS.find(d=>d.id===cup.drinkKey)?.name:null)||String(cup.drinkKey||'Drink').replace(/_/g,' ');}
+  function makeCupInteractive(el,cup){
+    el.setAttribute('role','button');el.tabIndex=0;el.setAttribute('aria-label',`View study session: ${cupName(cup)}, ${fmtTime(cup.sessionSeconds)}`);
+    el.onclick=()=>showCup(cup);el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();showCup(cup);}};
+  }
+  function showCup(cup){
+    hideTip();document.getElementById('shelfSessionDetail')?.remove();const previous=document.activeElement;
+    const dialog=document.createElement('dialog');dialog.id='shelfSessionDetail';dialog.className='shelf-session-detail';dialog.setAttribute('aria-labelledby','shelfDetailTitle');
+    const visual=document.createElement('div');visual.className='shelf-detail-visual';visual.setAttribute('aria-hidden','true');visual.innerHTML=miniSVG({...cup,timestamp:'detail-'+cup.timestamp});
+    const title=document.createElement('h2');title.id='shelfDetailTitle';title.textContent=cupName(cup);
+    const duration=document.createElement('p');duration.className='shelf-study-duration';duration.textContent=`${fmtTime(cup.sessionSeconds)} studied`;
+    const goal=document.createElement('p');goal.className='shelf-study-goal';goal.textContent=cup.goalName||'Goal not recorded for this older session';
+    const category=document.createElement('p');category.textContent=cup.category?`Category: ${cup.category}`:'';
+    const when=document.createElement('p');when.textContent=`${new Date(cup.timestamp).toLocaleString()} · ${cup.tier||'house'}`;
+    const total=document.createElement('p');total.className='shelf-study-total';total.textContent=`Across your shelf: ${fmtTime(load().reduce((sum,c)=>sum+(Number(c.sessionSeconds)||0),0))} studied`;
+    const close=document.createElement('button');close.textContent='Close';close.onclick=()=>dialog.close();
+    dialog.addEventListener('close',()=>{dialog.remove();previous?.focus?.({preventScroll:true});});dialog.addEventListener('keydown',e=>e.stopPropagation());
+    dialog.append(visual,title,duration,goal,category,when,total,close);document.body.append(dialog);dialog.showModal();close.focus();
   }
 
   // ---- Milestone celebrations ----

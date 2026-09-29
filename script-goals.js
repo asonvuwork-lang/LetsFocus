@@ -15,6 +15,7 @@ const GoalsModule = (function() {
   let noDeadlineFilter = false;
 
   // ---- Deadlines tab view state ----
+  let deadlineScope='all', deadlineQuery='';
   let deadlinesView = 'list'; // 'list' | 'column'
 
   // ---- Priority constants ----
@@ -61,7 +62,7 @@ const GoalsModule = (function() {
     // Shift by cfg.days (1 or 2)
     const shifted = new Date(dl);
     shifted.setDate(shifted.getDate() - (cfg.days || 1));
-    return shifted.toISOString().slice(0, 10);
+    return `${shifted.getFullYear()}-${String(shifted.getMonth()+1).padStart(2,'0')}-${String(shifted.getDate()).padStart(2,'0')}`;
   }
 
   function saveData() {
@@ -91,7 +92,7 @@ const GoalsModule = (function() {
       if (!goal.recurring) return;
       if (goal.recurring === 'daily') {
         if (goal.lastResetDate !== todayKey) {
-          goal.completed = false;
+          goal.completed = false; goal.completionRewarded = false;
           if (goal.subgoals) goal.subgoals.forEach(sg => sg.completed = false);
           goal.lastResetDate = todayKey;
           goal.refreshedToday = true;
@@ -99,7 +100,7 @@ const GoalsModule = (function() {
         }
       } else if (goal.recurring === 'weekly') {
         if (goal.lastResetWeek !== weekKey) {
-          goal.completed = false;
+          goal.completed = false; goal.completionRewarded = false;
           if (goal.subgoals) goal.subgoals.forEach(sg => sg.completed = false);
           goal.lastResetWeek = weekKey;
           goal.refreshedToday = true;
@@ -172,17 +173,25 @@ const GoalsModule = (function() {
   // ---- Shared completion logic (Goals-tab checkbox + Deadlines-tab popover) ----
   // Never call this without also calling saveData()/updateMainProgress()/renderGoals()/
   // renderDeadlinesTab() afterward — this only mutates goal state + fires XP/stats.
-  function applyGoalCompletion(goal, checked) {
-    const wasCompleted = goal.completed;
-    goal.completed = checked;
-    if (goal.subgoals && goal.subgoals.length) goal.subgoals.forEach(sg => sg.completed = checked);
-    if (!wasCompleted && goal.completed) {
-      const _today = new Date(); _today.setHours(0, 0, 0, 0);
-      const isLate = goal.deadline && new Date(goal.deadline + 'T00:00:00') < _today;
-      const overdueStreak = typeof XPModule !== 'undefined' ? XPModule.getOverdueStreak() : 0;
-      if (typeof XPModule !== 'undefined') XPModule.onGoalComplete(goal, isLate, overdueStreak);
-      if (typeof StatsModule !== 'undefined') StatsModule.recordGoalComplete();
-    }
+  function refreshGoalViews(){saveData();updateMainProgress();renderGoals();renderDeadlinesTab();}
+  function offerUndo(message,undo,commit){
+    if(typeof MainControlsModule!=='undefined')MainControlsModule.offerUndo(message,()=>{undo();refreshGoalViews();},commit||updateMainProgress);
+    else commit?.();
+  }
+  function applyGoalCompletion(goal, checked, reversible=true) {
+    if(typeof MainControlsModule!=='undefined')MainControlsModule.commitUndo();
+    const previous={completed:goal.completed,subs:(goal.subgoals||[]).map(s=>s.completed)};
+    goal.completed=checked;(goal.subgoals||[]).forEach(s=>s.completed=checked);
+    const award=()=>{
+      if(previous.completed||!checked||goal.completionRewarded)return;
+      goal.completionRewarded=true;
+      const today=new Date();today.setHours(0,0,0,0);
+      const isLate=goal.deadline&&new Date(goal.deadline+'T00:00:00')<today;
+      if(typeof XPModule!=='undefined')XPModule.onGoalComplete(goal,isLate,XPModule.getOverdueStreak());
+      if(typeof StatsModule!=='undefined')StatsModule.recordGoalComplete();saveData();updateMainProgress();
+    };
+    if(!reversible){award();return;}
+    offerUndo(checked?'Goal completed':'Goal reopened',()=>{goal.completed=previous.completed;(goal.subgoals||[]).forEach((sg,i)=>sg.completed=previous.subs[i]??false);},award);
   }
 
   // ---- Rendering ----
@@ -262,6 +271,7 @@ const GoalsModule = (function() {
 
       if (displayDl && !goal.completed) {
         const badgeWrap = document.createElement('span');
+        badgeWrap.className='goal-deadline-wrap';
         badgeWrap.style.cssText = 'display:inline-flex;align-items:center;gap:4px;';
 
         const ringWrap = document.createElement('span');
@@ -297,7 +307,10 @@ const GoalsModule = (function() {
       del.className = 'delete-goal-btn'; del.innerHTML = '&times;';
       del.addEventListener('click', (e) => {
         e.stopPropagation();
+        if(typeof MainControlsModule!=='undefined')MainControlsModule.commitUndo();
+        const position=goals.indexOf(goal);
         goals = goals.filter(g => g.id !== goal.id);
+        offerUndo('Goal deleted',()=>{if(!goals.some(g=>g.id===goal.id))goals.splice(Math.min(position,goals.length),0,goal);});
         if (selectedGoalId === goal.id) selectedGoalId = null;
         saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab();
       });
@@ -375,6 +388,8 @@ const GoalsModule = (function() {
           const subEl = document.createElement('div'); subEl.className = 'subgoal-item';
           const sChk = document.createElement('input'); sChk.type = 'checkbox'; sChk.className = 'goal-checkbox'; sChk.checked = sg.completed;
           sChk.addEventListener('change', function() {
+            const previous={completed:goal.completed,sub:sg.completed};
+            offerUndo('Subgoal updated',()=>{if(goals.includes(goal)){goal.completed=previous.completed;sg.completed=previous.sub;}});
             sg.completed = this.checked;
             goal.completed = goal.subgoals.every(s => s.completed);
             saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab();
@@ -383,7 +398,9 @@ const GoalsModule = (function() {
           const sDel = document.createElement('button'); sDel.className = 'delete-goal-btn'; sDel.innerHTML = '&times;';
           sDel.addEventListener('click', (e) => {
             e.stopPropagation();
+            const position=goal.subgoals.indexOf(sg);
             goal.subgoals = goal.subgoals.filter(s => s.id !== sg.id);
+            offerUndo('Subgoal deleted',()=>{if(goals.includes(goal)&&!goal.subgoals.includes(sg))goal.subgoals.splice(position,0,sg);});
             saveData(); renderGoals();
           });
           subEl.appendChild(sChk); subEl.appendChild(sSpan);
@@ -537,6 +554,7 @@ const GoalsModule = (function() {
     }
 
     const timerPageVisible = !document.getElementById('timerPage')?.classList.contains('hidden');
+    if (typeof MainControlsModule!=='undefined'&&MainControlsModule.hasPendingUndo())return;
     if (!_allDoneCelebrated && !timerPageVisible) {
       _allDoneCelebrated = true;
       triggerCelebration();
@@ -546,7 +564,29 @@ const GoalsModule = (function() {
   // ================================================================
   // DEADLINES TAB
   // ================================================================
+  function deadlineDays(goal){return typeof MainControlsModule!=='undefined'?MainControlsModule.dueDays(getDisplayDeadline(goal)):0;}
+  function deadlineMatches(goal,scope){const days=deadlineDays(goal);return scope==='all'||(scope==='overdue'&&days<0)||(scope==='today'&&days===0)||(scope==='week'&&days>=0&&days<=7)||(scope==='later'&&days>7);}
+  function filteredDeadlines(){return goals.filter(g=>g.deadline&&!g.completed&&deadlineMatches(g,deadlineScope)&&`${g.text} ${g.category||''}`.toLowerCase().includes(deadlineQuery));}
+  function renderDeadlineTools(){
+    const header=document.querySelector('.deadlines-header');if(!header)return;
+    let tools=document.getElementById('deadlineTools');
+    if(!tools){
+      tools=document.createElement('div');tools.id='deadlineTools';
+      const filters=document.createElement('div');filters.className='deadline-summary';filters.setAttribute('aria-label','Filter deadlines');
+      for(const [value,label] of Object.entries({all:'All',overdue:'Overdue',today:'Today',week:'Next 7 days',later:'Later'})){
+        const button=document.createElement('button');button.dataset.scope=value;button.dataset.label=label;
+        button.onclick=()=>{deadlineScope=value;renderDeadlinesTab();};filters.append(button);
+      }
+      const label=document.createElement('label');label.htmlFor='deadlineSearch';label.textContent='Find a deadline';
+      const search=document.createElement('input');search.id='deadlineSearch';search.type='search';search.placeholder='Goal or category';search.oninput=()=>{deadlineQuery=search.value.trim().toLowerCase();renderDeadlinesTab();};
+      const clear=document.createElement('button');clear.className='deadline-clear-search';clear.textContent='Clear search';clear.onclick=()=>{deadlineQuery='';search.value='';renderDeadlinesTab();search.focus();};
+      tools.append(filters,label,search,clear);header.append(tools);
+    }
+    tools.querySelectorAll('[data-scope]').forEach(button=>{const count=goals.filter(g=>g.deadline&&!g.completed&&deadlineMatches(g,button.dataset.scope)).length;button.textContent=`${button.dataset.label} · ${count}`;button.setAttribute('aria-pressed',String(deadlineScope===button.dataset.scope));});
+  }
+
   function renderDeadlinesTab() {
+    renderDeadlineTools();
     renderOverdueNotifications();
     renderUpcomingAlerts();
     renderDeadlinesViewContent();
@@ -565,7 +605,7 @@ const GoalsModule = (function() {
     const container = document.getElementById('overdueNotifications');
     if (!container) return;
     container.innerHTML = '';
-    const overdueGoals = goals.filter(g => {
+    const overdueGoals = filteredDeadlines().filter(g => {
       if (g.completed) return false;
       const dl = getDisplayDeadline(g);
       return getDeadlineUrgency(dl) === 'overdue';
@@ -622,6 +662,9 @@ const GoalsModule = (function() {
       saveData(); document.body.removeChild(modal); callback();
     });
     dialog.querySelector('#modalDateCancel').addEventListener('click', () => document.body.removeChild(modal));
+    modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','Set deadline');
+    const dateInput=dialog.querySelector('#modalDateInput');dateInput.setAttribute('aria-label','Deadline date');dateInput.focus();
+    modal.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();dialog.querySelector('#modalDateCancel').click();}else if(e.key==='Enter'&&e.target===dateInput){e.preventDefault();dialog.querySelector('#modalDateSave').click();}else if(e.key==='Tab'){const controls=[dateInput,dialog.querySelector('#modalDateSave'),dialog.querySelector('#modalDateCancel')];const at=controls.indexOf(document.activeElement);e.preventDefault();controls[(at+(e.shiftKey?2:1))%3].focus();}});
   }
 
   // ---- Upcoming Alerts ----
@@ -629,7 +672,7 @@ const GoalsModule = (function() {
     const container = document.getElementById('upcomingAlerts');
     if (!container) return;
     container.innerHTML = '';
-    const alertGoals = goals.filter(g => {
+    const alertGoals = filteredDeadlines().filter(g => {
       if (g.completed) return false;
       const dl = getDisplayDeadline(g);
       const u = getDeadlineUrgency(dl);
@@ -660,7 +703,10 @@ const GoalsModule = (function() {
     if (!container) return;
     container.innerHTML = '';
 
-    const withDeadline = goals.filter(g => g.deadline && !g.completed);
+    const withDeadline = filteredDeadlines();
+    const emptyTitle=document.querySelector('.deadlines-empty-title'),emptySub=document.querySelector('.deadlines-empty-sub');
+    if(emptyTitle)emptyTitle.textContent=deadlineScope!=='all'||deadlineQuery?'No matching deadlines':'Nothing due — enjoy your coffee ☕';
+    if(emptySub)emptySub.textContent=deadlineScope!=='all'||deadlineQuery?'Try All or clear your search.':'Add a deadline to any goal using the 📅 icon';
     const emptyEl = document.getElementById('deadlinesEmpty');
     if (!withDeadline.length) {
       if (emptyEl) emptyEl.classList.remove('hidden');
@@ -684,7 +730,10 @@ const GoalsModule = (function() {
     if (!container) return;
     container.innerHTML = '';
 
-    const withDeadline = goals.filter(g => g.deadline && !g.completed);
+    const withDeadline = filteredDeadlines();
+    const emptyTitle=document.querySelector('.deadlines-empty-title'),emptySub=document.querySelector('.deadlines-empty-sub');
+    if(emptyTitle)emptyTitle.textContent=deadlineScope!=='all'||deadlineQuery?'No matching deadlines':'Nothing due — enjoy your coffee ☕';
+    if(emptySub)emptySub.textContent=deadlineScope!=='all'||deadlineQuery?'Try All or clear your search.':'Add a deadline to any goal using the 📅 icon';
     const emptyEl = document.getElementById('deadlinesEmpty');
     if (!withDeadline.length) {
       if (emptyEl) emptyEl.classList.remove('hidden');
@@ -773,6 +822,9 @@ const GoalsModule = (function() {
       </div>
       <div class="dl-row-days dl-days-${urgency}">${displayDl ? getDeadlineDaysLabel(displayDl) : ''}</div>
     `;
+    row.tabIndex=0;row.setAttribute('role','group');row.setAttribute('aria-label',`${goal.text}, ${getDeadlineDaysLabel(displayDl)}`);
+    row.addEventListener('keydown',e=>{if(e.target===row&&(e.key==='Enter'||e.key===' ')){e.preventDefault();showDeadlinePopover(goal,row);}});
+    const focus=document.createElement('button');focus.className='deadline-focus-btn';focus.textContent='Focus';focus.setAttribute('aria-label',`Focus on ${goal.text}`);focus.onclick=e=>{e.stopPropagation();TimerModule.startGoal(goal.id);};row.append(focus);
     row.addEventListener('click', () => showDeadlinePopover(goal, row));
     container.appendChild(row);
   }
@@ -797,6 +849,9 @@ const GoalsModule = (function() {
       <span class="dl-chip-title">${goal.text}</span>
       <span class="dl-chip-days">${displayDl ? getDeadlineDaysLabel(displayDl) : ''}</span>
     `;
+    chip.tabIndex=0;chip.setAttribute('role','group');chip.setAttribute('aria-label',`${goal.text}, ${getDeadlineDaysLabel(displayDl)}`);
+    chip.addEventListener('keydown',e=>{if(e.target===chip&&(e.key==='Enter'||e.key===' ')){e.preventDefault();showDeadlinePopover(goal,chip);}});
+    const focus=document.createElement('button');focus.className='deadline-focus-btn';focus.textContent='Focus';focus.setAttribute('aria-label',`Focus on ${goal.text}`);focus.onclick=e=>{e.stopPropagation();TimerModule.startGoal(goal.id);};chip.append(focus);
     chip.addEventListener('click', () => showDeadlinePopover(goal, chip));
     container.appendChild(chip);
   }
@@ -861,7 +916,7 @@ const GoalsModule = (function() {
     pop.style.left = left + 'px';
     pop.style.top = top + 'px';
 
-    pop.querySelector('.dl-pop-close').addEventListener('click', (e) => { e.stopPropagation(); pop.remove(); });
+    pop.querySelector('.dl-pop-close').addEventListener('click', (e) => { e.stopPropagation(); pop.remove(); anchorEl.focus(); });
     pop.querySelector('.dl-pop-edit-btn').addEventListener('click', (e) => {
       e.stopPropagation();
       pop.remove();
@@ -1394,8 +1449,8 @@ const GoalsModule = (function() {
     });
 
     clearAllGoalsBtn.addEventListener('click', async () => {
-      const ok = await showConfirm('Clear all goals? This cannot be undone.');
-      if (ok) { goals = []; selectedGoalId = null; saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab(); }
+      const ok = await showConfirm('Clear all goals? You can undo this immediately afterward.');
+      if (ok) { if(typeof MainControlsModule!=='undefined')MainControlsModule.commitUndo();const removed=[...goals];offerUndo('Goals cleared',()=>{goals=[...removed.filter(g=>!goals.some(existing=>existing.id===g.id)),...goals];});goals = []; selectedGoalId = null; saveData(); updateMainProgress(); renderGoals(); renderDeadlinesTab(); }
     });
 
     document.addEventListener('click', (e) => {
@@ -1443,7 +1498,7 @@ const GoalsModule = (function() {
   function completeGoalByIndex(goalIndex, subgoalDoneStates) {
     const goal = goals[goalIndex];
     if (!goal) return;
-    goal.completed = true;
+    applyGoalCompletion(goal,true,false);
     if (goal.subgoals && goal.subgoals.length && subgoalDoneStates && subgoalDoneStates.length) {
       goal.subgoals.forEach((sg, i) => {
         if (subgoalDoneStates[i] != null) sg.completed = subgoalDoneStates[i];

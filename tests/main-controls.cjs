@@ -1,0 +1,21 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const read=f=>fs.readFileSync(require('path').join(__dirname,'..',f),'utf8');
+const nodes=new Map();let appended;
+function element(){return {children:[],setAttribute(){},addEventListener(){},append(...items){this.children.push(...items);},remove(){nodes.delete(this.id);}};}
+const storage=new Map();
+const context=vm.createContext({console,Date,CustomEvent:function(){},setTimeout:()=>1,clearTimeout(){},document:{addEventListener(){},getElementById:id=>nodes.get(id),createElement:element,body:{append(el){nodes.set(el.id,el);appended=el;}}},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)}});
+vm.runInContext(read('script-main-controls.js')+';this.main=MainControlsModule;',context);
+const main=context.main;let commits=0,undos=0;
+main.offerUndo('Deleted',()=>undos++,()=>commits++);appended.children[1].onclick();assert.equal(undos,1);assert.equal(commits,0);assert.equal(main.hasPendingUndo(),false);
+main.offerUndo('First',()=>undos++,()=>commits++);main.offerUndo('Second',()=>undos++,()=>commits++);assert.equal(commits,1);main.commitUndo();main.commitUndo();assert.equal(commits,2,'action commit is exactly once');
+assert.equal(main.dueDays('2026-09-29',new Date(2026,8,28,20)),1);assert.equal(main.dueDays('2026-09-27',new Date(2026,8,28,1)),-1);assert.equal(main.dueDays(null),Infinity);assert.equal(main.duration(3661),'1h 1m');
+let offered,rewards=0,stats=0;
+const data=new Map([['goals',JSON.stringify([{id:1,text:'Read',completed:false,subgoals:[{id:2,text:'Chapter',completed:false}]}])]]);
+const goalsCtx=vm.createContext({Date,CustomEvent:function(){},localStorage:{getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v)},document:{getElementById:()=>null,querySelector:()=>null,dispatchEvent(){}},MainControlsModule:{commitUndo(){if(offered){const item=offered;offered=null;item.commit?.();}},offerUndo(message,undo,commit){offered={undo,commit};}},XPModule:{getOverdueStreak:()=>0,onGoalComplete:()=>rewards++},StatsModule:{recordGoalComplete:()=>stats++}});
+vm.runInContext(read('script-goals.js').replace('return { init, renderGoals','return { audit:{applyGoalCompletion}, init, renderGoals')+';this.goals=GoalsModule;',goalsCtx);
+const g=goalsCtx.goals.getGoals()[0];goalsCtx.goals.audit.applyGoalCompletion(g,true);assert(g.completed);assert.equal(rewards,0);offered.undo();offered=null;assert.equal(g.completed,false);assert.equal(g.subgoals[0].completed,false);assert.equal(rewards,0);
+goalsCtx.goals.audit.applyGoalCompletion(g,true);goalsCtx.MainControlsModule.commitUndo();assert.equal(rewards,1);assert.equal(stats,1);
+goalsCtx.goals.audit.applyGoalCompletion(g,false);goalsCtx.MainControlsModule.commitUndo();goalsCtx.goals.audit.applyGoalCompletion(g,true);goalsCtx.MainControlsModule.commitUndo();assert.equal(rewards,1,'reopening/rechecking cannot farm rewards');
+const shelfCtx=vm.createContext({Date,localStorage:{getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v)},document:{getElementById:()=>null},DrinkModule:{getCurrentDrinkInfo:()=>({drinkKey:'matcha',drinkType:'matcha',tier:'house'})}});
+vm.runInContext(read('script-shelf.js')+';this.shelf=DrinkShelfModule;',shelfCtx);shelfCtx.shelf.addCup(3661,'Read chapter 2','Study');const cup=JSON.parse(data.get('letsfocus_shelf'))[0];assert.equal(cup.goalName,'Read chapter 2');assert.equal(cup.category,'Study');assert.equal(cup.sessionSeconds,3661);
+console.log('Main controls: undo/commit guards, reward protection, local deadline dates and shelf session metadata passed.');

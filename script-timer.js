@@ -328,7 +328,7 @@ const TimerModule = (function() {
     const beansBefore = typeof ShopModule !== 'undefined' ? ShopModule.getBeans() : 0;
     if (typeof StatsModule !== 'undefined') StatsModule.recordSession(focusedSeconds, selectedGoal?.text || '');
     if (typeof XPModule !== 'undefined') XPModule.onSessionComplete(focusedSeconds, isFullPomodoro, selectedGoal?.text || '');
-    if (typeof DrinkShelfModule !== 'undefined') DrinkShelfModule.addCup(focusedSeconds);
+    if (typeof DrinkShelfModule !== 'undefined') DrinkShelfModule.addCup(focusedSeconds, selectedGoal?.text || '', selectedGoal?.category || null);
     sessionBeansEarned = typeof ShopModule !== 'undefined' ? Math.max(0, ShopModule.getBeans() - beansBefore) : 0;
   }
 
@@ -1428,6 +1428,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
     if (!overlay || !cup) return;
 
     cup.addEventListener('click', () => {
+      if(readRecovery()){resumePendingSession();return;}
       const saved = loadTimerData();
       configHours = saved.hours ?? 0; configMinutes = saved.minutes ?? 25; configSeconds = saved.seconds ?? 0;
       segState.hours = configHours; segState.minutes = configMinutes; segState.seconds = configSeconds;
@@ -1482,6 +1483,20 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
     document.getElementById('confirmBackBtn')?.addEventListener('click', () => { populateGoalPicker(); showConfigStep(1); });
 
     initInputMode();
+  }
+
+  function getPendingSession(){return readRecovery();}
+  function discardPendingSession(){clearRecovery();document.dispatchEvent(new Event('letsfocus:sessionchange'));}
+  function resumePendingSession(){const saved=readRecovery();if(!saved)return;restoreRecovery(saved);toggleTimer();document.dispatchEvent(new Event('letsfocus:sessionchange'));}
+  async function startGoal(id){
+    if(readRecovery()&&!(await showConfirm('Start a new session and discard the saved unfinished session?')))return;
+    const index=GoalsModule.getGoals().findIndex(g=>String(g.id)===String(id)&&!g.completed);
+    if(index<0)return;
+    clearRecovery();const goal=GoalsModule.getGoals()[index];
+    selectedGoal={id:goal.id,index,text:goal.text,category:goal.category||null,subgoals:(goal.subgoals||[]).map(s=>({text:s.text||s,done:s.completed||false}))};
+    pomodoroMode=false;
+    const configured=loadTimerData();if(!((configured.hours||0)*3600+(configured.minutes||0)*60+(configured.seconds||0)))saveTimerData(0,25,0);
+    showTimerPage();updatePomoIndicator();toggleTimer();document.dispatchEvent(new Event('letsfocus:sessionchange'));
   }
 
   // ---- Keyboard shortcuts ----
@@ -1555,7 +1570,8 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
   }
 
   function hideTimerPage() {
-    clearRecovery();
+    if(timerRunning){const now=Date.now();remainingMs=Math.max(0,phaseEndsAtMs-now);remainingSeconds=Math.ceil(remainingMs/1000);settleFocusRun(now);}
+    if(sessionStatsRecorded||remainingMs<=0)clearRecovery();else saveRecovery();
     cancelPomoAutoStart();
     drinkSessionActive = false;
     clearTimerCompletionVisuals();
@@ -1572,6 +1588,7 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
     GoalsModule.renderGoals(); GoalsModule.updateMainProgress();
     if (typeof window.hideFocusModeBanner === 'function') window.hideFocusModeBanner();
     window.scrollTo?.({top:mainPageScrollY,behavior:'instant'});
+    document.dispatchEvent(new Event('letsfocus:sessionchange'));
   }
 
   function toggleTimer() {
@@ -1868,5 +1885,5 @@ document.getElementById('poSoundsToggle').addEventListener('click', () => {
     setTimeout(offerRecovery, 0);
   }
 
-  return { init, showTimerPage, hideTimerPage, playChime: playSoftChime };
+  return { init, showTimerPage, hideTimerPage, getPendingSession, resumePendingSession, discardPendingSession, startGoal, playChime: playSoftChime };
 })();
