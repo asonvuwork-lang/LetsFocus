@@ -1,0 +1,10 @@
+.weekly-brew-total { font:500 clamp(1.2rem,4vw,1.65rem) 'Playfair Display',serif; color:#715332; margin:14px 0 8px; }
+.leaderboard-note { color:#715d47; font:.9rem/1.5 'Source Sans Pro',sans-serif; }
+.leaderboard-sample { margin-top:20px; border-top:1px solid #d6c5aa; padding-top:8px; }
+.leaderboard-sample summary { cursor:pointer; min-height:44px; padding:12px 0; color:#715332; font-weight:600; }
+.leaderboard-sample summary:focus-visible { outline:3px solid #a56f30; outline-offset:3px; }
+.leaderboard-sample table { width:100%; border-collapse:collapse; margin:16px 0; font-family:'Source Sans Pro',sans-serif; }
+.leaderboard-sample caption { text-align:left; font-family:'Playfair Display',serif; padding:8px 0 14px; }
+.leaderboard-sample th,.leaderboard-sample td { text-align:left; padding:12px 8px; border-bottom:1px solid #d6c5aa; }
+.leaderboard-sample th { color:#755433; background:#e9dcc466; }
+.leaderboard-sample td:last-child { font-variant-numeric:tabular-nums; white-space:nowrap; }

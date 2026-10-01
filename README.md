@@ -290,3 +290,27 @@ Before activating accounts: configure the new provider and approved redirect URL
 implement account-isolated storage, explicit guest import, conflict-safe atomic saves,
 offline/error states, and database ownership rules; then test two different accounts
 and cross-device save/reload. Calendar authorization must remain a separate optional step.
+
+### Study Room preview
+
+The Study Room tab is a local, in-memory prototype with explicitly labeled sample
+people. It supports capacity (2/4/6/8), locking, guest removal, leaving with host
+handoff, and simulated connection loss/reconnect. My Timer links to the existing
+Focus controls without starting a session. Refresh resets the preview. Invites
+explain that no live link exists; the preview sends no room data and changes no
+personal goals, study history, or rewards.
+
+Before real multiplayer, enforce membership, capacity, host permissions, invite
+expiry/revocation, and removal on the server. Client-side preview controls are not
+security enforcement. Accounts, data separation and reliable session sync remain
+separate deferred work.
+
+Publication gate: run relevant automated tests and browser checks before publishing;
+report any untested behavior or blockers. This preview is covered by
+`node tests/room-preview.cjs` plus the existing main controls/session checks.
+
+### Local weekly progress preview
+
+Stats now shows focus time and active days for the current Monday–Sunday week using the existing UTC daily totals. Data stays in this browser. An expandable sample leaderboard uses fictional names and times, separate from personal progress; equal times share a rank. It does not implement accounts, online rankings, or verified session scoring.
+
+Validation: `node tests/leaderboard.cjs` checks week boundaries, future-date exclusion, invalid totals, ties, and duration formatting.

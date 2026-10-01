@@ -16,6 +16,8 @@
   <link rel="stylesheet" href="styles-main-controls.css?v=brew-20260928">
   <script src="https://cdn.jsdelivr.net/npm/vara@1.4.0/lib/vara.min.js"></script>
   <link rel="stylesheet" href="styles-account.css?v=accounts-20260928">
+  <link rel="stylesheet" href="styles-room.css?v=room-preview-20260930">
+  <link rel="stylesheet" href="styles-leaderboard.css?v=weekly-preview-20261001">
 </head>
 <body>
 
@@ -72,6 +74,7 @@
     <!-- Tab Navigation -->
     <nav class="tab-nav">
       <button class="tab-btn active" data-tab="goals">☕ Goals</button>
+      <button class="tab-btn" data-tab="room">☕ Study Room</button>
       <button class="tab-btn" data-tab="deadlines">📅 Deadlines</button>
       <button class="tab-btn" data-tab="stats">📊 Stats</button>
       <button class="tab-btn" data-tab="achievements">🏅 Achievements</button>
@@ -79,6 +82,8 @@
       <button class="tab-btn" data-tab="music">♪ Music Setup</button>
       <button class="tab-btn" data-tab="collection">🍵 My Collection</button>
     </nav>
+
+    <div class="tab-content" id="tab-room"><section id="studyRoom" aria-label="Study room preview"></section></div>
 
     <!-- TAB: Goals -->
     <div class="tab-content active" id="tab-goals">
@@ -289,6 +294,8 @@
             </div>
           </div>
         </div>
+
+        <section class="stats-section" id="leaderboardPreview" aria-label="Weekly progress and sample leaderboard"></section>
 
         <div class="stats-grid">
           <div class="stat-card stat-card-primary">
@@ -704,6 +711,8 @@
   <script src="script-timer-layout.js?v=panels-20260927"></script>
   <script src="script-focus-mode.js?v=experience-20260927"></script>
   <script src="script-main-controls.js?v=brew-20260928"></script>
+  <script src="script-room.js?v=room-preview-20260930"></script>
+  <script src="script-leaderboard.js?v=weekly-preview-20261001"></script>
   <!-- Bootstrap last -->
   <script src="script-main.js?v=brew-20260928"></script>
 </body>

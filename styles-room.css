@@ -1,0 +1,30 @@
+#studyRoom { max-width:1120px; margin:24px auto; padding:clamp(18px,3vw,32px); color:#654b34; background:#f4eddf; border:1px solid #d5c2a4; border-radius:24px; }
+.room-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.room-heading h2 { font:italic 2rem 'Playfair Display',serif; margin:0; }
+.room-preview-badge { font:600 .7rem 'Source Sans Pro',sans-serif; letter-spacing:.1em; border:1px solid #cbb594; padding:7px 10px; border-radius:20px; }
+.room-intro,.room-status { line-height:1.5; font-family:'Source Sans Pro',sans-serif; }
+#studyRoom button,#studyRoom select,.room-dialog button { min-height:44px; border:1px solid #bba17d; border-radius:10px; padding:10px 14px; background:#fff9ee; color:#654b34; font:600 .95rem 'Source Sans Pro',sans-serif; cursor:pointer; }
+#studyRoom button:disabled,#studyRoom select:disabled { opacity:.5; cursor:not-allowed; }
+#studyRoom button:focus-visible,#studyRoom select:focus-visible,#studyRoom summary:focus-visible,.room-dialog button:focus-visible { outline:3px solid #a56f30; outline-offset:3px; }
+.room-switch { display:flex; gap:8px; margin:20px 0 12px; }
+#studyRoom .room-switch button[aria-pressed=true] { background:#795736; color:#fff8ed; }
+.room-scene { border-radius:20px; padding:24px; background:repeating-linear-gradient(92deg,#745035 0,#745035 80px,#704b32 82px,#745035 86px); box-shadow:inset 0 2px 10px #301a1344; }
+.room-table-sign { text-align:center; color:#edddbc; letter-spacing:.13em; font:600 .75rem 'Source Sans Pro',sans-serif; padding:5px 0 24px; }
+.room-seats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; }
+.room-seat { text-align:center; background:#f6eddc; border:1px solid #d5bc96; border-radius:60px 60px 18px 18px; padding:22px 10px 14px; box-shadow:0 7px 12px #2c180b33; min-width:0; }
+.room-seat h3 { font:500 1.05rem 'Playfair Display',serif; overflow-wrap:anywhere; }
+.room-seat p { font:.85rem 'Source Sans Pro',sans-serif; }
+.room-cup { font-size:3rem; display:block; }
+.room-seat-empty { background:#ffffff0c; border:1px dashed #d3ba8f88; box-shadow:none; color:#eeddbb; }
+.room-tools { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:20px 0; }
+.room-tools label { display:flex; align-items:center; gap:8px; }
+.room-simulations { border-top:1px solid #d5c2a4; padding-top:16px; }
+.room-simulations summary { padding:10px 0; cursor:pointer; }
+.room-simulations button { margin:5px 8px 5px 0; }
+.room-personal-desk { padding:30px; text-align:center; border:1px solid #d5c2a4; border-radius:18px; }
+.room-desk-cup { font-size:4rem; }
+.room-dialog { width:min(440px,calc(100% - 32px)); max-height:calc(100dvh - 32px); overflow:auto; box-sizing:border-box; padding:28px; margin:auto; background:#f8efdf; border:1px solid #bba17d; border-radius:20px; color:#654b34; }
+.room-dialog::backdrop { background:#28160a99; }
+.room-dialog p { line-height:1.5; }.room-dialog button { margin-right:10px; }
+@media(max-width:760px){ #studyRoom { margin:16px 12px; } .room-seats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; } .room-scene { padding:16px; } .room-switch button { flex:1; } }
+@media(max-width:360px){ .room-seats { grid-template-columns:1fr; } }
